@@ -78,7 +78,7 @@ def fit_ridge(train: pd.DataFrame) -> TrainedRegressor:
 
 def fit_xgboost(train: pd.DataFrame) -> TrainedRegressor:
     numeric = numeric_columns(train)
-    x = train[numeric]
+    x = train[numeric].apply(pd.to_numeric, errors="coerce")
     y = train["y"].to_numpy(dtype=float)
     model = XGBRegressor(
         objective="reg:squarederror",
@@ -102,5 +102,5 @@ def predict_model(trained: TrainedRegressor, frame: pd.DataFrame) -> np.ndarray:
     if trained.kind == "ridge":
         x = frame[trained.feature_names]
         return np.asarray(trained.model.predict(x), dtype=float)
-    x = frame[trained.feature_names]
+    x = frame[trained.feature_names].apply(pd.to_numeric, errors="coerce")
     return np.asarray(trained.model.predict(x), dtype=float)

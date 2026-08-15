@@ -51,9 +51,15 @@ def _event_rows(rng: np.random.Generator, event_id: int, story: str) -> list[dic
 
     eligible_idx = np.where(times >= 2.0)[0]
     last_eligible = int(eligible_idx[-1]) if len(eligible_idx) else 0
-    risks = np.linspace(start_risk, final_risk, n_messages)
-    risks[: last_eligible + 1] = np.linspace(start_risk, (start_risk + final_risk) / 2, last_eligible + 1)
-    risks[last_eligible + 1 :] = np.linspace((start_risk + final_risk) / 2, final_risk, n_messages - last_eligible)
+    n_pre = last_eligible + 1
+    n_post = n_messages - n_pre
+    midpoint = (start_risk + final_risk) / 2
+    risks = np.empty(n_messages, dtype=float)
+    risks[:n_pre] = np.linspace(start_risk, midpoint, n_pre)
+    if n_post:
+        risks[n_pre:] = np.linspace(midpoint, final_risk, n_post)
+    else:
+        risks[-1] = final_risk
     if story == "low":
         risks = np.clip(risks, NEGLIGIBLE_RISK, -7.0)
         risks[-1] = min(final_risk, -8.0)

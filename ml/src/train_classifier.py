@@ -18,7 +18,7 @@ class TrainedClassifier:
 
 def fit_warning_classifier(train: pd.DataFrame) -> TrainedClassifier:
     numeric = numeric_columns(train)
-    x = train[numeric]
+    x = train[numeric].apply(pd.to_numeric, errors="coerce")
     y = (train["y"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD).astype(int)
     pos = max(int(y.sum()), 1)
     neg = max(int((1 - y).sum()), 1)

@@ -137,15 +137,16 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         history = event["history"]
         full = event["full_history"]
         feature_row = features[features["event_id"] == event_id].iloc[0]
-        boot = np.array(
-            [model.predict(feature_row[booster.feature_names].to_frame().T)[0] for model in ensemble]
+        aligned = pd.DataFrame(
+            [{name: float(feature_row[name]) for name in booster.feature_names}]
         )
+        boot = np.array([model.predict(aligned)[0] for model in ensemble])
         prediction = predict_event(
             trained=booster,
             ensemble_preds=boot,
             calibrator=calibrator,
             explainer=explainer,
-            row=feature_row,
+            row=aligned.iloc[0],
             messages=_messages(history),
             event_id=f"demo-{event_id}",
         )

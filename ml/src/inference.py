@@ -36,17 +36,26 @@ class PrismModel:
         self.explainer = shap_explainer(self.trained, background)
         self.model_version = MODEL_VERSION
 
-    def predict_messages(self, event_id: str, messages: list[dict[str, Any]], cutoff_hours: int = 48) -> dict[str, Any]:
+    def predict_messages(
+        self, event_id: str, messages: list[dict[str, Any]], cutoff_hours: int = 48
+    ) -> dict[str, Any]:
         cutoff_days = cutoff_hours / 24.0
         if any(float(item["timeToTcaDays"]) < cutoff_days - 1e-9 for item in messages):
             raise ValueError("post-cutoff messages are not allowed")
-        frame = _messages_to_frame(event_id, messages)
-        events = build_event_histories(frame)
+        frame = _messages_to_frame(messages)
+        events = build_event_histories(frame, require_later_target=False)
         if not events:
             raise ValueError("no eligible pre-cutoff messages")
         features = build_feature_table(events)
         row = features.iloc[0]
-        aligned = pd.DataFrame([{name: row[name] if name in row else np.nan for name in self.feature_names}])
+        aligned = pd.DataFrame(
+            [
+                {
+                    name: float(row[name]) if name in row and pd.notna(row[name]) else np.nan
+                    for name in self.feature_names
+                }
+            ]
+        )
         series = aligned.iloc[0]
         ens = np.array([model.predict(aligned)[0] for model in self.ensemble])
         return predict_event(
@@ -60,47 +69,56 @@ class PrismModel:
         )
 
 
-def _messages_to_frame(event_id: str, messages: list[dict[str, Any]]) -> pd.DataFrame:
+def _num(item: dict[str, Any], key: str, default: float) -> float:
+    value = item.get(key, default)
+    if value is None:
+        return default
+    return float(value)
+
+
+def _messages_to_frame(messages: list[dict[str, Any]]) -> pd.DataFrame:
     rows = []
     for item in messages:
+        miss = float(item["missDistanceM"])
+        speed = float(item["relativeSpeedMps"])
         rows.append(
             {
                 "event_id": 0,
                 "mission_id": 0,
                 "time_to_tca": float(item["timeToTcaDays"]),
                 "risk": float(item["riskLog10"]),
-                "max_risk_estimate": float(item.get("maxRiskEstimate", item["riskLog10"] + 0.4)),
-                "max_risk_scaling": float(item.get("maxRiskScaling", 1.0)),
-                "miss_distance": float(item["missDistanceM"]),
-                "relative_speed": float(item["relativeSpeedMps"]),
-                "relative_position_r": float(item.get("relativePositionR", item["missDistanceM"] * 0.2)),
-                "relative_position_t": float(item.get("relativePositionT", item["missDistanceM"] * 0.8)),
-                "relative_position_n": float(item.get("relativePositionN", 10.0)),
-                "relative_velocity_r": float(item.get("relativeVelocityR", 0.0)),
-                "relative_velocity_t": float(item.get("relativeVelocityT", item["relativeSpeedMps"])),
-                "relative_velocity_n": float(item.get("relativeVelocityN", 0.0)),
-                "azimuth": float(item.get("azimuth", 0.0)),
-                "elevation": float(item.get("elevation", 0.0)),
-                "geocentric_latitude": float(item.get("geocentricLatitude", 0.0)),
-                "c_object_type": str(item.get("cObjectType", "UNKNOWN")),
-                "F10": float(item.get("f10", 100.0)),
-                "F3M": float(item.get("f3m", 100.0)),
-                "AP": float(item.get("ap", 10.0)),
-                "SSN": float(item.get("ssn", 50.0)),
-                "t_sigma_r": float(item.get("tSigmaR", 100.0)),
-                "t_sigma_t": float(item.get("tSigmaT", 140.0)),
-                "t_sigma_n": float(item.get("tSigmaN", 80.0)),
-                "c_sigma_r": float(item.get("cSigmaR", 150.0)),
-                "c_sigma_t": float(item.get("cSigmaT", 200.0)),
-                "c_sigma_n": float(item.get("cSigmaN", 90.0)),
+                "max_risk_estimate": _num(item, "maxRiskEstimate", float(item["riskLog10"]) + 0.4),
+                "max_risk_scaling": _num(item, "maxRiskScaling", 1.0),
+                "miss_distance": miss,
+                "relative_speed": speed,
+                "relative_position_r": _num(item, "relativePositionR", miss * 0.2),
+                "relative_position_t": _num(item, "relativePositionT", miss * 0.8),
+                "relative_position_n": _num(item, "relativePositionN", 10.0),
+                "relative_velocity_r": _num(item, "relativeVelocityR", 0.0),
+                "relative_velocity_t": _num(item, "relativeVelocityT", speed),
+                "relative_velocity_n": _num(item, "relativeVelocityN", 0.0),
+                "azimuth": _num(item, "azimuth", 0.0),
+                "elevation": _num(item, "elevation", 0.0),
+                "geocentric_latitude": _num(item, "geocentricLatitude", 0.0),
+                "c_object_type": str(item.get("cObjectType") or "UNKNOWN"),
+                "F10": _num(item, "f10", 100.0),
+                "F3M": _num(item, "f3m", 100.0),
+                "AP": _num(item, "ap", 10.0),
+                "SSN": _num(item, "ssn", 50.0),
+                "t_sigma_r": _num(item, "tSigmaR", 100.0),
+                "t_sigma_t": _num(item, "tSigmaT", 140.0),
+                "t_sigma_n": _num(item, "tSigmaN", 80.0),
+                "c_sigma_r": _num(item, "cSigmaR", 150.0),
+                "c_sigma_t": _num(item, "cSigmaT", 200.0),
+                "c_sigma_n": _num(item, "cSigmaN", 90.0),
                 "t_sigma_rdot": 2.0,
                 "t_sigma_tdot": 2.0,
                 "t_sigma_ndot": 2.0,
                 "c_sigma_rdot": 3.0,
                 "c_sigma_tdot": 3.0,
                 "c_sigma_ndot": 3.0,
-                "t_position_covariance_det": float(item.get("tSigmaR", 100.0) ** 6),
-                "c_position_covariance_det": float(item.get("cSigmaR", 150.0) ** 6),
+                "t_position_covariance_det": _num(item, "tSigmaR", 100.0) ** 6,
+                "c_position_covariance_det": _num(item, "cSigmaR", 150.0) ** 6,
                 "t_span": 4.0,
                 "c_span": 2.0,
                 "t_rcs_estimate": 2.0,
@@ -115,10 +133,10 @@ def _messages_to_frame(event_id: str, messages: list[dict[str, Any]]) -> pd.Data
                 "c_h_apo": 700.0,
                 "t_h_per": 550.0,
                 "c_h_per": 500.0,
-                "t_obs_available": float(item.get("tObsUsed", 20) + 4),
-                "c_obs_available": float(item.get("cObsUsed", 10) + 3),
-                "t_obs_used": float(item.get("tObsUsed", 20)),
-                "c_obs_used": float(item.get("cObsUsed", 10)),
+                "t_obs_available": _num(item, "tObsUsed", 20.0) + 4,
+                "c_obs_available": _num(item, "cObsUsed", 10.0) + 3,
+                "t_obs_used": _num(item, "tObsUsed", 20.0),
+                "c_obs_used": _num(item, "cObsUsed", 10.0),
                 "t_actual_od_span": 2.0,
                 "c_actual_od_span": 2.0,
                 "t_recommended_od_span": 3.0,

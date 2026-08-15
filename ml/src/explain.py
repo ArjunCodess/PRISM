@@ -29,7 +29,7 @@ def local_factors(
     row: pd.Series,
     top_k: int = 6,
 ) -> tuple[float, list[Factor]]:
-    x = row[trained.feature_names].to_frame().T
+    x = row[trained.feature_names].to_frame().T.apply(pd.to_numeric, errors="coerce")
     values = np.asarray(explainer.shap_values(x), dtype=float).reshape(-1)
     base = float(np.asarray(explainer.expected_value).reshape(-1)[0])
     order = np.argsort(np.abs(values))[::-1][:top_k]
