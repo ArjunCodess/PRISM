@@ -117,7 +117,7 @@ def predict(payload: PredictRequest) -> PredictResponse:
     try:
         result = get_model().predict_messages(
             payload.eventId,
-            [item.model_dump() for item in payload.messages],
+            [item.model_dump(exclude_none=True) for item in payload.messages],
             cutoff_hours=payload.cutoffHours,
         )
     except ValueError as exc:

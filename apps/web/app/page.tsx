@@ -1,5 +1,5 @@
 import { loadCases } from "@/lib/data";
-import { formatLogRisk } from "@/lib/data";
+import { formatLogRisk } from "@/lib/format";
 import { Band } from "@/components/band";
 import { Shell } from "@/components/shell";
 import Link from "next/link";

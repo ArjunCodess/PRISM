@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Band } from "@/components/band";
 import { Explanation } from "@/components/explanation";
 import { RiskChart } from "@/components/risk-chart";
-import { formatLogRisk, formatPc } from "@/lib/data";
+import { formatLogRisk, formatPc } from "@/lib/format";
 import type { DemoCase } from "@/lib/types";
 
 export function CaseWorkspace({ item }: { item: DemoCase }) {

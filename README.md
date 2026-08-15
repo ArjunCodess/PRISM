@@ -7,7 +7,7 @@ Predictive Risk Intelligence for Space Monitoring is an explainable T-48-hour co
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -r requirements.txt
 python ml/src/pipeline.py
 cd apps/web
 npm install

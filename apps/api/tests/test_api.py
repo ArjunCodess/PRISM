@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 CASES = ROOT / "ml" / "artifacts" / "demo_cases.json"
 
 
@@ -18,9 +18,22 @@ def test_health() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_predicts_curated_case() -> None:
+    assert CASES.exists()
+    cases = json.loads(CASES.read_text(encoding="utf-8"))
+    client = TestClient(app)
+    response = client.post(
+        "/v1/risk/predict",
+        json={"eventId": cases[0]["id"], "cutoffHours": 48, "messages": cases[0]["messages"]},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "predictedFinalRiskLog10" in body
+    assert body["disclaimer"]
+
+
 def test_rejects_post_cutoff_messages() -> None:
-    if not CASES.exists():
-        return
+    assert CASES.exists()
     cases = json.loads(CASES.read_text(encoding="utf-8"))
     messages = list(cases[0]["messages"])
     messages.append(

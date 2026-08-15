@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPc } from "./data";
+import { formatPc } from "./format";
 
 describe("probability conversion", () => {
   it("converts log-risk to a frequency aid", () => {
