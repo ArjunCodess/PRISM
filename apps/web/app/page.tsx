@@ -14,6 +14,7 @@ export default async function QueuePage() {
             <tr>
               <th className="px-4 py-3">Case</th>
               <th>Mission</th>
+              <th>Hours to TCA</th>
               <th>Current log-risk</th>
               <th>Forecast band</th>
               <th></th>
@@ -27,6 +28,9 @@ export default async function QueuePage() {
                   <div className="font-mono text-xs text-slate-400">{item.id}</div>
                 </td>
                 <td>{item.missionAlias}</td>
+                <td className="telemetry font-mono">
+                  {(item.messages[item.messages.length - 1].timeToTcaDays * 24).toFixed(1)}
+                </td>
                 <td className="telemetry font-mono">{formatLogRisk(item.baselineRiskLog10)}</td>
                 <td>
                   <Band value={item.prediction.riskBand} abstained={item.prediction.abstained} />

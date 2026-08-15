@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+from xgboost import XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 ART = ROOT / "ml" / "artifacts"
+SRC = ROOT / "ml" / "src"
+sys.path.insert(0, str(SRC))
+
+from explain import local_factors, shap_explainer
+from train_regressor import TrainedRegressor
 
 
 def test_frozen_artifacts_exist() -> None:
@@ -16,3 +28,47 @@ def test_frozen_artifacts_exist() -> None:
         "model_card.json",
     ]:
         assert (ART / name).exists(), name
+
+
+def test_demo_cases_match_prd() -> None:
+    cases = json.loads((ART / "demo_cases.json").read_text(encoding="utf-8"))
+    stories = {item["story"] for item in cases}
+    assert stories == {"low", "escalate", "deescalate", "uncertain", "failure"}
+    assert any(item["prediction"]["abstained"] for item in cases)
+    assert all(item["prediction"]["disclaimer"] for item in cases)
+    for item in cases:
+        assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
+        if item["futureMessages"]:
+            assert all(msg["timeToTcaDays"] < 2.0 for msg in item["futureMessages"])
+
+
+def test_model_beats_persistence() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["improvement"]["beats_persistence"]
+    assert metrics["ensemble"]["mae"] < metrics["persistence"]["mae"]
+    assert metrics["ensemble"]["esa_loss"] < metrics["persistence"]["esa_loss"]
+
+
+def test_reloaded_booster_matches_saved_schema() -> None:
+    schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
+    model = XGBRegressor()
+    model.load_model(ART / "risk_regressor.json")
+    rng = np.random.default_rng(0)
+    frame = pd.DataFrame(rng.normal(size=(8, len(schema))), columns=schema)
+    pred = np.asarray(model.predict(frame), dtype=float)
+    assert pred.shape == (8,)
+    assert np.isfinite(pred).all()
+
+
+def test_shap_adds_to_prediction() -> None:
+    schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
+    model = XGBRegressor()
+    model.load_model(ART / "risk_regressor.json")
+    trained = TrainedRegressor(model=model, feature_names=schema, kind="xgboost")
+    explainer = shap_explainer(trained, pd.DataFrame(np.zeros((4, len(schema))), columns=schema))
+    row = pd.Series({name: 0.0 for name in schema})
+    base, factors = local_factors(trained, explainer, row, top_k=len(schema))
+    x = row[schema].to_frame().T
+    pred = float(model.predict(x)[0])
+    shap_sum = base + sum(item.contribution for item in factors)
+    assert shap_sum == pytest.approx(pred, abs=1e-3)

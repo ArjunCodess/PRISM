@@ -76,3 +76,62 @@ def persistence_improvement(y_true: np.ndarray, y_model: np.ndarray, y_persist: 
         "mae_improvement": mae_persist - mae_model,
         "beats_persistence": float(mae_model < mae_persist),
     }
+
+
+def reliability_bins(y_true: np.ndarray, proba: np.ndarray, n_bins: int = 8) -> list[dict[str, float]]:
+    labels = (y_true >= HIGH_RISK_THRESHOLD).astype(float)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    rows: list[dict[str, float]] = []
+    for i in range(n_bins):
+        left, right = edges[i], edges[i + 1]
+        if i == n_bins - 1:
+            mask = (proba >= left) & (proba <= right)
+        else:
+            mask = (proba >= left) & (proba < right)
+        if not np.any(mask):
+            continue
+        rows.append(
+            {
+                "mid": float((left + right) / 2),
+                "predicted": float(np.mean(proba[mask])),
+                "observed": float(np.mean(labels[mask])),
+                "n": float(np.sum(mask)),
+            }
+        )
+    return rows
+
+
+def error_gallery(
+    event_ids: np.ndarray,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    persist: np.ndarray,
+) -> dict[str, list[dict[str, float | int]]]:
+    residual = y_pred - y_true
+    high = y_true >= HIGH_RISK_THRESHOLD
+    pred_high = y_pred >= HIGH_RISK_THRESHOLD
+
+    def pack(indices: np.ndarray) -> list[dict[str, float | int]]:
+        rows = []
+        for idx in indices:
+            rows.append(
+                {
+                    "eventId": int(event_ids[idx]),
+                    "actual": float(y_true[idx]),
+                    "predicted": float(y_pred[idx]),
+                    "persistence": float(persist[idx]),
+                    "error": float(residual[idx]),
+                }
+            )
+        return rows
+
+    under = np.argsort(residual)[:5]
+    over = np.argsort(residual)[::-1][:5]
+    missed = np.where(high & ~pred_high)[0][:5]
+    false_esc = np.where(~high & pred_high)[0][:5]
+    return {
+        "worstUnderpredictions": pack(under),
+        "worstOverpredictions": pack(over),
+        "missedHighRisk": pack(missed),
+        "falseEscalations": pack(false_esc),
+    }

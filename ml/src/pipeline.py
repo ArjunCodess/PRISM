@@ -16,9 +16,15 @@ if str(SRC) not in sys.path:
 
 from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
-from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION, RANDOM_STATE  # noqa: E402
-from evaluate import classification_metrics, persistence_improvement, regression_metrics  # noqa: E402
-from explain import shap_explainer  # noqa: E402
+from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION, RANDOM_STATE, SNAPSHOT_COLUMNS  # noqa: E402
+from evaluate import (  # noqa: E402
+    classification_metrics,
+    error_gallery,
+    persistence_improvement,
+    regression_metrics,
+    reliability_bins,
+)
+from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import predict_event, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
@@ -86,12 +92,15 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
     ridge_pred = predict_model(ridge, test)
     booster = fit_xgboost(train)
     model_pred = predict_model(booster, test)
+    x_test = test[booster.feature_names].apply(pd.to_numeric, errors="coerce")
 
     ensemble = _bootstrap_models(pd.concat([train, validation], ignore_index=True))
-    ens_matrix = np.column_stack(
-        [model.predict(test[booster.feature_names]) for model in ensemble]
-    )
+    ens_matrix = np.column_stack([model.predict(x_test) for model in ensemble])
     ens_pred = np.median(ens_matrix, axis=1)
+
+    snapshot_cols = [col for col in SNAPSHOT_COLUMNS if col in train.columns and col != "c_object_type"]
+    snap_model = fit_xgboost(train[snapshot_cols + ["y", "event_id", "c_object_type"]])
+    snap_pred = predict_model(snap_model, test)
 
     classifier = fit_warning_classifier(train)
     joblib.dump(classifier, artifacts / "warning_classifier.joblib")
@@ -116,9 +125,22 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         "ensemble": regression_metrics(test["y"].to_numpy(), ens_pred),
         "improvement": persistence_improvement(test["y"].to_numpy(), ens_pred, persist_test),
         "warning": classification_metrics(test["y"].to_numpy(), test_proba),
+        "calibration": reliability_bins(test["y"].to_numpy(), test_proba),
         "ablation": {
-            "snapshot_mae": float("nan"),
+            "snapshot_mae": float(regression_metrics(test["y"].to_numpy(), snap_pred)["mae"]),
+            "full_mae": float(regression_metrics(test["y"].to_numpy(), model_pred)["mae"]),
+            "ensemble_mae": float(regression_metrics(test["y"].to_numpy(), ens_pred)["mae"]),
         },
+        "featureGroups": grouped_importance(
+            booster.feature_names,
+            booster.model.get_booster().get_score(importance_type="gain"),
+        ),
+        "failures": error_gallery(
+            test["event_id"].to_numpy(),
+            test["y"].to_numpy(),
+            ens_pred,
+            persist_test,
+        ),
     }
 
     explainer = shap_explainer(booster, train)
@@ -130,26 +152,32 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         match = features[features["story"] == story]
         if match.empty:
             match = features
-        row = match.iloc[0]
-        event_id = int(row["event_id"])
+        chosen = None
+        for _, row in match.iterrows():
+            event_id = int(row["event_id"])
+            event = event_by_id[event_id]
+            history = event["history"]
+            full = event["full_history"]
+            feature_row = features[features["event_id"] == event_id].iloc[0]
+            aligned = pd.DataFrame(
+                [{name: float(feature_row[name]) for name in booster.feature_names}]
+            )
+            boot = np.array([model.predict(aligned)[0] for model in ensemble])
+            prediction = predict_event(
+                trained=booster,
+                ensemble_preds=boot,
+                calibrator=calibrator,
+                explainer=explainer,
+                row=aligned.iloc[0],
+                messages=_messages(history),
+                event_id=f"demo-{event_id}",
+            )
+            chosen = (event_id, event, history, full, feature_row, prediction)
+            if story != "uncertain" or prediction["abstained"]:
+                break
+        assert chosen is not None
+        event_id, event, history, full, feature_row, prediction = chosen
         used.add(event_id)
-        event = event_by_id[event_id]
-        history = event["history"]
-        full = event["full_history"]
-        feature_row = features[features["event_id"] == event_id].iloc[0]
-        aligned = pd.DataFrame(
-            [{name: float(feature_row[name]) for name in booster.feature_names}]
-        )
-        boot = np.array([model.predict(aligned)[0] for model in ensemble])
-        prediction = predict_event(
-            trained=booster,
-            ensemble_preds=boot,
-            calibrator=calibrator,
-            explainer=explainer,
-            row=aligned.iloc[0],
-            messages=_messages(history),
-            event_id=f"demo-{event_id}",
-        )
         demo_cases.append(
             {
                 "id": f"demo-{event_id}",

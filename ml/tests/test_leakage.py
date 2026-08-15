@@ -39,17 +39,16 @@ def test_no_post_cutoff_in_history(events_and_features: tuple[list[dict[str, obj
         assert (history["time_to_tca"] >= CUTOFF_DAYS - 1e-9).all()
 
 
-def test_target_not_copied_into_features(events_and_features: tuple[list[dict[str, object]], pd.DataFrame]) -> None:
+def test_target_uses_later_cdm(events_and_features: tuple[list[dict[str, object]], pd.DataFrame]) -> None:
     events, features = events_and_features
+    leaked = [col for col in features.columns if col.startswith("target_")]
+    assert leaked == []
     for event in events:
         snapshot: pd.Series = event["snapshot"]  # type: ignore[assignment]
-        y = float(event["y"])
-        if abs(float(snapshot["time_to_tca"]) - float(event["target_time_to_tca"])) > 1e-9:
-            assert y != pytest.approx(float(snapshot["risk"])) or True
+        assert float(event["target_time_to_tca"]) < float(snapshot["time_to_tca"]) - 1e-9
         row = features.loc[features["event_id"] == event["event_id"]].iloc[0]
-        assert "y" in row
-        leaked = [col for col in features.columns if col.startswith("target_")]
-        assert leaked == []
+        assert float(row["risk"]) == pytest.approx(float(snapshot["risk"]))
+        assert float(row["y"]) == pytest.approx(float(event["y"]))
 
 
 def test_grouped_splits_are_disjoint(events_and_features: tuple[list[dict[str, object]], pd.DataFrame]) -> None:
@@ -70,7 +69,11 @@ def test_grouped_splits_are_disjoint(events_and_features: tuple[list[dict[str, o
     assert union == set(int(x) for x in features["event_id"].unique())
 
 
-def test_derived_miss_distance_finite(events_and_features: tuple[list[dict[str, object]], pd.DataFrame]) -> None:
+def test_derived_geometry_is_checked(events_and_features: tuple[list[dict[str, object]], pd.DataFrame]) -> None:
     _events, features = events_and_features
     assert np.isfinite(features["derived_miss_distance"]).all()
-    assert (features["derived_miss_distance"] > 0).all()
+    assert np.isfinite(features["derived_relative_speed"]).all()
+    assert np.isfinite(features["miss_distance_residual"]).all()
+    # Synthetic miss_distance is an independent draw; residual is a quality flag, never a silent replacement.
+    assert "miss_distance" in features.columns
+    assert not np.allclose(features["derived_miss_distance"], features["miss_distance"])

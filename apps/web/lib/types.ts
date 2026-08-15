@@ -50,4 +50,13 @@ export type MetricsFile = {
   improvement: Record<string, number>;
   warning: Record<string, number>;
   splits: Record<string, number>;
+  calibration?: Array<{ mid: number; predicted: number; observed: number; n: number }>;
+  ablation?: Record<string, number>;
+  featureGroups?: Array<{ group: string; gain: number }>;
+  failures?: {
+    worstUnderpredictions: Array<Record<string, number>>;
+    worstOverpredictions: Array<Record<string, number>>;
+    missedHighRisk: Array<Record<string, number>>;
+    falseEscalations: Array<Record<string, number>>;
+  };
 };

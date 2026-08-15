@@ -18,6 +18,7 @@ export function CaseWorkspace({ item }: { item: DemoCase }) {
     <div className="space-y-4">
       <section className="grid gap-3 rounded-lg border border-white/10 bg-panel p-4 md:grid-cols-5">
         <Metric label="Current log-risk" value={formatLogRisk(item.baselineRiskLog10)} />
+        <Metric label="Hours to TCA" value={`${(latest.timeToTcaDays * 24).toFixed(1)} h`} />
         <Metric label={showBaseline ? "Baseline forecast" : "Copilot forecast"} value={formatLogRisk(displayRisk)} />
         <Metric label="Approx Pc" value={formatPc(pc)} />
         <Metric
@@ -40,9 +41,13 @@ export function CaseWorkspace({ item }: { item: DemoCase }) {
         <Explanation text={item.prediction.explanation} factors={item.prediction.topFactors} />
       </div>
 
-      <section className="grid gap-3 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-4">
         <Metric label="Miss distance" value={`${latest.missDistanceM.toFixed(0)} m`} />
         <Metric label="Relative speed" value={`${latest.relativeSpeedMps.toFixed(0)} m/s`} />
+        <Metric
+          label="Position uncertainty"
+          value={`t ${Number(latest.tSigmaR ?? 0).toFixed(0)} m / c ${Number(latest.cSigmaR ?? 0).toFixed(0)} m`}
+        />
         <Metric label="Eligible CDMs" value={`${item.messages.length}`} />
       </section>
 

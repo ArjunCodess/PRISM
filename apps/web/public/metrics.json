@@ -75,7 +75,196 @@
     "precision": 0.631578947368421,
     "recall": 1.0
   },
+  "calibration": [
+    {
+      "mid": 0.0625,
+      "predicted": 0.0,
+      "observed": 0.0,
+      "n": 63.0
+    },
+    {
+      "mid": 0.1875,
+      "predicted": 0.16003441668137466,
+      "observed": 0.0,
+      "n": 1.0
+    },
+    {
+      "mid": 0.4375,
+      "predicted": 0.4627898523318458,
+      "observed": 0.0,
+      "n": 1.0
+    },
+    {
+      "mid": 0.5625,
+      "predicted": 0.5,
+      "observed": 0.5,
+      "n": 14.0
+    },
+    {
+      "mid": 0.6875,
+      "predicted": 0.7216548461180889,
+      "observed": 1.0,
+      "n": 1.0
+    },
+    {
+      "mid": 0.9375,
+      "predicted": 1.0,
+      "observed": 1.0,
+      "n": 4.0
+    }
+  ],
   "ablation": {
-    "snapshot_mae": NaN
+    "snapshot_mae": 1.0707502164649079,
+    "full_mae": 0.3459534093022594,
+    "ensemble_mae": 0.37221495837613344
+  },
+  "featureGroups": [
+    {
+      "group": "current estimated risk",
+      "gain": 456.1291848346591
+    },
+    {
+      "group": "position uncertainty",
+      "gain": 5.077840991318226
+    },
+    {
+      "group": "observation quality",
+      "gain": 4.659753834828734
+    },
+    {
+      "group": "miss-distance geometry",
+      "gain": 3.240565226675244
+    },
+    {
+      "group": "orbit properties",
+      "gain": 1.856466168537736
+    },
+    {
+      "group": "relative speed",
+      "gain": 1.8363946452736855
+    },
+    {
+      "group": "other",
+      "gain": 0.8042217334732413
+    },
+    {
+      "group": "space weather",
+      "gain": 0.3729524575173855
+    }
+  ],
+  "failures": {
+    "worstUnderpredictions": [
+      {
+        "eventId": 247,
+        "actual": -7.0422066514904085,
+        "predicted": -8.68284797668457,
+        "persistence": -7.0422066514904085,
+        "error": -1.6406413251941618
+      },
+      {
+        "eventId": 280,
+        "actual": -9.379219291820245,
+        "predicted": -10.361202239990234,
+        "persistence": -10.590623125871172,
+        "error": -0.9819829481699891
+      },
+      {
+        "eventId": 347,
+        "actual": -6.263410841714253,
+        "predicted": -7.221625804901123,
+        "persistence": -6.263410841714253,
+        "error": -0.9582149631868697
+      },
+      {
+        "eventId": 277,
+        "actual": -9.745047467000763,
+        "predicted": -10.624120712280273,
+        "persistence": -10.825867305892013,
+        "error": -0.8790732452795105
+      },
+      {
+        "eventId": 399,
+        "actual": -6.153579366571181,
+        "predicted": -6.97281551361084,
+        "persistence": -6.153579366571181,
+        "error": -0.8192361470396587
+      }
+    ],
+    "worstOverpredictions": [
+      {
+        "eventId": 412,
+        "actual": -17.786680618512104,
+        "predicted": -16.46017837524414,
+        "persistence": -14.861517667188757,
+        "error": 1.3265022432679636
+      },
+      {
+        "eventId": 415,
+        "actual": -11.93424108533425,
+        "predicted": -10.885002136230469,
+        "persistence": -9.915724653483586,
+        "error": 1.0492389491037812
+      },
+      {
+        "eventId": 113,
+        "actual": -16.591871190439136,
+        "predicted": -15.650445938110352,
+        "persistence": -13.928311551425566,
+        "error": 0.9414252523287843
+      },
+      {
+        "eventId": 353,
+        "actual": -17.043508423460917,
+        "predicted": -16.18511962890625,
+        "persistence": -14.494428500714681,
+        "error": 0.8583887945546671
+      },
+      {
+        "eventId": 266,
+        "actual": -14.721474880787522,
+        "predicted": -14.01091194152832,
+        "persistence": -13.308997643801895,
+        "error": 0.7105629392592014
+      }
+    ],
+    "missedHighRisk": [
+      {
+        "eventId": 194,
+        "actual": -5.743921320156657,
+        "predicted": -6.015501022338867,
+        "persistence": -6.055713449242612,
+        "error": -0.27157970218221017
+      },
+      {
+        "eventId": 262,
+        "actual": -5.883526482452339,
+        "predicted": -6.178803443908691,
+        "persistence": -5.749785440222162,
+        "error": -0.2952769614563522
+      },
+      {
+        "eventId": 408,
+        "actual": -5.997403023250128,
+        "predicted": -6.008028984069824,
+        "persistence": -5.997403023250128,
+        "error": -0.010625960819695912
+      }
+    ],
+    "falseEscalations": [
+      {
+        "eventId": 17,
+        "actual": -6.0830459610105265,
+        "predicted": -5.755666255950928,
+        "persistence": -6.0830459610105265,
+        "error": 0.3273797050595988
+      },
+      {
+        "eventId": 284,
+        "actual": -6.328900151957013,
+        "predicted": -5.888702392578125,
+        "persistence": -6.328900151957013,
+        "error": 0.44019775937888816
+      }
+    ]
   }
 }
