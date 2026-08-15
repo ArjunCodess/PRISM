@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(61, 226, 255, 0.08), transparent 34%),
+    #070b14;
+  color: #e8eefc;
+}
+
+.telemetry {
+  font-variant-numeric: tabular-nums;
+}
