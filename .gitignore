@@ -1,0 +1,47 @@
+# python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# node
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# data
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+*.zip
+*.csv
+!ml/artifacts/demo_cases.json
+!ml/artifacts/metrics.json
+!ml/artifacts/feature_schema.json
+!ml/artifacts/model_card.json
+
+# models that are large
+*.ubj
+*.joblib
+!ml/artifacts/warning_calibrator.joblib
+!ml/artifacts/risk_regressor.json
+
+# env / os
+.env
+.env.local
+.DS_Store
+Thumbs.db
+*.log
+
+# ide
+.idea/
+.vscode/
