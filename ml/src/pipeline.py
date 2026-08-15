@@ -16,7 +16,7 @@ if str(SRC) not in sys.path:
 
 from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
-from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION, RANDOM_STATE, SNAPSHOT_COLUMNS  # noqa: E402
+from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION, RANDOM_STATE, SNAPSHOT_COLUMNS, STORY_COPY  # noqa: E402
 from evaluate import (  # noqa: E402
     classification_metrics,
     error_gallery,
@@ -25,7 +25,7 @@ from evaluate import (  # noqa: E402
     reliability_bins,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
-from export_demo_cases import predict_event, write_json  # noqa: E402
+from export_demo_cases import case_briefing, predict_event, story_fit, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
@@ -49,10 +49,23 @@ def _messages(history: pd.DataFrame) -> list[dict[str, float | str]]:
                 "riskLog10": float(row["risk"]),
                 "missDistanceM": float(row["miss_distance"]),
                 "relativeSpeedMps": float(row["relative_speed"]),
+                "maxRiskEstimate": float(row["max_risk_estimate"]),
+                "relativePositionR": float(row["relative_position_r"]),
+                "relativePositionT": float(row["relative_position_t"]),
+                "relativePositionN": float(row["relative_position_n"]),
+                "relativeVelocityR": float(row["relative_velocity_r"]),
+                "relativeVelocityT": float(row["relative_velocity_t"]),
+                "relativeVelocityN": float(row["relative_velocity_n"]),
                 "tSigmaR": float(row["t_sigma_r"]),
+                "tSigmaT": float(row["t_sigma_t"]),
+                "tSigmaN": float(row["t_sigma_n"]),
                 "cSigmaR": float(row["c_sigma_r"]),
+                "cSigmaT": float(row["c_sigma_t"]),
+                "cSigmaN": float(row["c_sigma_n"]),
                 "tObsUsed": float(row["t_obs_used"]),
                 "cObsUsed": float(row["c_obs_used"]),
+                "tObsAvailable": float(row["t_obs_available"]),
+                "cObsAvailable": float(row["c_obs_available"]),
                 "cObjectType": str(row["c_object_type"]),
             }
         )
@@ -145,56 +158,90 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
 
     explainer = shap_explainer(booster, train)
     event_by_id = {event["event_id"]: event for event in events}
+    predictions: dict[int, dict[str, object]] = {}
+    for _, feature_row in features.iterrows():
+        event_id = int(feature_row["event_id"])
+        event = event_by_id[event_id]
+        aligned = pd.DataFrame([{name: float(feature_row[name]) for name in booster.feature_names}])
+        boot = np.array([model.predict(aligned)[0] for model in ensemble])
+        predictions[event_id] = predict_event(
+            trained=booster,
+            ensemble_preds=boot,
+            calibrator=calibrator,
+            explainer=explainer,
+            row=aligned.iloc[0],
+            messages=_messages(event["history"]),
+            event_id=f"demo-{event_id}",
+        )
+
     stories_needed = ["low", "escalate", "deescalate", "uncertain", "failure"]
-    demo_cases: list[dict[str, object]] = []
     used: set[int] = set()
+    test_ids = set(splits.test_ids)
+    demo_cases: list[dict[str, object]] = []
     for story in stories_needed:
-        match = features[features["story"] == story]
-        if match.empty:
-            match = features
-        chosen = None
-        for _, row in match.iterrows():
-            event_id = int(row["event_id"])
-            event = event_by_id[event_id]
-            history = event["history"]
-            full = event["full_history"]
+        ranked: list[tuple[float, int]] = []
+        fallback: list[tuple[float, int]] = []
+        for event_id, prediction in predictions.items():
+            if event_id in used:
+                continue
             feature_row = features[features["event_id"] == event_id].iloc[0]
-            aligned = pd.DataFrame(
-                [{name: float(feature_row[name]) for name in booster.feature_names}]
-            )
-            boot = np.array([model.predict(aligned)[0] for model in ensemble])
-            prediction = predict_event(
-                trained=booster,
-                ensemble_preds=boot,
-                calibrator=calibrator,
-                explainer=explainer,
-                row=aligned.iloc[0],
-                messages=_messages(history),
-                event_id=f"demo-{event_id}",
-            )
-            chosen = (event_id, event, history, full, feature_row, prediction)
-            if story != "uncertain" or prediction["abstained"]:
-                break
-        assert chosen is not None
-        event_id, event, history, full, feature_row, prediction = chosen
+            persist = float(feature_row["risk"])
+            actual = float(feature_row["y"])
+            pred = float(prediction["predictedFinalRiskLog10"])
+            abstained = bool(prediction["abstained"])
+            score = story_fit(story, pred, persist, actual, abstained)
+            prefer = 1.5 if event_id in test_ids else 0.0
+            same_story = str(feature_row.get("story")) == story
+            if score >= 0 and same_story:
+                ranked.append((score + prefer, event_id))
+            elif score >= 0:
+                fallback.append((score + prefer - 0.4, event_id))
+            elif story == "failure" and not abstained:
+                late = actual >= -6 and persist < actual - 0.4
+                under = pred < actual - 0.35
+                if late and under:
+                    fallback.append((actual - pred + prefer, event_id))
+        pool = ranked or fallback
+        if not pool and story == "failure":
+            for event_id, prediction in predictions.items():
+                if event_id in used:
+                    continue
+                feature_row = features[features["event_id"] == event_id].iloc[0]
+                persist = float(feature_row["risk"])
+                actual = float(feature_row["y"])
+                pred = float(prediction["predictedFinalRiskLog10"])
+                if actual >= -6 and pred < actual - 0.35:
+                    pool.append((actual - pred, event_id))
+        if not pool:
+            pool = [(0.0, event_id) for event_id in predictions if event_id not in used]
+        pool.sort(key=lambda item: item[0], reverse=True)
+        event_id = pool[0][1]
         used.add(event_id)
+        event = event_by_id[event_id]
+        feature_row = features[features["event_id"] == event_id].iloc[0]
+        prediction = predictions[event_id]
+        persist = float(feature_row["risk"])
+        actual = float(feature_row["y"])
+        copy = STORY_COPY[story]
         demo_cases.append(
             {
                 "id": f"demo-{event_id}",
                 "story": story,
                 "missionAlias": f"MISSION-{int(event['mission_id']):02d}",
-                "title": {
-                    "low": "Stable low-risk flyby",
-                    "escalate": "Risk climbing toward TCA",
-                    "deescalate": "Early alarm, later geometry safer",
-                    "uncertain": "Interval crosses the warning line",
-                    "failure": "Late jump the model can miss",
-                }[story],
+                "title": copy["title"],
+                "blurb": copy["blurb"],
+                "briefing": case_briefing(
+                    story,
+                    persist,
+                    float(prediction["predictedFinalRiskLog10"]),
+                    actual,
+                    bool(prediction["abstained"]),
+                ),
                 "prediction": prediction,
-                "baselineRiskLog10": float(feature_row["risk"]),
-                "actualFinalRiskLog10": float(feature_row["y"]),
-                "messages": _messages(history),
-                "futureMessages": _messages(full[full["time_to_tca"] < 2.0]),
+                "baselineRiskLog10": persist,
+                "actualFinalRiskLog10": actual,
+                "messages": _messages(event["history"]),
+                "futureMessages": _messages(event["full_history"][event["full_history"]["time_to_tca"] < 2.0]),
             }
         )
 

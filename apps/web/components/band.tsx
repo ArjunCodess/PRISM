@@ -1,5 +1,11 @@
 export function Band({ value, abstained }: { value: string; abstained: boolean }) {
-  const label = abstained ? "REVIEW REQUIRED" : value.toUpperCase();
+  const label = abstained
+    ? "REVIEW REQUIRED"
+    : value === "high"
+      ? "HIGH-RISK ALERT"
+      : value === "low"
+        ? "LOOKS QUIET"
+        : "REVIEW REQUIRED";
   const tone =
     abstained || value === "review"
       ? "text-amber border-amber"

@@ -11,7 +11,7 @@ export function Shell({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-cyan/20 pb-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan">PRISM / ISTRAC-style copilot</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan">PRISM</p>
           <h1 className="mt-1 text-3xl font-semibold">{title}</h1>
         </div>
         <nav className="flex gap-3 text-sm text-cyan">
@@ -20,7 +20,7 @@ export function Shell({
         </nav>
       </header>
       <p className="rounded border border-amber/40 bg-amber/10 px-3 py-2 text-sm text-amber">
-        Educational research prototype. Not for operational decisions. Human approval is required.
+        Educational prototype. Human approval required. Not for operations.
       </p>
       {children}
     </div>

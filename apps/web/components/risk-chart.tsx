@@ -34,6 +34,7 @@ export function RiskChart({
   return (
     <div className="h-72 rounded-lg border border-white/10 bg-panel p-3">
       <p className="mb-2 text-xs uppercase tracking-widest text-cyan">Risk history</p>
+      <p className="mb-2 text-xs text-slate-400">Amber line: 48 hours before closest approach.</p>
       <ResponsiveContainer width="100%" height="90%">
         <LineChart data={data}>
           <CartesianGrid stroke="rgba(255,255,255,0.08)" />
@@ -41,7 +42,7 @@ export function RiskChart({
           <YAxis tick={{ fill: "#9db0c9", fontSize: 12 }} />
           <Tooltip
             contentStyle={{ background: "#10182a", border: "1px solid #3de2ff" }}
-            formatter={(value) => [value ?? "hidden until reveal", "log10 Pc"]}
+            formatter={(value) => [value ?? "hidden until you reveal later updates", "reported chance"]}
           />
           <ReferenceLine x={2} stroke="#f5c16c" label={{ value: "T-48", fill: "#f5c16c" }} />
           <Line type="monotone" dataKey="risk" stroke="#3de2ff" dot={false} connectNulls={false} />

@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 
 from constants import CUTOFF_DAYS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
-from explain import explanation_text, local_factors, shap_explainer
-from train_regressor import TrainedRegressor, predict_model
+from explain import explanation_text, local_factors
 
 
 def risk_band(prob: float, abstained: bool) -> str:
@@ -65,6 +64,74 @@ def predict_event(
         "nMessagesUsed": len(messages),
     }
     return payload
+
+
+def frequency_phrase(log_risk: float) -> str:
+    if not np.isfinite(log_risk):
+        return "unknown"
+    if log_risk <= -9:
+        return "vanishingly small"
+    count = max(1, int(round(10 ** -float(log_risk))))
+    if count >= 1_000_000_000:
+        return "less than 1 in a billion"
+    return f"1 in {count:,}"
+
+
+def _spoken_chance(log_risk: float) -> str:
+    phrase = frequency_phrase(log_risk)
+    if phrase.startswith("1 in"):
+        return f"about {phrase}"
+    return phrase
+
+
+def case_briefing(story: str, persist: float, pred: float, actual: float, abstained: bool) -> str:
+    today = _spoken_chance(persist)
+    guess = _spoken_chance(pred)
+    later = _spoken_chance(actual)
+    if abstained:
+        return f"Today {today}. Guesses cross the 1-in-a-million line, so a person should review this."
+    if story == "low":
+        return f"Today {today}. Forecast stays quiet ({guess})."
+    if story == "escalate":
+        return f"Today {today}. Forecast rises to {guess}."
+    if story == "deescalate":
+        return f"Today {today}. Forecast calms to {guess}."
+    if story == "failure":
+        return f"Forecast {guess}; later update {later}."
+    return f"Today {today}. Forecast {guess}."
+
+
+def story_fit(story: str, pred: float, persist: float, actual: float, abstained: bool) -> float:
+    pred_err = abs(pred - actual)
+    persist_err = abs(persist - actual)
+    if story == "low":
+        if abstained or actual >= -7 or pred >= -7 or persist >= -7:
+            return -1.0
+        return 2.0 - 0.05 * pred_err
+    if story == "escalate":
+        if abstained or actual < -6 or pred <= persist:
+            return -1.0
+        return 1.5 + (persist_err - pred_err)
+    if story == "deescalate":
+        if abstained or actual >= -6 or persist <= actual or pred >= persist:
+            return -1.0
+        return 1.5 + (persist_err - pred_err)
+    if story == "uncertain":
+        return 3.0 if abstained else -1.0
+    if story == "failure":
+        if abstained:
+            return -1.0
+        late_jump = actual >= HIGH_RISK_THRESHOLD and persist < HIGH_RISK_THRESHOLD - 0.25
+        missed = actual >= HIGH_RISK_THRESHOLD and pred < HIGH_RISK_THRESHOLD
+        under = pred < actual - 0.45
+        if missed and late_jump:
+            return 6.0 + (actual - pred)
+        if missed:
+            return 4.0 + (actual - pred)
+        if late_jump and under:
+            return 3.0 + (actual - pred)
+        return -1.0
+    return -1.0
 
 
 def write_json(path: Path, payload: object) -> None:

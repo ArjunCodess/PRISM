@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 ROOT = Path(__file__).resolve().parents[2]
 ML_SRC = ROOT / "ml" / "src"
@@ -28,6 +28,8 @@ app.add_middleware(
 
 
 class Message(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     timeToTcaDays: float = Field(ge=0)
     riskLog10: float
     missDistanceM: float = Field(gt=0)

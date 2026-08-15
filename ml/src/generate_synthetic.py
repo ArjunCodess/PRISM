@@ -63,6 +63,13 @@ def _event_rows(rng: np.random.Generator, event_id: int, story: str) -> list[dic
     if story == "low":
         risks = np.clip(risks, NEGLIGIBLE_RISK, -7.0)
         risks[-1] = min(final_risk, -8.0)
+    elif story == "failure":
+        # Keep the early messages quiet so a late jump is actually hidden past T-48.
+        quiet = np.linspace(start_risk, min(start_risk, -7.2), n_pre)
+        risks[:n_pre] = quiet
+        if n_post:
+            risks[n_pre:] = np.linspace(quiet[-1], final_risk, n_post)
+        risks[-1] = final_risk
 
     pos_r = float(rng.normal(0, miss0 * 0.3))
     pos_t = float(rng.normal(0, miss0 * 0.7))

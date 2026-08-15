@@ -10,8 +10,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   if (!item) notFound();
   return (
     <Shell title={item.title}>
-      <p className="font-mono text-sm text-slate-400">
-        {item.id} · {item.missionAlias} · cutoff 48h
+      <p className="text-sm text-slate-400">
+        {item.missionAlias} · frozen at T-48 · {item.id}
       </p>
       <CaseWorkspace item={item} />
     </Shell>

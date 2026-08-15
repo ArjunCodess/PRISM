@@ -36,6 +36,14 @@ def test_demo_cases_match_prd() -> None:
     assert stories == {"low", "escalate", "deescalate", "uncertain", "failure"}
     assert any(item["prediction"]["abstained"] for item in cases)
     assert all(item["prediction"]["disclaimer"] for item in cases)
+    failure = next(item for item in cases if item["story"] == "failure")
+    pred = float(failure["prediction"]["predictedFinalRiskLog10"])
+    actual = float(failure["actualFinalRiskLog10"])
+    persist = float(failure["baselineRiskLog10"])
+    missed = actual >= -6 and pred < -6
+    late = actual > persist + 0.4
+    under = pred < actual - 0.35
+    assert (missed or (late and under)) and abs(pred - actual) >= 0.35
     for item in cases:
         assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
         if item["futureMessages"]:

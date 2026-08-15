@@ -88,17 +88,44 @@ SNAPSHOT_COLUMNS = [
 ]
 
 FEATURE_DICTIONARY = {
-    "risk": "current estimated log collision risk",
-    "risk_change": "change in log risk from first to last eligible message",
-    "risk_slope": "log-risk trend toward closest approach",
-    "risk_delta_last3": "log-risk change across the last three messages",
-    "miss_distance": "predicted miss distance at closest approach",
-    "relative_speed": "relative speed at closest approach",
-    "normalized_separation": "miss distance relative to combined position uncertainty",
-    "t_obs_used": "target observations used in orbit determination",
-    "c_obs_used": "chaser observations used in orbit determination",
-    "t_position_covariance_det": "target position uncertainty volume",
-    "c_position_covariance_det": "chaser position uncertainty volume",
-    "hours_before_cutoff": "hours between the latest message and the T-48 cutoff",
-    "n_messages": "number of eligible conjunction messages",
+    "risk": "today's reported chance",
+    "risk_change": "whether chance rose or fell",
+    "risk_slope": "whether chance is climbing",
+    "risk_delta_last3": "change across the last three updates",
+    "miss_distance": "predicted miss distance",
+    "relative_speed": "closing speed",
+    "normalized_separation": "miss size versus uncertainty",
+    "t_obs_used": "satellite observations used",
+    "c_obs_used": "other-object observations used",
+    "t_position_covariance_det": "satellite position uncertainty",
+    "c_position_covariance_det": "other-object position uncertainty",
+    "hours_before_cutoff": "hours left before the 48-hour line",
+    "n_messages": "early messages available",
+    "max_risk_estimate": "most pessimistic chance in the message",
+    "derived_miss_distance": "miss distance from the geometry",
+    "t_sigma_r": "satellite radial uncertainty",
+    "c_sigma_r": "other-object radial uncertainty",
+}
+
+STORY_COPY = {
+    "low": {
+        "title": "A quiet flyby",
+        "blurb": "Wide miss. Copilot and today's number both stay calm.",
+    },
+    "escalate": {
+        "title": "Chance is climbing",
+        "blurb": "Early updates get more serious before closest approach.",
+    },
+    "deescalate": {
+        "title": "Early scare, then calmer",
+        "blurb": "First alerts looked high; later geometry looks safer.",
+    },
+    "uncertain": {
+        "title": "Needs a human look",
+        "blurb": "The guess range crosses the warning line.",
+    },
+    "failure": {
+        "title": "An honest miss",
+        "blurb": "A late jump the copilot understated.",
+    },
 }

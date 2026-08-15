@@ -37,6 +37,8 @@ export type DemoCase = {
   story: string;
   missionAlias: string;
   title: string;
+  blurb?: string;
+  briefing?: string;
   prediction: Prediction;
   baselineRiskLog10: number;
   actualFinalRiskLog10: number;
