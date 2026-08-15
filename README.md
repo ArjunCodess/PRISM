@@ -29,7 +29,7 @@ The UI also works offline from cached `public/demo_cases.json` if the API is sto
 
 - `ml/` training, evaluation, SHAP, artifacts
 - `apps/api` FastAPI inference
-- `apps/web` Next.js mission-control UI
+- `apps/web` Next.js 16 App Router mission-control UI
 - `prd.md` locked product requirements
 
 ## Safety
