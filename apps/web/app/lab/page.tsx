@@ -71,7 +71,7 @@ export default async function LabPage() {
               <HeroMetric label="90% band coverage" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="nominal 90%" />
             </dl>
             <p className="mt-6 max-w-[62ch] text-sm leading-7 text-stone-600">
-              Average error falls {improvement.toFixed(1)}%, but the selected ensemble ties persistence on the challenge loss. The MAE gain is continuous-risk accuracy, not a better high-risk decision score. On missions never seen in training, high-risk MAE is {(metrics.missionHoldout?.model.mae_high_risk ?? Number.NaN).toFixed(1)}.
+              Average error falls {improvement.toFixed(1)}%, but ESA-style loss and F2 tie persistence exactly because the persistence guard copies any current report already at or above −6. The MAE gain is continuous-risk accuracy, not a better high-risk decision score. On missions never seen in training, high-risk MAE is {(metrics.missionHoldout?.model.mae_high_risk ?? Number.NaN).toFixed(1)}.
             </p>
           </div>
           <aside className="rounded-lg bg-[#eeeae0] p-6 text-sm leading-6 text-stone-600">

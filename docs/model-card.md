@@ -16,7 +16,7 @@
 
 **Why XGBoost.** The claim is about inspectable event-level summaries, not sequence modeling. XGBoost fits medium-sized, missing-valued tabular features, stays reproducible offline, and keeps SHAP attached to named quantities. Inference is a CPU-only 10-model ensemble; no GPU is required.
 
-**Current result.** MAE is in `log10(Pc)` units. The selected conservative ensemble reduces held-out MAE from 5.080 for persistence to 3.052, but both score 0.167 on ESA-style loss (high-risk MSE / F2, β=2). The MAE gain is driven mainly by continuous-risk accuracy and does not translate into fewer errors under the challenge’s risk-weighted objective.
+**Current result.** MAE is in `log10(Pc)` units. The selected conservative ensemble reduces held-out MAE from 5.080 for persistence to 3.052, but both score 0.167 on ESA-style loss (high-risk MSE / F2, β=2) with F2 0.361. That exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`, so PRISM matches persistence on the high-risk tail by design. The MAE gain is therefore continuous-risk accuracy, not a better risk-weighted decision score.
 
 **History.** The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency. Snapshot-only MAE is 2.960. Adding those summaries lowers it to 2.842. Covariance trends add little once snapshot and history features are present (2.838).
 
