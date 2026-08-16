@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -138,5 +139,19 @@ def story_fit(story: str, pred: float, persist: float, actual: float, abstained:
 
 
 def write_json(path: Path, payload: object) -> None:
+    def json_safe(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: json_safe(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [json_safe(item) for item in value]
+        if isinstance(value, (float, np.floating)) and not math.isfinite(float(value)):
+            return None
+        if isinstance(value, np.integer):
+            return int(value)
+        return value
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(json_safe(payload), indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )

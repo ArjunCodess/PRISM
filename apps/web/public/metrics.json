@@ -152,7 +152,7 @@
         "median_ae": 0.33365821838378906,
         "within_0_5": 0.5668202764976958,
         "within_1_0": 0.6405529953917051,
-        "mae_high_risk": NaN,
+        "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
         "f2": 0.0
@@ -165,7 +165,7 @@
         "median_ae": 0.3710298538208008,
         "within_0_5": 0.6666666666666666,
         "within_1_0": 0.7142857142857143,
-        "mae_high_risk": NaN,
+        "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
         "f2": 0.0
@@ -301,7 +301,7 @@
         "median_ae": 2.89950875557229,
         "within_0_5": 0.1566265060240964,
         "within_1_0": 0.2289156626506024,
-        "mae_high_risk": NaN,
+        "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
         "f2": 0.0
@@ -342,7 +342,7 @@
         "median_ae": 1.6813392639160156,
         "within_0_5": 0.30985915492957744,
         "within_1_0": 0.4084507042253521,
-        "mae_high_risk": NaN,
+        "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
         "f2": 0.0
