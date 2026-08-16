@@ -14,11 +14,13 @@ import {
 } from "recharts";
 import type { CdmMessage } from "@/lib/types";
 
-export function RiskChart({ messages, future, revealed, forecast }: { messages: CdmMessage[]; future: CdmMessage[]; revealed: boolean; forecast: number }) {
+export function RiskChart({ messages, future, revealed, forecast, persistence }: { messages: CdmMessage[]; future: CdmMessage[]; revealed: boolean; forecast: number; persistence?: number }) {
   const observed = messages.map((item) => ({ t: item.timeToTcaDays, observed: item.riskLog10, final: null as number | null }));
   const later = future.map((item) => ({ t: item.timeToTcaDays, observed: null as number | null, final: revealed ? item.riskLog10 : null }));
   const data = [...observed, ...later].sort((a, b) => b.t - a.t);
-  const allRisks = [...messages.map((m) => m.riskLog10), forecast, ...(revealed ? future.map((m) => m.riskLog10) : [])];
+  const persist = persistence ?? messages.at(-1)?.riskLog10 ?? forecast;
+  const splitPersist = Math.abs(forecast - persist) > 0.12;
+  const allRisks = [...messages.map((m) => m.riskLog10), forecast, persist, ...(revealed ? future.map((m) => m.riskLog10) : [])];
   const minRisk = Math.floor(Math.min(-6.5, ...allRisks) - 0.5);
   const maxRisk = Math.ceil(Math.max(-3.5, ...allRisks) + 0.5);
   const maxDays = Math.ceil(Math.max(...messages.map((m) => m.timeToTcaDays)));
@@ -32,7 +34,8 @@ export function RiskChart({ messages, future, revealed, forecast }: { messages: 
         </div>
         <div className="flex flex-wrap gap-3 text-[0.65rem] text-stone-500">
           <Key color="bg-cyan" label="Known by T−48" />
-          <Key color="bg-amber" label="Copilot forecast" />
+          <Key color="bg-amber" label="Forecast" />
+          {splitPersist ? <Key color="bg-stone-400" label="Persistence" /> : null}
           {revealed ? <Key color="bg-ink" label="Later updates" /> : <Key color="bg-stone-300" label="Future hidden" />}
         </div>
       </div>
@@ -50,7 +53,8 @@ export function RiskChart({ messages, future, revealed, forecast }: { messages: 
             <ReferenceLine y={-4} stroke="#e4cece" strokeDasharray="2 7" />
             <Line type="monotone" dataKey="observed" stroke="#356b67" strokeWidth={2.4} dot={{ r: 3, fill: "#fffefd", stroke: "#356b67", strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
             {revealed ? <Line type="monotone" dataKey="final" stroke="#242521" strokeWidth={1.8} strokeDasharray="5 5" dot={{ r: 2.5, fill: "#242521" }} connectNulls isAnimationActive={false} /> : null}
-            <ReferenceDot x={0.12} y={forecast} r={5} fill="#9a682a" stroke="#fffefd" strokeWidth={2} label={{ value: "forecast", fill: "#9a682a", fontSize: 10, position: "right" }} />
+            <ReferenceDot x={0.12} y={forecast} r={5} fill="#9a682a" stroke="#fffefd" strokeWidth={2} label={{ value: splitPersist ? "forecast" : "forecast = persist", fill: "#9a682a", fontSize: 10, position: "right" }} />
+            {splitPersist ? <ReferenceDot x={0.55} y={persist} r={4} fill="#9a9a92" stroke="#fffefd" strokeWidth={2} label={{ value: "persist", fill: "#77776f", fontSize: 10, position: "right" }} /> : null}
           </LineChart>
         </ResponsiveContainer>
       </div>

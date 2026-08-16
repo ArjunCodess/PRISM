@@ -19,11 +19,12 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [revealError, setRevealError] = useState("");
   const [isRevealing, setIsRevealing] = useState(false);
-  const [showBaseline, setShowBaseline] = useState(false);
   const latest = item.messages.at(-1)!;
-  const displayRisk = showBaseline ? item.baselineRiskLog10 : item.prediction.predictedFinalRiskLog10;
+  const forecast = item.prediction.predictedFinalRiskLog10;
+  const persist = item.baselineRiskLog10;
   const [low90, high90] = item.prediction.interval90Log10;
   const [low50, high50] = item.prediction.interval50Log10 ?? item.prediction.interval90Log10;
+  const delta = forecast - persist;
 
   async function revealOutcome() {
     setIsRevealing(true);
@@ -56,14 +57,20 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
 
       <dl className="grid overflow-hidden rounded-lg border hairline bg-panel sm:grid-cols-2 xl:grid-cols-5">
         <Metric label="Time to TCA" value={`${(latest.timeToTcaDays * 24).toFixed(1)} h`} note="selected message" />
-        <Metric label="Current report" value={item.baselineRiskLog10.toFixed(2)} note={chanceWords(item.baselineRiskLog10)} />
-        <Metric label={showBaseline ? "Persistence" : "Forecast"} value={displayRisk.toFixed(2)} note={chanceWords(displayRisk)} accent={!showBaseline} />
+        <Metric label="Today's report" value={persist.toFixed(2)} note={`${chanceWords(persist)} · persistence`} />
+        <Metric label="Forecast" value={forecast.toFixed(2)} note={`${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs today`} accent />
         <Metric label="50% / 90% spread" value={`${low50.toFixed(1)}…${high50.toFixed(1)}`} note={`outer ${low90.toFixed(1)}…${high90.toFixed(1)}`} />
         <Metric label="High-risk estimate" value={`${(item.prediction.configuredHighRiskProbability * 100).toFixed(0)}%`} note="ESA class ≥ −6 · 9 test positives" />
       </dl>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(19rem,.75fr)]">
-        <RiskChart messages={item.messages} future={outcome?.futureMessages ?? []} revealed={Boolean(outcome)} forecast={item.prediction.predictedFinalRiskLog10} />
+        <RiskChart
+          messages={item.messages}
+          future={outcome?.futureMessages ?? []}
+          revealed={Boolean(outcome)}
+          forecast={forecast}
+          persistence={persist}
+        />
         <Explanation text={item.prediction.explanation} factors={item.prediction.topFactors} />
       </div>
 
@@ -81,13 +88,11 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
         </section>
 
         <aside className="panel p-6">
-          <p className="eyebrow">Analyst controls</p>
-          <h2 className="display mt-2 text-3xl">Compare, then reveal</h2>
-          <div className="mt-6 grid grid-cols-2 rounded-md border hairline p-1">
-            <button type="button" onClick={() => setShowBaseline(false)} aria-pressed={!showBaseline} className={`rounded px-3 py-2 text-sm ${!showBaseline ? "bg-stone-200 text-ink" : "text-stone-500"}`}>Forecast</button>
-            <button type="button" onClick={() => setShowBaseline(true)} aria-pressed={showBaseline} className={`rounded px-3 py-2 text-sm ${showBaseline ? "bg-stone-200 text-ink" : "text-stone-500"}`}>Persistence</button>
-          </div>
-          <p className="mt-4 text-xs leading-5 text-stone-500">Persistence simply carries the latest report forward. The forecast uses cutoff-safe trends.</p>
+          <p className="eyebrow">Later update</p>
+          <h2 className="display mt-2 text-3xl">Reveal when ready</h2>
+          <p className="mt-4 text-sm leading-6 text-stone-600">
+            Today's report and the forecast are already in the strip above. Persistence is today's value carried forward. The later messages stay hidden until you ask.
+          </p>
           <button type="button" onClick={revealOutcome} disabled={Boolean(outcome) || isRevealing} className="interactive mt-6 w-full rounded-md bg-ink px-4 py-3 text-sm text-white hover:bg-cyan disabled:opacity-50">
             {outcome ? "Outcome revealed" : isRevealing ? "Loading outcome…" : "Reveal final outcome"}
           </button>
@@ -99,7 +104,7 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
         <section className="rounded-lg border border-amber/30 bg-amber/[0.05] p-6" aria-live="polite">
           <p className="eyebrow !text-amber">Final update</p>
           <h2 className="display mt-2 text-3xl">Reported risk finished at {outcome.actualFinalRiskLog10.toFixed(2)}.</h2>
-          <p className="mt-2 text-sm text-stone-600">{chanceWords(outcome.actualFinalRiskLog10)} · forecast error {Math.abs(item.prediction.predictedFinalRiskLog10 - outcome.actualFinalRiskLog10).toFixed(2)} log units</p>
+          <p className="mt-2 text-sm text-stone-600">{chanceWords(outcome.actualFinalRiskLog10)} · forecast error {Math.abs(forecast - outcome.actualFinalRiskLog10).toFixed(2)} log units · persistence error {Math.abs(persist - outcome.actualFinalRiskLog10).toFixed(2)}</p>
         </section>
       ) : null}
 
