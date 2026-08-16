@@ -15,6 +15,7 @@ export type Prediction = {
   highRiskThresholdLog10: number;
   riskBand: string;
   abstained: boolean;
+  abstentionReasons?: string[];
   topFactors: Factor[];
   explanation?: string;
   modelVersion: string;
@@ -49,7 +50,9 @@ export type DemoCase = {
 
 export type MetricsFile = {
   modelVersion?: string;
+  researchQuestion?: string;
   nEvents?: number;
+  nHighRiskEligible?: number;
   dataSource?: string;
   dataSourceKind?: "real" | "synthetic" | string;
   sourceRows?: number;
@@ -60,9 +63,10 @@ export type MetricsFile = {
   ridge?: Record<string, number>;
   xgboost?: Record<string, number>;
   improvement: Record<string, number>;
-  warning: Record<string, number>;
+  warning: Record<string, number | string>;
   uncertainty?: {
     method: string;
+    interpretation?: string;
     interval50Coverage: number;
     interval90Coverage: number;
     meanInterval50Width: number;
@@ -70,20 +74,56 @@ export type MetricsFile = {
     nModels: number;
   };
   missionIdComparison?: {
+    why?: string;
     withoutMissionId: Record<string, number>;
     withMissionId: Record<string, number>;
   };
   missionHoldout?: {
+    why?: string;
     heldOutMissions: number[];
     trainEvents: number;
     testEvents: number;
+    nHighRiskTest?: number;
     model: Record<string, number>;
     persistence: Record<string, number>;
   };
   robustness?: Record<string, Record<string, Record<string, number>>>;
   splits: Record<string, number>;
   calibration?: Array<{ mid: number; predicted: number; observed: number; n: number }>;
-  ablation?: Record<string, number>;
+  ablation?: {
+    question?: string;
+    families?: Record<string, Record<string, number | boolean | null>>;
+    persistenceMae?: number;
+    historyDeltaMae?: number;
+    historyHelps?: boolean;
+  };
+  horizons?: Array<{
+    cutoffHours: number;
+    eligibleEvents: number;
+    trainEvents: number;
+    testEvents: number;
+    skipped?: boolean;
+    model?: Record<string, number>;
+    persistence?: Record<string, number>;
+    maeImprovement?: number;
+  }>;
+  abstention?: {
+    rule?: string;
+    operatingPoint?: Record<string, number | Record<string, number>>;
+    coverageCurve?: Array<Record<string, number>>;
+  };
+  shapContrast?: {
+    rule?: string;
+    correct?: { n: number; groups: Array<{ group: string; meanAbsShap: number }> };
+    incorrect?: { n: number; groups: Array<{ group: string; meanAbsShap: number }> };
+  };
+  failureClusters?: {
+    nTest?: number;
+    nInaccurate?: number;
+    dominantFailures?: string[];
+    modes?: Record<string, Record<string, number>>;
+  };
+  abstentionRule?: string;
   featureGroups?: Array<{ group: string; gain: number }>;
   failures?: {
     worstUnderpredictions: Array<Record<string, number>>;
