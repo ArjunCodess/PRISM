@@ -5,11 +5,11 @@ import { loadCases, loadMetrics } from "@/lib/data";
 import { chanceWords } from "@/lib/plain";
 
 const storyLabel: Record<string, string> = {
-  low: "Stable low risk",
-  escalate: "Escalating",
+  low: "Easy correct",
+  escalate: "Hard correct",
   deescalate: "De-escalating",
-  uncertain: "Uncertain",
-  failure: "Known failure",
+  uncertain: "Abstention",
+  failure: "Confident failure",
 };
 
 export default async function QueuePage() {
@@ -20,7 +20,7 @@ export default async function QueuePage() {
     <Shell title="Five encounters, frozen before the future is known." kicker="Conjunction event queue">
       <section className="mb-12 grid gap-8 border-b hairline pb-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <p className="max-w-[64ch] text-lg leading-8 text-stone-600">
-          Every forecast uses only messages available at least 48 hours before closest approach. Choose a case, read the model’s reasons, then reveal the final update.
+          At T−48, what can we infer about the later reported `log10(Pc)`? Choose a case, read the reasons, then reveal the later update.
         </p>
         <dl className="grid grid-cols-3 gap-4 text-sm">
           <Summary label="Cases" value={cases.length.toString()} />
@@ -31,7 +31,7 @@ export default async function QueuePage() {
 
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <h2 className="display text-3xl">Curated cases</h2>
-        <p className="text-xs text-stone-500">High-risk class: log₁₀(Pc) ≥ −6</p>
+        <p className="text-xs text-stone-500">ESA class log₁₀(Pc) ≥ −6 · 9 test positives, not an operational threshold</p>
       </div>
 
       <section className="overflow-hidden rounded-lg border hairline bg-panel" aria-label="Curated conjunction cases">
@@ -57,7 +57,7 @@ export default async function QueuePage() {
       </section>
 
       <p className="mt-5 max-w-3xl text-xs leading-5 text-stone-500">
-        Source: {metrics?.dataSource ?? "frozen training artifacts"}. These historical anonymized cases explain early forecasting; they are not operational predictions.
+        Source: {metrics?.dataSource ?? "frozen training artifacts"}. These historical anonymized cases explain an early forecasting experiment; they are not operational predictions. High-risk class: ESA challenge log₁₀(Pc) ≥ −6, not an operational threshold.
       </p>
     </Shell>
   );

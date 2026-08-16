@@ -21,7 +21,7 @@ export function Shell({ title, kicker, children }: { title: string; kicker?: str
       </main>
 
       <footer className="no-print grid gap-2 border-t hairline py-6 text-xs leading-5 text-stone-500 sm:grid-cols-2">
-        <p>Educational research prototype · offline-ready</p>
+        <p>Research prototype · not flight software</p>
         <p className="sm:text-right">Forecasts support human review and never authorize a manoeuvre.</p>
       </footer>
     </div>

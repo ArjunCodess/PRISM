@@ -20,7 +20,7 @@ export function fallbackBriefing(
   const today = chanceWords(item.baselineRiskLog10);
   const guess = chanceWords(item.prediction.predictedFinalRiskLog10);
   if (item.prediction.abstained) {
-    return `Today ${today}. Guesses cross the warning line.`;
+    return `Today ${today}. Guesses disagree enough that a person should review this.`;
   }
   return `Today ${today}. Forecast ${guess}.`;
 }

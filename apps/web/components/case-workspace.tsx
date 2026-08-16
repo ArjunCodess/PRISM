@@ -21,7 +21,6 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
   const [isRevealing, setIsRevealing] = useState(false);
   const [showBaseline, setShowBaseline] = useState(false);
   const latest = item.messages.at(-1)!;
-  const previous = item.messages.at(-2);
   const displayRisk = showBaseline ? item.baselineRiskLog10 : item.prediction.predictedFinalRiskLog10;
   const [low90, high90] = item.prediction.interval90Log10;
   const [low50, high50] = item.prediction.interval50Log10 ?? item.prediction.interval90Log10;
@@ -45,17 +44,22 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
       <section className="flex flex-col gap-4 border-b hairline pb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="max-w-[70ch] text-lg leading-8 text-stone-600">{item.briefing ?? fallbackBriefing(item)}</p>
-          <p className="mt-2 text-xs text-stone-500">Locked at T−{(latest.timeToTcaDays * 24).toFixed(1)} hours · {item.messages.length} messages used</p>
+          <p className="mt-2 text-xs text-stone-500">Locked at T−{(latest.timeToTcaDays * 24).toFixed(1)} hours · {item.messages.length} messages used · forecast of the final reported log₁₀(Pc)</p>
         </div>
         <Band value={item.prediction.riskBand} abstained={item.prediction.abstained} />
       </section>
+      {item.prediction.abstained ? (
+        <p className="max-w-[70ch] text-sm leading-6 text-amber">
+          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% bootstrap band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
+        </p>
+      ) : null}
 
       <dl className="grid overflow-hidden rounded-lg border hairline bg-panel sm:grid-cols-2 xl:grid-cols-5">
         <Metric label="Time to TCA" value={`${(latest.timeToTcaDays * 24).toFixed(1)} h`} note="selected message" />
         <Metric label="Current report" value={item.baselineRiskLog10.toFixed(2)} note={chanceWords(item.baselineRiskLog10)} />
         <Metric label={showBaseline ? "Persistence" : "Forecast"} value={displayRisk.toFixed(2)} note={chanceWords(displayRisk)} accent={!showBaseline} />
         <Metric label="50% / 90% spread" value={`${low50.toFixed(1)}…${high50.toFixed(1)}`} note={`outer ${low90.toFixed(1)}…${high90.toFixed(1)}`} />
-        <Metric label="Warning probability" value={`${(item.prediction.configuredHighRiskProbability * 100).toFixed(0)}%`} note="configured class ≥ −6" />
+        <Metric label="High-risk estimate" value={`${(item.prediction.configuredHighRiskProbability * 100).toFixed(0)}%`} note="ESA class ≥ −6 · 9 test positives" />
       </dl>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(19rem,.75fr)]">

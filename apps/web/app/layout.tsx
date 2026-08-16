@@ -3,13 +3,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://prism.local"),
-  title: { default: "PRISM — conjunction risk copilot", template: "%s · PRISM" },
-  description: "An offline, explainable T-48-hour conjunction-risk forecasting research prototype.",
+  title: { default: "PRISM — T−48 conjunction-risk forecast", template: "%s · PRISM" },
+  description: "Predicting final reported conjunction risk from information available 48 hours before closest approach.",
   applicationName: "PRISM",
   robots: { index: false, follow: false },
   openGraph: {
-    title: "PRISM — conjunction risk copilot",
-    description: "Forecasting final conjunction risk 48 hours early, with uncertainty and explanations.",
+    title: "PRISM — T−48 conjunction-risk forecast",
+    description: "Predicting final reported conjunction risk from information available 48 hours before closest approach.",
     type: "website",
   },
 };
