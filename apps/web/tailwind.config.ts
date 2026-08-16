@@ -13,7 +13,7 @@ const config: Config = {
         safe: "#47725a",
       },
       fontFamily: {
-        sans: ["Aptos", "Segoe UI Variable", "Segoe UI", "sans-serif"],
+        sans: ["var(--font-sans)", "Inter", "sans-serif"],
         serif: ["Georgia", "Times New Roman", "serif"],
         mono: ["Cascadia Mono", "Consolas", "ui-monospace", "monospace"],
       },
