@@ -12,10 +12,10 @@ from explain import explanation_text, local_factors
 from train_regressor import TrainedRegressor
 
 
-def risk_band(prob: float, abstained: bool) -> str:
+def risk_band(prob: float, abstained: bool, point: float | None = None) -> str:
     if abstained:
         return "review"
-    if prob >= 0.7:
+    if (point is not None and point >= HIGH_RISK_THRESHOLD) or prob >= 0.7:
         return "high"
     if prob >= 0.4:
         return "review"
@@ -48,7 +48,7 @@ def predict_event(
         "interval50Log10": [float(inner_lo), float(inner_hi)],
         "configuredHighRiskProbability": proba,
         "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
-        "riskBand": risk_band(proba, abstained),
+        "riskBand": risk_band(proba, abstained, point),
         "abstained": abstained,
         "topFactors": [
             {

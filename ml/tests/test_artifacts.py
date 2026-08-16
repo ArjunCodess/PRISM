@@ -15,7 +15,13 @@ SRC = ROOT / "ml" / "src"
 sys.path.insert(0, str(SRC))
 
 from explain import local_factors, shap_explainer
+from export_demo_cases import risk_band
 from train_regressor import TrainedRegressor
+
+
+def test_existing_high_risk_forecast_is_never_labelled_low() -> None:
+    assert risk_band(0.01, False, -5.5) == "high"
+    assert risk_band(0.01, True, -5.5) == "review"
 
 
 def test_frozen_artifacts_exist() -> None:

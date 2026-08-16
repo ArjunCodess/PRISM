@@ -1996,7 +1996,7 @@
       ],
       "configuredHighRiskProbability": 0.14285714285714285,
       "highRiskThresholdLog10": -6.0,
-      "riskBand": "low",
+      "riskBand": "high",
       "abstained": false,
       "topFactors": [
         {
