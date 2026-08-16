@@ -1,10 +1,28 @@
 CUTOFF_DAYS = 2.0
+CUTOFF_HOURS = 48
+HORIZON_HOURS = (72, 48, 24, 12)
+# Persistence guard and abstention use the ESA class and a locked disagreement
+# threshold. They are not tuned on the held-out test split.
 HIGH_RISK_THRESHOLD = -6.0
 LOW_RISK_CLIP = -6.001
 NEGLIGIBLE_RISK = -30.0
 RANDOM_STATE = 42
-MODEL_VERSION = "prism-0.1.0"
-DISCLAIMER = "Educational research prototype; not for operational decisions."
+MODEL_VERSION = "prism-0.2.0"
+ABSTENTION_DISAGREEMENT = 1.25
+DISCLAIMER = (
+    "Research prototype for offline, explainable conjunction-risk forecasting. "
+    "Not flight software. Not an operational decision system."
+)
+ABSTENTION_RULE = (
+    "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class "
+    "log10(Pc) ≥ −6, when current risk or miss distance is missing, or when "
+    "bootstrap disagreement exceeds 1.25 log-risk units. The class, guard, and "
+    "disagreement threshold were locked before evaluating the test split."
+)
+RESEARCH_QUESTION = (
+    "Do pre-T−48 conjunction histories contain enough predictive signal to "
+    "improve forecasts of later reported log10(Pc) over persistence?"
+)
 
 TREND_COLUMNS = [
     "risk",
@@ -107,23 +125,23 @@ FEATURE_DICTIONARY = {
 
 STORY_COPY = {
     "low": {
-        "title": "A quiet flyby",
-        "blurb": "Wide miss. Copilot and today's number both stay calm.",
+        "title": "Easy correct prediction",
+        "blurb": "Wide miss. Persistence and the forecast both stay calm, and both are right.",
     },
     "escalate": {
-        "title": "Chance is climbing",
-        "blurb": "Early updates get more serious before closest approach.",
+        "title": "Hard correct prediction",
+        "blurb": "The history is moving. The forecast beats carrying the latest report forward.",
     },
     "deescalate": {
         "title": "Early scare, then calmer",
         "blurb": "First alerts looked high; later geometry looks safer.",
     },
     "uncertain": {
-        "title": "Needs a human look",
-        "blurb": "The guess range crosses the warning line.",
+        "title": "The model refuses to claim",
+        "blurb": "Ensemble spread crosses the ESA class, so PRISM asks for human review.",
     },
     "failure": {
-        "title": "An honest miss",
-        "blurb": "A late jump the copilot understated.",
+        "title": "Confident failure",
+        "blurb": "The model did not abstain, and the later update shows it was wrong.",
     },
 }

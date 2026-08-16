@@ -35,11 +35,12 @@ def event_features(
     history["log_c_position_covariance_det"] = np.log(
         history["c_position_covariance_det"].clip(lower=1e-12)
     )
+    cutoff_days = float(event.get("cutoff_days", CUTOFF_DAYS))
     features: dict[str, float | str] = {
         "event_id": snapshot["event_id"],
         "y": float(event["y"]),
         "n_messages": float(len(history)),
-        "hours_before_cutoff": float((snapshot["time_to_tca"] - CUTOFF_DAYS) * 24.0),
+        "hours_before_cutoff": float((snapshot["time_to_tca"] - cutoff_days) * 24.0),
     }
     if include_mission:
         features["mission_id"] = float(snapshot["mission_id"])

@@ -5,12 +5,14 @@ from constants import CUTOFF_DAYS
 
 
 def build_event_histories(
-    frame: pd.DataFrame, require_later_target: bool = True
+    frame: pd.DataFrame,
+    require_later_target: bool = True,
+    cutoff_days: float = CUTOFF_DAYS,
 ) -> list[dict[str, object]]:
     events: list[dict[str, object]] = []
     for event_id, group in frame.groupby("event_id", sort=True):
         ordered = group.sort_values("time_to_tca", ascending=False).reset_index(drop=True)
-        eligible = ordered[ordered["time_to_tca"] >= CUTOFF_DAYS]
+        eligible = ordered[ordered["time_to_tca"] >= cutoff_days]
         if eligible.empty:
             continue
         target_row = ordered.iloc[-1]
@@ -29,6 +31,7 @@ def build_event_histories(
                 "full_history": ordered,
                 "y": float(target_row["risk"]),
                 "target_time_to_tca": float(target_row["time_to_tca"]),
+                "cutoff_days": float(cutoff_days),
                 "story": snapshot["story"] if "story" in snapshot else None,
             }
         )

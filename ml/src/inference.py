@@ -44,7 +44,9 @@ class PrismModel:
         if any(float(item["timeToTcaDays"]) < cutoff_days - 1e-9 for item in messages):
             raise ValueError("post-cutoff messages are not allowed")
         frame = _messages_to_frame(messages)
-        events = build_event_histories(frame, require_later_target=False)
+        events = build_event_histories(
+            frame, require_later_target=False, cutoff_days=cutoff_days
+        )
         if not events:
             raise ValueError("no eligible pre-cutoff messages")
         features = build_feature_table(events)
