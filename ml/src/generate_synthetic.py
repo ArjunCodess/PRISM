@@ -42,6 +42,10 @@ def _event_rows(rng: np.random.Generator, event_id: int, story: str) -> list[dic
         final_risk = float(rng.uniform(-6.4, -5.5))
         t_sigma = float(rng.uniform(400, 2200))
         c_sigma = float(rng.uniform(600, 2800))
+    elif story == "high":
+        start_risk = float(rng.uniform(-5.8, -4.2))
+        final_risk = float(rng.uniform(-5.6, -3.8))
+        miss0 = float(rng.uniform(60, 500))
     else:  # failure-like jump
         start_risk = float(rng.uniform(-9.5, -7.0))
         final_risk = float(rng.uniform(-5.2, -3.6))
@@ -155,8 +159,8 @@ def _event_rows(rng: np.random.Generator, event_id: int, story: str) -> list[dic
 
 def generate_synthetic_cdms(n_events: int = 400, seed: int = RANDOM_STATE) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    stories = np.array(["low", "escalate", "deescalate", "uncertain", "failure"])
-    weights = np.array([0.62, 0.12, 0.12, 0.08, 0.06])
+    stories = np.array(["low", "escalate", "deescalate", "uncertain", "failure", "high"])
+    weights = np.array([0.50, 0.08, 0.08, 0.10, 0.06, 0.18])
     rows: list[dict[str, object]] = []
     for event_id in range(n_events):
         story = str(rng.choice(stories, p=weights))

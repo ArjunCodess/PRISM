@@ -132,25 +132,41 @@ FEATURE_DICTIONARY = {
     "c_sigma_r": "other-object radial uncertainty",
 }
 
-STORY_COPY = {
-    "low": {
-        "title": "Easy correct prediction",
-        "blurb": "Wide miss. Persistence and the forecast both stay calm, and both are right.",
+DEMO_SLOTS = [
+    {
+        "key": "low",
+        "story": "low",
+        "title": "Quiet miss",
+        "blurb": "Wide miss. Today's report and the forecast both stay well below the ESA class.",
     },
-    "escalate": {
-        "title": "Hard correct prediction",
-        "blurb": "The history is moving. The forecast beats carrying the latest report forward.",
+    {
+        "key": "low",
+        "story": "low",
+        "title": "Still quiet",
+        "blurb": "A second calm encounter. Nothing here is asking for a high-risk call.",
     },
-    "deescalate": {
-        "title": "Early scare, then calmer",
-        "blurb": "First alerts looked high; later geometry looks safer.",
+    {
+        "key": "uncertain",
+        "story": "uncertain",
+        "title": "Needs a person",
+        "blurb": "The bootstrap spread crosses the ESA class, so PRISM withholds a call.",
     },
-    "uncertain": {
-        "title": "The model refuses to claim",
-        "blurb": "Ensemble spread crosses the ESA class, so PRISM asks for human review.",
+    {
+        "key": "high_now",
+        "story": "high",
+        "title": "Already at the line",
+        "blurb": "Today's report is already in the ESA high-risk class, so the forecast copies it.",
     },
-    "failure": {
-        "title": "Confident failure",
-        "blurb": "The model did not abstain, and the later update shows it was wrong.",
+    {
+        "key": "high_stays",
+        "story": "high",
+        "title": "Stays in the class",
+        "blurb": "Already high at T−48. The later report stays in the ESA class.",
     },
-}
+    {
+        "key": "high_drop",
+        "story": "high",
+        "title": "High, then it drops",
+        "blurb": "Already high at T−48. The later report leaves the ESA class.",
+    },
+]

@@ -21,8 +21,9 @@ from abstention import (  # noqa: E402
     selective_metrics,
 )
 from build_events import build_event_histories  # noqa: E402
-from constants import CUTOFF_DAYS, HIGH_RISK_THRESHOLD  # noqa: E402
+from constants import CUTOFF_DAYS, DEMO_SLOTS, HIGH_RISK_THRESHOLD  # noqa: E402
 from experiments import cluster_test_failures  # noqa: E402
+from export_demo_cases import story_fit  # noqa: E402
 from feature_sets import (  # noqa: E402
     FAMILIES,
     assert_trend_stems_are_known,
@@ -163,3 +164,22 @@ def test_abstain_mask_matches_scalar_rule() -> None:
     assert mask.tolist() == [False, True]
     assert crosses.tolist() == [False, True]
     assert decide_abstention(matrix[1], -7.0, 400.0).abstained
+
+
+def test_demo_slots_cover_the_exhibit_mix() -> None:
+    stories = [slot["story"] for slot in DEMO_SLOTS]
+    assert len(DEMO_SLOTS) == 6
+    assert stories.count("low") == 2
+    assert stories.count("uncertain") == 1
+    assert stories.count("high") == 3
+
+
+def test_story_fit_scores_exhibit_slots() -> None:
+    assert story_fit("low", -12.0, -12.0, -12.0, False) > 0
+    assert story_fit("low", -12.0, -12.0, -12.0, True) < 0
+    assert story_fit("uncertain", -8.0, -7.0, -7.0, True) > 0
+    assert story_fit("uncertain", -8.0, -7.0, -7.0, False) < 0
+    assert story_fit("high_now", -5.0, -5.0, -30.0, False) > 0
+    assert story_fit("high_now", -5.0, -8.0, -5.0, False) < 0
+    assert story_fit("high_stays", -5.0, -5.0, -5.2, False) > 0
+    assert story_fit("high_drop", -5.0, -5.0, -12.0, False) > 0

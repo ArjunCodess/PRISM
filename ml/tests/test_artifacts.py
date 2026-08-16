@@ -36,25 +36,23 @@ def test_frozen_artifacts_exist() -> None:
         assert (ART / name).exists(), name
 
 
-def test_demo_cases_match_prd() -> None:
+def test_demo_cases_match_exhibit() -> None:
     cases = json.loads((ART / "demo_cases.json").read_text(encoding="utf-8"))
-    stories = {item["story"] for item in cases}
-    assert stories == {"low", "escalate", "deescalate", "uncertain", "failure"}
-    assert any(item["prediction"]["abstained"] for item in cases)
+    stories = [item["story"] for item in cases]
+    assert len(cases) == 6
+    assert stories.count("low") == 2
+    assert stories.count("uncertain") == 1
+    assert stories.count("high") == 3
     assert all(item["prediction"]["disclaimer"] for item in cases)
-    failure = next(item for item in cases if item["story"] == "failure")
-    pred = float(failure["prediction"]["predictedFinalRiskLog10"])
-    actual = float(failure["actualFinalRiskLog10"])
-    persist = float(failure["baselineRiskLog10"])
-    missed = actual >= -6 and pred < -6
-    late = actual > persist + 0.4
-    under = pred < actual - 0.35
-    confident = not failure["prediction"]["abstained"]
-    assert confident
-    assert (missed or (late and under) or abs(pred - actual) >= 2.0) and abs(pred - actual) >= 0.35
+    lows = [item for item in cases if item["story"] == "low"]
+    assert all(not item["prediction"]["abstained"] for item in lows)
+    assert all(item["prediction"]["riskBand"] == "low" for item in lows)
     uncertain = next(item for item in cases if item["story"] == "uncertain")
     assert uncertain["prediction"]["abstained"]
     assert uncertain["prediction"]["abstentionReasons"]
+    highs = [item for item in cases if item["story"] == "high"]
+    assert all(not item["prediction"]["abstained"] for item in highs)
+    assert all(item["prediction"]["riskBand"] == "high" for item in highs)
     for item in cases:
         assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
         if item["futureMessages"]:

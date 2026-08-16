@@ -20,13 +20,13 @@ from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
 from constants import (  # noqa: E402
     ABSTENTION_RULE,
+    DEMO_SLOTS,
     ESA_LOSS_DEFINITION,
     FALSE_REASSURANCE_DEFINITION,
     HIGH_RISK_THRESHOLD,
     MODEL_VERSION,
     RANDOM_STATE,
     RESEARCH_QUESTION,
-    STORY_COPY,
 )
 from evaluate import (  # noqa: E402
     classification_metrics,
@@ -43,7 +43,7 @@ from experiments import (  # noqa: E402
     shap_outcome_contrast,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
-from export_demo_cases import case_briefing, predict_event, story_fit, write_json  # noqa: E402
+from export_demo_cases import assemble_demo_cases, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
 from ingest import (  # noqa: E402
@@ -61,38 +61,6 @@ from train_regressor import (  # noqa: E402
     predict_model,
 )
 from validate import validate_cdm_frame  # noqa: E402
-
-
-def _messages(history: pd.DataFrame) -> list[dict[str, float | str]]:
-    rows = []
-    for _, row in history.sort_values("time_to_tca", ascending=False).iterrows():
-        rows.append(
-            {
-                "timeToTcaDays": float(row["time_to_tca"]),
-                "riskLog10": float(row["risk"]),
-                "missDistanceM": float(row["miss_distance"]),
-                "relativeSpeedMps": float(row["relative_speed"]),
-                "maxRiskEstimate": float(row["max_risk_estimate"]),
-                "relativePositionR": float(row["relative_position_r"]),
-                "relativePositionT": float(row["relative_position_t"]),
-                "relativePositionN": float(row["relative_position_n"]),
-                "relativeVelocityR": float(row["relative_velocity_r"]),
-                "relativeVelocityT": float(row["relative_velocity_t"]),
-                "relativeVelocityN": float(row["relative_velocity_n"]),
-                "tSigmaR": float(row["t_sigma_r"]),
-                "tSigmaT": float(row["t_sigma_t"]),
-                "tSigmaN": float(row["t_sigma_n"]),
-                "cSigmaR": float(row["c_sigma_r"]),
-                "cSigmaT": float(row["c_sigma_t"]),
-                "cSigmaN": float(row["c_sigma_n"]),
-                "tObsUsed": float(row["t_obs_used"]),
-                "cObsUsed": float(row["c_obs_used"]),
-                "tObsAvailable": float(row["t_obs_available"]),
-                "cObsAvailable": float(row["c_obs_available"]),
-                "cObjectType": str(row["c_object_type"]),
-            }
-        )
-    return rows
 
 
 def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
@@ -399,7 +367,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "abstentionRule": ABSTENTION_RULE,
     }
 
-    event_by_id = {event["event_id"]: event for event in events}
+    event_by_id = {int(event["event_id"]): event for event in events}
     aligned_all = features[booster.feature_names].apply(pd.to_numeric, errors="coerce")
     raw_all_ensemble = np.column_stack([model.predict(aligned_all) for model in ensemble])
     all_persist_guard = features["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
@@ -416,99 +384,27 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         features["miss_distance"].to_numpy(dtype=float),
     )
     event_ids = features["event_id"].astype(int).to_numpy()
-    id_to_position = {event_id: position for position, event_id in enumerate(event_ids)}
     predictions = {
-        event_id: {
+        int(event_id): {
             "predictedFinalRiskLog10": float(all_point[position]),
             "configuredHighRiskProbability": float(all_probability[position]),
             "abstained": bool(all_abstained[position]),
         }
         for position, event_id in enumerate(event_ids)
     }
-    features_by_id = features.set_index("event_id", drop=False)
-
-    stories_needed = ["low", "escalate", "deescalate", "uncertain", "failure"]
-    used: set[int] = set()
-    test_ids = set(splits.test_ids)
-    demo_cases: list[dict[str, object]] = []
     explainer = shap_explainer(booster, train)
-    for story in stories_needed:
-        ranked: list[tuple[float, int]] = []
-        fallback: list[tuple[float, int]] = []
-        for event_id, prediction in predictions.items():
-            if event_id in used:
-                continue
-            feature_row = features_by_id.loc[event_id]
-            persist = float(feature_row["risk"])
-            actual = float(feature_row["y"])
-            pred = float(prediction["predictedFinalRiskLog10"])
-            abstained = bool(prediction["abstained"])
-            score = story_fit(story, pred, persist, actual, abstained)
-            prefer = 1.5 if event_id in test_ids else 0.0
-            same_story = str(feature_row.get("story")) == story
-            if score >= 0 and same_story:
-                ranked.append((score + prefer, event_id))
-            elif score >= 0:
-                fallback.append((score + prefer - 0.4, event_id))
-            elif story == "failure" and not abstained:
-                late = actual >= -6 and persist < actual - 0.4
-                under = pred < actual - 0.35
-                if late and under:
-                    fallback.append((actual - pred + prefer, event_id))
-        pool = ranked or fallback
-        if not pool and story == "failure":
-            for event_id, prediction in predictions.items():
-                if event_id in used:
-                    continue
-                feature_row = features_by_id.loc[event_id]
-                persist = float(feature_row["risk"])
-                actual = float(feature_row["y"])
-                pred = float(prediction["predictedFinalRiskLog10"])
-                if actual >= -6 and pred < actual - 0.35:
-                    pool.append((actual - pred, event_id))
-        if not pool:
-            pool = [(0.0, event_id) for event_id in predictions if event_id not in used]
-        pool.sort(key=lambda item: item[0], reverse=True)
-        event_id = pool[0][1]
-        used.add(event_id)
-        event = event_by_id[event_id]
-        feature_row = features_by_id.loc[event_id]
-        position = id_to_position[event_id]
-        prediction = predict_event(
-            trained=booster,
-            ensemble_preds=all_ensemble[position],
-            calibrator=calibrator,
-            explainer=explainer,
-            row=aligned_all.iloc[position],
-            messages=_messages(event["history"]),
-            event_id=f"demo-{event_id}",
-        )
-        persist = float(feature_row["risk"])
-        actual = float(feature_row["y"])
-        copy = STORY_COPY[story]
-        demo_cases.append(
-            {
-                "id": f"demo-{event_id}",
-                "story": story,
-                "missionAlias": f"MISSION-{int(event['mission_id']):02d}",
-                "title": copy["title"],
-                "blurb": copy["blurb"],
-                "briefing": case_briefing(
-                    story,
-                    persist,
-                    float(prediction["predictedFinalRiskLog10"]),
-                    actual,
-                    bool(prediction["abstained"]),
-                ),
-                "prediction": prediction,
-                "baselineRiskLog10": persist,
-                "actualFinalRiskLog10": actual,
-                "messages": _messages(event["history"]),
-                "futureMessages": _messages(
-                    event["full_history"][event["full_history"]["time_to_tca"] < 2.0]
-                ),
-            }
-        )
+    demo_cases = assemble_demo_cases(
+        slots=DEMO_SLOTS,
+        predictions=predictions,
+        features=features,
+        event_by_id=event_by_id,
+        aligned=aligned_all,
+        ensemble_matrix=all_ensemble,
+        trained=booster,
+        calibrator=calibrator,
+        explainer=explainer,
+        test_ids=set(int(event_id) for event_id in splits.test_ids),
+    )
 
     booster.model.save_model(artifacts / "risk_regressor.json")
     joblib.dump(

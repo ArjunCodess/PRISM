@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from abstention import REASON_TEXT, decide_abstention
-from constants import CUTOFF_DAYS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
+from constants import CUTOFF_DAYS, DEMO_SLOTS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
 from explain import explanation_text, local_factors
 from train_regressor import TrainedRegressor
 
@@ -93,19 +93,20 @@ def _spoken_chance(log_risk: float) -> str:
 def case_briefing(story: str, persist: float, pred: float, actual: float, abstained: bool) -> str:
     today = _spoken_chance(persist)
     guess = _spoken_chance(pred)
-    later = _spoken_chance(actual)
-    if abstained:
+    if abstained or story == "uncertain":
         return (
             f"Today {today}. Guesses cross the 1-in-a-million line, so a person should review this."
         )
     if story == "low":
         return f"Today {today}. Forecast stays quiet ({guess})."
-    if story == "escalate":
-        return f"Today {today}. Forecast rises to {guess}."
-    if story == "deescalate":
-        return f"Today {today}. Forecast calms to {guess}."
-    if story == "failure":
-        return f"Forecast {guess}; later update {later}."
+    if story == "high_now":
+        return f"Today {today}. Already at the ESA class, so the forecast copies today's report."
+    if story == "high_stays":
+        return f"Today {today}. Forecast copies today's report ({guess})."
+    if story == "high_drop":
+        return f"Today {today}. Forecast copies today's report ({guess})."
+    if story == "high":
+        return f"Today {today}. Forecast {guess}."
     return f"Today {today}. Forecast {guess}."
 
 
@@ -115,33 +116,244 @@ def story_fit(story: str, pred: float, persist: float, actual: float, abstained:
     if story == "low":
         if abstained or actual >= -7 or pred >= -7 or persist >= -7 or pred_err > 0.5:
             return -1.0
-        return 3.0 - pred_err - 0.1 * persist_err
-    if story == "escalate":
-        if abstained or persist_err < 0.8 or pred_err > persist_err - 0.3:
-            return -1.0
-        return 2.0 + (persist_err - pred_err) - 0.2 * pred_err
-    if story == "deescalate":
-        if abstained or actual >= -6 or persist <= actual or pred >= persist:
-            return -1.0
-        return 1.5 + (persist_err - pred_err)
+        away_from_floor = 0.6 if persist > -29 else 0.0
+        return 3.0 - pred_err - 0.1 * persist_err + away_from_floor
     if story == "uncertain":
         return 3.0 if abstained else -1.0
-    if story == "failure":
-        if abstained or pred_err < 0.45:
+    if story == "high_now":
+        if abstained or persist < HIGH_RISK_THRESHOLD:
             return -1.0
-        late_jump = actual >= HIGH_RISK_THRESHOLD and persist < HIGH_RISK_THRESHOLD - 0.25
-        missed = actual >= HIGH_RISK_THRESHOLD and pred < HIGH_RISK_THRESHOLD
-        rare = 2.0 if actual >= HIGH_RISK_THRESHOLD else 0.0
-        if missed and late_jump:
-            return 6.0 + (actual - pred) + rare
-        if missed:
-            return 4.0 + (actual - pred) + rare
-        if late_jump and pred < actual - 0.45:
-            return 3.0 + (actual - pred) + rare
-        if pred_err >= 2.0:
-            return 1.0 + pred_err + rare
-        return -1.0
+        collapse = 1.5 if actual <= -20 else 0.0
+        return 2.0 + collapse + max(persist - HIGH_RISK_THRESHOLD, 0.0)
+    if story == "high_stays":
+        if abstained or persist < HIGH_RISK_THRESHOLD or actual < HIGH_RISK_THRESHOLD:
+            return -1.0
+        return 3.0 + max(actual - HIGH_RISK_THRESHOLD, 0.0)
+    if story == "high_drop":
+        if abstained or persist < HIGH_RISK_THRESHOLD or actual >= HIGH_RISK_THRESHOLD:
+            return -1.0
+        not_floor = 1.2 if actual > -29 else 0.0
+        return 2.0 + not_floor
+    if story == "high":
+        if abstained:
+            return -1.0
+        if (
+            persist < HIGH_RISK_THRESHOLD
+            and pred < HIGH_RISK_THRESHOLD
+            and actual < HIGH_RISK_THRESHOLD
+        ):
+            return -1.0
+        return 1.0 + max(persist, pred, actual)
     return -1.0
+
+
+def messages_from_history(history: pd.DataFrame) -> list[dict[str, float | str]]:
+    rows: list[dict[str, float | str]] = []
+    for _, row in history.sort_values("time_to_tca", ascending=False).iterrows():
+        rows.append(
+            {
+                "timeToTcaDays": float(row["time_to_tca"]),
+                "riskLog10": float(row["risk"]),
+                "missDistanceM": float(row["miss_distance"]),
+                "relativeSpeedMps": float(row["relative_speed"]),
+                "maxRiskEstimate": float(row["max_risk_estimate"]),
+                "relativePositionR": float(row["relative_position_r"]),
+                "relativePositionT": float(row["relative_position_t"]),
+                "relativePositionN": float(row["relative_position_n"]),
+                "relativeVelocityR": float(row["relative_velocity_r"]),
+                "relativeVelocityT": float(row["relative_velocity_t"]),
+                "relativeVelocityN": float(row["relative_velocity_n"]),
+                "tSigmaR": float(row["t_sigma_r"]),
+                "tSigmaT": float(row["t_sigma_t"]),
+                "tSigmaN": float(row["t_sigma_n"]),
+                "cSigmaR": float(row["c_sigma_r"]),
+                "cSigmaT": float(row["c_sigma_t"]),
+                "cSigmaN": float(row["c_sigma_n"]),
+                "tObsUsed": float(row["t_obs_used"]),
+                "cObsUsed": float(row["c_obs_used"]),
+                "tObsAvailable": float(row["t_obs_available"]),
+                "cObsAvailable": float(row["c_obs_available"]),
+                "cObjectType": str(row["c_object_type"]),
+            }
+        )
+    return rows
+
+
+def _as_int_id(value: object) -> int:
+    return int(value)
+
+
+def select_demo_event_ids(
+    slots: list[dict[str, str]],
+    predictions: dict[int, dict[str, Any]],
+    features: pd.DataFrame,
+    test_ids: set[int],
+) -> list[tuple[dict[str, str], int]]:
+    indexed = features.copy()
+    indexed["event_id"] = indexed["event_id"].map(_as_int_id)
+    features_by_id = indexed.set_index("event_id", drop=False)
+    used: set[int] = set()
+    chosen: list[tuple[dict[str, str], int]] = []
+    for slot in slots:
+        ranked: list[tuple[float, int]] = []
+        for raw_id, prediction in predictions.items():
+            event_id = _as_int_id(raw_id)
+            if event_id in used:
+                continue
+            feature_row = features_by_id.loc[event_id]
+            persist = float(feature_row["risk"])
+            actual = float(feature_row["y"])
+            pred = float(prediction["predictedFinalRiskLog10"])
+            abstained = bool(prediction["abstained"])
+            score = story_fit(slot["key"], pred, persist, actual, abstained)
+            prefer = 1.5 if event_id in test_ids else 0.0
+            if score >= 0:
+                ranked.append((score + prefer, event_id))
+        pool = ranked
+        if not pool and slot["story"] == "high":
+            for raw_id, prediction in predictions.items():
+                event_id = _as_int_id(raw_id)
+                if event_id in used:
+                    continue
+                feature_row = features_by_id.loc[event_id]
+                persist = float(feature_row["risk"])
+                abstained = bool(prediction["abstained"])
+                if abstained or persist < HIGH_RISK_THRESHOLD:
+                    continue
+                prefer = 1.5 if event_id in test_ids else 0.0
+                pool.append((persist + prefer, event_id))
+        if not pool:
+            pool = [
+                (0.0, _as_int_id(event_id))
+                for event_id in predictions
+                if _as_int_id(event_id) not in used
+            ]
+        pool.sort(key=lambda item: item[0], reverse=True)
+        event_id = pool[0][1]
+        used.add(event_id)
+        chosen.append((slot, event_id))
+    return chosen
+
+
+def assemble_demo_cases(
+    *,
+    slots: list[dict[str, str]],
+    predictions: dict[int, dict[str, Any]],
+    features: pd.DataFrame,
+    event_by_id: dict[int, dict[str, Any]],
+    aligned: pd.DataFrame,
+    ensemble_matrix: np.ndarray,
+    trained: TrainedRegressor,
+    calibrator: Any,
+    explainer: Any,
+    test_ids: set[int],
+) -> list[dict[str, Any]]:
+    event_ids = features["event_id"].map(_as_int_id).to_numpy()
+    id_to_position = {int(event_id): position for position, event_id in enumerate(event_ids)}
+    selected = select_demo_event_ids(slots, predictions, features, test_ids)
+    indexed = features.copy()
+    indexed["event_id"] = indexed["event_id"].map(_as_int_id)
+    features_by_id = indexed.set_index("event_id", drop=False)
+    events = {_as_int_id(event_id): event for event_id, event in event_by_id.items()}
+    demo_cases: list[dict[str, Any]] = []
+    for slot, event_id in selected:
+        event = events[event_id]
+        feature_row = features_by_id.loc[event_id]
+        position = id_to_position[event_id]
+        history = messages_from_history(event["history"])
+        later = event["full_history"]
+        future = later[later["time_to_tca"] < CUTOFF_DAYS]
+        prediction = predict_event(
+            trained=trained,
+            ensemble_preds=ensemble_matrix[position],
+            calibrator=calibrator,
+            explainer=explainer,
+            row=aligned.iloc[position],
+            messages=history,
+            event_id=f"demo-{event_id}",
+        )
+        persist = float(feature_row["risk"])
+        actual = float(feature_row["y"])
+        demo_cases.append(
+            {
+                "id": f"demo-{event_id}",
+                "story": slot["story"],
+                "missionAlias": f"MISSION-{int(event['mission_id']):02d}",
+                "title": slot["title"],
+                "blurb": slot["blurb"],
+                "briefing": case_briefing(
+                    slot["key"],
+                    persist,
+                    float(prediction["predictedFinalRiskLog10"]),
+                    actual,
+                    bool(prediction["abstained"]),
+                ),
+                "prediction": prediction,
+                "baselineRiskLog10": persist,
+                "actualFinalRiskLog10": actual,
+                "messages": history,
+                "futureMessages": messages_from_history(future),
+            }
+        )
+    return demo_cases
+
+
+def refresh_from_frozen() -> list[dict[str, Any]]:
+    from abstention import abstain_mask
+    from build_events import build_event_histories
+    from inference import PrismModel
+    from ingest import load_esa_training
+    from validate import validate_cdm_frame
+
+    root = Path(__file__).resolve().parents[2]
+    features = pd.read_csv(root / "data" / "processed" / "events.csv")
+    features["event_id"] = features["event_id"].map(_as_int_id)
+    split_path = root / "ml" / "artifacts" / "split_manifest.json"
+    splits = json.loads(split_path.read_text(encoding="utf-8"))
+    test_ids = {int(event_id) for event_id in splits["test"]}
+    model = PrismModel()
+    aligned = features[model.feature_names].apply(pd.to_numeric, errors="coerce")
+    raw_ensemble = np.column_stack([member.predict(aligned) for member in model.ensemble])
+    persist = features["risk"].to_numpy(dtype=float)
+    ensemble_matrix = np.where(
+        (persist >= HIGH_RISK_THRESHOLD)[:, None],
+        persist[:, None],
+        raw_ensemble,
+    )
+    point = np.median(ensemble_matrix, axis=1)
+    abstained, _, _ = abstain_mask(
+        ensemble_matrix,
+        persist,
+        features["miss_distance"].to_numpy(dtype=float),
+    )
+    predictions = {
+        int(event_id): {
+            "predictedFinalRiskLog10": float(point[index]),
+            "abstained": bool(abstained[index]),
+        }
+        for index, event_id in enumerate(features["event_id"].to_numpy())
+    }
+    chosen = select_demo_event_ids(DEMO_SLOTS, predictions, features, test_ids)
+    selected_ids = {event_id for _, event_id in chosen}
+    raw = load_esa_training(root / "data" / "raw")
+    raw = raw[raw["event_id"].map(_as_int_id).isin(selected_ids)].copy()
+    events = build_event_histories(validate_cdm_frame(raw))
+    event_by_id = {_as_int_id(event["event_id"]): event for event in events}
+    cases = assemble_demo_cases(
+        slots=DEMO_SLOTS,
+        predictions=predictions,
+        features=features,
+        event_by_id=event_by_id,
+        aligned=aligned,
+        ensemble_matrix=ensemble_matrix,
+        trained=model.trained,
+        calibrator=model.calibrator,
+        explainer=model.explainer,
+        test_ids=test_ids,
+    )
+    write_json(root / "ml" / "artifacts" / "demo_cases.json", cases)
+    write_json(root / "apps" / "web" / "public" / "demo_cases.json", cases)
+    return cases
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -161,3 +373,9 @@ def write_json(path: Path, payload: object) -> None:
         json.dumps(json_safe(payload), indent=2, allow_nan=False) + "\n",
         encoding="utf-8",
     )
+
+
+if __name__ == "__main__":
+    cases = refresh_from_frozen()
+    summary = ", ".join(f"{item['story']}:{item['id']}" for item in cases)
+    print(f"wrote {len(cases)} demo cases ({summary})")
