@@ -71,7 +71,7 @@ export default async function LabPage() {
               <HeroMetric label="90% band coverage" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="nominal 90%" />
             </dl>
             <p className="mt-6 max-w-[62ch] text-sm leading-7 text-stone-600">
-              Average error falls {improvement.toFixed(1)}%, but the selected ensemble ties persistence on the challenge loss. Random-event performance looks stronger than mission-held-out performance, especially on rare high-risk events.
+              Average error falls {improvement.toFixed(1)}%, but the selected ensemble ties persistence on the challenge loss. The MAE gain is continuous-risk accuracy, not a better high-risk decision score. On missions never seen in training, high-risk MAE is {(metrics.missionHoldout?.model.mae_high_risk ?? Number.NaN).toFixed(1)}.
             </p>
           </div>
           <aside className="rounded-lg bg-[#eeeae0] p-6 text-sm leading-6 text-stone-600">
@@ -82,7 +82,7 @@ export default async function LabPage() {
         </section>
 
         {horizons.length > 0 ? (
-          <Section title="Waiting helps persistence more than it helps PRISM" copy="Learned forecasting has the largest advantage when information is sparse. As the cutoff moves toward closest approach, the latest report becomes a stronger baseline and the model’s edge shrinks.">
+          <Section title="The value of learned forecasting is highest when information is sparse" copy="Waiting helps persistence more than it helps PRISM. As the cutoff moves toward closest approach, the latest report becomes a stronger baseline and the model’s edge shrinks.">
             <div className="overflow-x-auto rounded-lg border hairline bg-panel">
               <table className="w-full min-w-[620px] text-left text-sm">
                 <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">Horizon</th><th>Test events</th><th>XGBoost MAE</th><th>Persistence MAE</th><th>Improvement</th></tr></thead>
@@ -103,7 +103,7 @@ export default async function LabPage() {
         ) : null}
 
         {Object.keys(families).length > 0 ? (
-          <Section title="Does history beat the latest snapshot?" copy="History features encode recent change, slope, range, variability, and observation-count evolution across the pre-cutoff CDM sequence. Covariance trends add little after those summaries are present.">
+          <Section title="Does history beat the latest snapshot?" copy="The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency. Covariance trends add little after those summaries are present.">
             <div className="overflow-x-auto rounded-lg border hairline bg-panel">
               <table className="w-full min-w-[620px] text-left text-sm">
                 <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">Feature set</th><th>Features</th><th>MAE</th><th>ESA loss</th><th>Δ MAE from previous</th></tr></thead>
@@ -133,7 +133,7 @@ export default async function LabPage() {
           </Section>
         ) : null}
 
-        <Section title="When should the model refuse?" copy={metrics.abstentionRule ?? "PRISM abstains when the 90% bootstrap band crosses log10(Pc) ≥ −6, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units. The rule was locked before looking at test outcomes."}>
+        <Section title="When should the model refuse?" copy="The −6 class follows ESA. The persistence guard and 1.25 disagreement threshold were fixed before test evaluation. False reassurance is an accepted forecast below −6 while the final reported value is ≥ −6.">
           <div className="grid gap-6 lg:grid-cols-3">
             <HeroBox label="Coverage" value={coverage === null ? "—" : `${(coverage * 100).toFixed(1)}%`} note={coverage === null ? "events that receive a firm forecast" : `${((1 - coverage) * 100).toFixed(1)}% sent to review`} />
             <HeroBox label="Accepted MAE" value={maeAccepted === null ? "—" : maeAccepted.toFixed(3)} note={`all-event MAE ${metrics.ensemble.mae.toFixed(3)}`} />
@@ -148,7 +148,7 @@ export default async function LabPage() {
               <Coverage label="90% band" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
             </div>
           </Section>
-          <Section title="Mission identity adds little" copy={metrics.missionIdComparison?.why ?? "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from production."}>
+          <Section title="Mission identity adds little" copy={metrics.missionIdComparison?.why ?? "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from the deployed exhibit."}>
             <div className="panel p-6">
               <Line label="Without mission ID" value={metrics.missionIdComparison?.withoutMissionId.mae?.toFixed(3) ?? "—"} />
               <Line label="With mission ID" value={metrics.missionIdComparison?.withMissionId.mae?.toFixed(3) ?? "—"} />
@@ -182,7 +182,7 @@ export default async function LabPage() {
         ) : null}
 
         {shapNames.length > 0 ? (
-          <Section title="Explanations on correct vs incorrect cases" copy="When the single XGBoost model is wrong by two or more log units, tracking-completeness features rise in mean |SHAP| relative to accurate cases. These are model explanations, not physical causes.">
+          <Section title="Explanations on correct vs incorrect cases" copy="Tracking-completeness features have higher mean |SHAP| among errors of two or more log units than among accurate cases. That is an association in model attribution, not a physical cause.">
             <div className="panel space-y-5 p-6">
               {shapNames.map((name) => {
                 const correct = shapCorrect?.groups.find((item) => item.group === name)?.meanAbsShap ?? 0;
@@ -241,7 +241,7 @@ export default async function LabPage() {
             <h2 className="display mt-2 text-3xl">The high-risk estimate is scarce</h2>
             <p className="mt-5 text-sm leading-7 text-stone-600">
               Only {nHighRiskEligible ?? 66} eligible events meet the ESA challenge class log10(Pc) ≥ −6, including {nHighRiskTest ?? 9} in the frozen test split.
-              That line is a competition scoring class, not an ISRO operational threshold. Treat the calibrated estimate of high-risk-event probability as a fit based on a very small positive class, not an operational warning system.
+              That line is a competition scoring class, not an ISRO operational threshold. Because only nine test events are positive, this probability estimate should be treated as a scarce-label fit, not an operational warning system.
               PRISM forecasts the later reported `log10(Pc)`; it does not calculate collision probability from first principles or recommend a manoeuvre.
             </p>
           </div>

@@ -109,6 +109,7 @@ export type MetricsFile = {
   }>;
   abstention?: {
     rule?: string;
+    falseReassuranceDefinition?: string;
     operatingPoint?: Record<string, number | Record<string, number>>;
     coverageCurve?: Array<Record<string, number>>;
   };
