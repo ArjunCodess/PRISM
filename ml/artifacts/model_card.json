@@ -12,7 +12,7 @@
   "researchQuestion": "Do pre-T\u221248 conjunction histories contain enough predictive signal to improve forecasts of later reported log10(Pc) over persistence?",
   "highRiskThresholdLog10": -6.0,
   "highRiskThresholdNote": "ESA challenge class log10(Pc) \u2265 \u22126, not an operational threshold",
-  "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units.",
+  "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
   "nHighRiskEligible": 66,
   "nHighRiskTest": 9,
   "metrics": {
@@ -275,5 +275,6 @@
     },
     "meanHighRiskProbabilityAccepted": 0.013601935182199843
   },
-  "beatsPersistence": false
+  "beatsPersistence": false,
+  "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126."
 }

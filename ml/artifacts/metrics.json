@@ -3,7 +3,7 @@
   "researchQuestion": "Do pre-T\u221248 conjunction histories contain enough predictive signal to improve forecasts of later reported log10(Pc) over persistence?",
   "dataSource": "ESA Collision Avoidance Challenge training archive",
   "dataSourceKind": "real",
-  "selectedPolicy": "bootstrap xgboost median with a persistence guard at the ESA class; the guard and abstention thresholds were locked before test evaluation",
+  "selectedPolicy": "bootstrap xgboost median with a persistence guard at the ESA \u22126 class; the \u22126 class follows the ESA challenge definition, while the guard and 1.25 disagreement threshold were fixed before test evaluation",
   "sourceRows": 162634,
   "eligibleRows": 138462,
   "nEvents": 8293,
@@ -356,7 +356,7 @@
     }
   },
   "missionIdComparison": {
-    "why": "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from production.",
+    "why": "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from the deployed exhibit.",
     "withoutMissionId": {
       "mae": 2.837923999301585,
       "rmse": 5.023260298696936,
@@ -452,7 +452,8 @@
     },
     "persistenceMae": 5.0795360010082655,
     "historyDeltaMae": 0.11860522181127875,
-    "historyHelps": true
+    "historyHelps": true,
+    "historyBlock": "The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency."
   },
   "horizons": [
     {
@@ -581,7 +582,7 @@
     }
   ],
   "abstention": {
-    "rule": "Abstain if the 90% bootstrap band crosses log10(Pc) \u2265 \u22126, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. These thresholds were locked before test evaluation.",
+    "rule": "Abstain if the 90% bootstrap band crosses log10(Pc) \u2265 \u22126, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
     "operatingPoint": {
       "n": 1659,
       "nAccepted": 1298,
@@ -620,7 +621,8 @@
         "mse_hr": 0.08014836623010997,
         "f2": 0.0
       },
-      "meanHighRiskProbabilityAccepted": 0.013601935182199843
+      "meanHighRiskProbabilityAccepted": 0.013601935182199843,
+      "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126."
     },
     "coverageCurve": [
       {
@@ -766,7 +768,8 @@
         "falseReassurance": 2,
         "operatingPoint": 0.0
       }
-    ]
+    ],
+    "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126."
   },
   "shapContrast": {
     "correct": {
@@ -1125,5 +1128,10 @@
       }
     ]
   },
-  "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The class, guard, and disagreement threshold were locked before evaluating the test split."
+  "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
+  "definitions": {
+    "mae": "Mean absolute error in log10(Pc) units on the final reported risk.",
+    "esaLoss": "ESA-style loss is high-risk MSE divided by F2 (F-beta with \u03b2=2), so recall of the log10(Pc) \u2265 \u22126 class is weighted more than precision.",
+    "falseReassurance": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126."
+  }
 }
