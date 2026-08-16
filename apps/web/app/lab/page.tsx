@@ -4,6 +4,7 @@ import { Shell } from "@/components/shell";
 import { loadMetrics } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Model laboratory" };
+export const dynamic = "force-dynamic";
 
 const FAMILY_LABEL: Record<string, string> = {
   snapshot: "Latest snapshot only",
