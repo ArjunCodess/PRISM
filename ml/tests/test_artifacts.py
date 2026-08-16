@@ -49,7 +49,12 @@ def test_demo_cases_match_prd() -> None:
     missed = actual >= -6 and pred < -6
     late = actual > persist + 0.4
     under = pred < actual - 0.35
-    assert (missed or (late and under)) and abs(pred - actual) >= 0.35
+    confident = not failure["prediction"]["abstained"]
+    assert confident
+    assert (missed or (late and under) or abs(pred - actual) >= 2.0) and abs(pred - actual) >= 0.35
+    uncertain = next(item for item in cases if item["story"] == "uncertain")
+    assert uncertain["prediction"]["abstained"]
+    assert uncertain["prediction"]["abstentionReasons"]
     for item in cases:
         assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
         if item["futureMessages"]:

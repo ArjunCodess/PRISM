@@ -40,7 +40,8 @@ def test_no_post_cutoff_in_history(
     events, _features = events_and_features
     for event in events:
         history: pd.DataFrame = event["history"]  # type: ignore[assignment]
-        assert (history["time_to_tca"] >= CUTOFF_DAYS - 1e-9).all()
+        cutoff = float(event.get("cutoff_days", CUTOFF_DAYS))
+        assert (history["time_to_tca"] >= cutoff - 1e-9).all()
 
 
 def test_target_uses_later_cdm(
