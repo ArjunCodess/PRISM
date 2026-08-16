@@ -14,7 +14,9 @@ export function factorDirection(direction: string): string {
   return direction === "higher" ? "more worrying" : "calmer";
 }
 
-export function fallbackBriefing(item: DemoCase): string {
+export function fallbackBriefing(
+  item: Pick<DemoCase, "baselineRiskLog10" | "prediction">,
+): string {
   const today = chanceWords(item.baselineRiskLog10);
   const guess = chanceWords(item.prediction.predictedFinalRiskLog10);
   if (item.prediction.abstained) {

@@ -10,6 +10,7 @@ export type Prediction = {
   predictedFinalRiskLog10: number;
   predictedFinalPc: number;
   interval90Log10: [number, number] | number[];
+  interval50Log10?: [number, number] | number[];
   configuredHighRiskProbability: number;
   highRiskThresholdLog10: number;
   riskBand: string;
@@ -47,10 +48,39 @@ export type DemoCase = {
 };
 
 export type MetricsFile = {
+  modelVersion?: string;
+  nEvents?: number;
+  dataSource?: string;
+  dataSourceKind?: "real" | "synthetic" | string;
+  sourceRows?: number;
+  eligibleRows?: number;
   ensemble: Record<string, number>;
   persistence: Record<string, number>;
+  median?: Record<string, number>;
+  ridge?: Record<string, number>;
+  xgboost?: Record<string, number>;
   improvement: Record<string, number>;
   warning: Record<string, number>;
+  uncertainty?: {
+    method: string;
+    interval50Coverage: number;
+    interval90Coverage: number;
+    meanInterval50Width: number;
+    meanInterval90Width: number;
+    nModels: number;
+  };
+  missionIdComparison?: {
+    withoutMissionId: Record<string, number>;
+    withMissionId: Record<string, number>;
+  };
+  missionHoldout?: {
+    heldOutMissions: number[];
+    trainEvents: number;
+    testEvents: number;
+    model: Record<string, number>;
+    persistence: Record<string, number>;
+  };
+  robustness?: Record<string, Record<string, Record<string, number>>>;
   splits: Record<string, number>;
   calibration?: Array<{ mid: number; predicted: number; observed: number; n: number }>;
   ablation?: Record<string, number>;

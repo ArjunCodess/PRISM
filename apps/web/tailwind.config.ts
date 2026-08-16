@@ -5,15 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#070b14",
-        panel: "#10182a",
-        cyan: "#3de2ff",
-        amber: "#f5c16c",
-        alert: "#ff5d6c",
+        ink: "#242521",
+        panel: "#fffefd",
+        cyan: "#356b67",
+        amber: "#9a682a",
+        alert: "#a44e4e",
+        safe: "#47725a",
       },
       fontFamily: {
-        sans: ["IBM Plex Sans", "Segoe UI", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+        sans: ["Aptos", "Segoe UI Variable", "Segoe UI", "sans-serif"],
+        serif: ["Georgia", "Times New Roman", "serif"],
+        mono: ["Cascadia Mono", "Consolas", "ui-monospace", "monospace"],
       },
     },
   },

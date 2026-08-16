@@ -3,21 +3,78 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --paper: #f5f3ee;
+  --panel: #fffefd;
+  --ink: #242521;
+  --muted: #72746c;
+  --line: #dddcd5;
+  --accent: #356b67;
+  --ochre: #9a682a;
+  --alert: #a44e4e;
+  --safe: #47725a;
 }
 
-html,
+* { box-sizing: border-box; }
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: var(--paper);
+}
+
 body {
   min-height: 100%;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
-body {
-  background:
-    radial-gradient(circle at top, rgba(61, 226, 255, 0.08), transparent 34%),
-    #070b14;
-  color: #e8eefc;
+::selection { color: white; background: var(--accent); }
+a, button { -webkit-tap-highlight-color: transparent; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+button { font: inherit; }
+
+.display {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .telemetry {
+  font-family: "Cascadia Mono", Consolas, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.hairline { border-color: var(--line); }
+.interactive { transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease; }
+.interactive:active { opacity: 0.78; }
+.scanline { position: relative; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+@media print {
+  body { background: white; }
+  .no-print { display: none !important; }
+  .panel { color: #111; background: white; box-shadow: none; }
 }
