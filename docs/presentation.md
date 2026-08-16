@@ -1,81 +1,143 @@
-# PRISM presentation scripts
+# PRISM presentation notes
 
-Use the abstention case for the 90-second path and the laboratory for longer questions. Keep the language exactly as written around thresholds and results: `−6` is the ESA challenge class, the ranges are model spread, and the model lowers MAE but ties persistence on ESA loss.
+Print this. Keep it next to the keyboard. Numbers stay the same even if your brain does not.
 
-## 90-second script
+## If you blank
 
-“Collision-risk estimates can change as new tracking observations arrive, but an operator still needs time to prepare. PRISM asks a narrow question: do the conjunction messages available 48 hours before closest approach contain enough information to forecast the final reported `log10(Pc)` better than carrying the latest value forward?
+Say this and then open the abstention case:
 
-These five cases come from the real ESA Collision Avoidance Challenge archive. I’ll open the abstention case. The page is frozen before T−48. It shows the current log collision risk, the forecast of the final reported value, the calibrated estimate of high-risk-event probability based on a very small positive class, and the spread across ten bootstrap models. PRISM abstains when that spread crosses the ESA class `log10(Pc) ≥ −6`, when a critical field is missing, or when the models disagree by more than 1.25 log units—so it asks for human review.
+"Two objects might get close. The reported collision chance keeps changing as new tracking data arrives. Waiting gives a better number, and it also eats planning time. PRISM stops the clock 48 hours early and asks: can the history of those reports beat just copying today's value? On average, yes. On the ESA high-risk score, it ties, because if today's report is already at -6 or worse, PRISM copies it on purpose. The ranges on screen are model spread. They are not a 90 percent promise. This is a school research exhibit. A person still has to review it."
 
-The explanation shows which cutoff-safe features moved this model’s result. These are SHAP contributions, so they explain model behavior rather than physical causation. The future is still hidden. When I reveal it, later messages and the final reported value appear.
+Then click Reveal. Breathe. Keep going.
 
-In the laboratory, the ensemble lowers held-out mean absolute error from 5.080 to 3.052, but it ties persistence on ESA-style high-risk loss. Nominal 90% bootstrap bands cover only 48.6% of outcomes, so ensemble spread is not calibrated uncertainty. I therefore do not claim that AI wins every required metric. PRISM is a research prototype for offline, explainable forecasting; it is not flight software, and it never commands a manoeuvre.”
+## What this project actually is
 
-## 3-minute script
+PRISM is Predictive Risk Intelligence for Space Monitoring. Fancy name. Simple job.
 
-“Spacecraft conjunction alerts describe a possible close approach between two objects. The reported collision probability can rise or fall as new observations change the projected geometry and covariance. Waiting gives better information, but less time to plan. PRISM forecasts how serious an event’s last reported risk will look while stopping the clock two days early.
+It forecasts the later reported `log10(Pc)` from messages you would have had 48 hours before closest approach. That later number is a report from the conjunction process. It is not the true physical probability of a crash, and PRISM does not compute orbits from first principles.
 
-The data are the public ESA Collision Avoidance Challenge archive from 2015–2019. The original training ZIP contains 162,634 CDM rows across 13,154 events. PRISM keeps 8,293 events that have both a usable pre-T−48 history and a later labeled outcome: 162,634 rows → event histories → 8,293 eligible events → 1,659 test events. The official challenge test CSV has no final labels, so I use it to verify input compatibility, not to claim model quality.
+The baseline is persistence. Persistence means: take the latest pre-cutoff risk and copy it forward. If a learned model cannot beat that, it is not adding much.
 
-The leakage rule is simple and tested: every feature message has `time_to_tca ≥ 2 days`; the target comes from a later final update; and train, validation, calibration, and test contain different event IDs. All model and policy choices are frozen before the untouched test evaluation. The feature table summarizes the latest safe snapshot plus temporal transforms of those same snapshot quantities: changes in reported risk, miss distance, observations, and encounter geometry.
+Data comes from the public ESA Collision Avoidance Challenge archive (2015 to 2019). Real CDMs. Anonymized events. 162,634 rows. 13,154 events. After the cutoff rule, 8,293 events are eligible. The frozen test split has 1,659 events.
 
-The learned model is XGBoost on event-level summaries rather than a sequence model, so temporal signals can be inspected directly and the exhibit stays reproducible offline. I compare it with a constant median, Ridge, and the strongest simple baseline: persistence, which copies the latest pre-T−48 risk forward. Ten bootstrap XGBoost models provide a point forecast and model spread. A separate calibration split maps the forecast to the probability of the ESA challenge high-risk class, `log10(Pc) ≥ −6`. That line is a competition scoring class, not an ISRO operational rule. Only 66 eligible events meet it, including nine in the test split.
+T-48 exists because the ESA challenge test file only has messages with `time_to_tca` of at least 2 days. Hence we freeze there. We also report T-72, T-24, and T-12 so you can see what waiting does.
 
-[Open the abstention case.]
+The high-risk line `log10(Pc) >= -6` is the ESA scoring class. It is not an ISRO operations rule. Only 66 eligible events meet it. Nine of those sit in the test split. Therefore that probability meter is a scarce-label estimate. Treat it that way when you talk.
 
-This page contains only cutoff-safe messages. The forecast is shown next to persistence, the 50% and 90% model-spread bands, geometry, observations, and a SHAP explanation. Because the wide band crosses the configured class, the system abstains and says ‘Review required.’ I can compare the learned forecast with persistence in one click, then reveal the final update. Reveal is the only route that loads post-T−48 truth.
+## How the pipeline works
 
-[Open Model lab.]
+1. Keep only messages at or before the cutoff.
+2. The later update is the label. It never goes into features.
+3. Train, validation, calibration, and test use different event IDs. Validation is not reused to pick the test set.
+4. Each event becomes one row of inspectable summaries: latest snapshot, plus slopes, changes, ranges, and observation-count history of those same snapshot fields.
+5. Fit XGBoost. Also fit median, Ridge, and persistence.
+6. Take the median of ten bootstrap XGBoost models. If the current report is already at or above -6, copy that report. That is the persistence guard.
+7. A separate calibration split maps the forecast to "chance this later report is high-risk."
+8. Abstain when the 90 percent bootstrap band crosses -6, a critical field is missing, or the models disagree by more than 1.25 log units.
 
-On 1,659 untouched test events, the selected guarded ensemble reduces MAE from 5.080 to 3.052, or 39.9%. Both it and persistence score 0.167 on ESA-style loss—high-risk MSE divided by F2 with β=2—and F2 is 0.361 for both. That exact tie is the persistence guard: once the current report is already at or above `−6`, PRISM copies it, so it matches persistence on the region ESA-style loss scores. The MAE gain is continuous-risk accuracy and does not translate into fewer errors under the challenge’s risk-weighted objective. The value of learned forecasting is highest when information is sparse: the learned advantage is largest at T−72 and nearly gone at T−12. The model-spread bands also under-cover: the nominal 90% band contains only 48.6% of outcomes. The interface calls it model spread rather than a calibrated interval.
+You can say "XGBoost on named history features" if someone asks why it is not a transformer. 8,293 events. Lots of missing cells. We wanted to read the reasons. A sequence model can wait until it wins on the same frozen split.
 
-The failure gallery keeps the worst misses visible, and a four-mission holdout shows that the rare high-risk tail remains difficult. The honest conclusion is that learned trends improve average error, while persistence remains essential for high-risk safety. PRISM is a research exhibit, not flight software, and every recommendation remains a request for human review.”
+## The result you should lead with
 
-## 7-minute script
+Held-out test, 1,659 events. MAE is in `log10(Pc)` units.
 
-“Space surveillance systems repeatedly update close-approach estimates as radar and optical observations improve the two objects’ orbits. A small miss distance is not enough to infer collision probability because the uncertainty region can be large, shifted, or shrinking. Operators need to read projected separation, covariance, and probability together. They also need time: late estimates are more accurate, but leave less time for analysis and contingency planning.
+- Persistence MAE: 5.080
+- PRISM MAE: 3.052 (about 40 percent lower)
+- ESA-style loss: 0.167 for both
+- F2: 0.361 for both
 
-PRISM addresses the forecasting problem posed by ESA’s Collision Avoidance Challenge. For each event, it predicts the final reported `log10(Pc)` using only messages available at least 48 hours before closest approach. It also returns a configured high-risk warning probability, model spread, an abstention state, and a SHAP explanation. It forecasts a later reported risk; it does not recompute collision probability from orbital mechanics and does not identify live objects.
+ESA-style loss is high-risk MSE divided by F2. F2 is F-beta with beta 2, so missing a high-risk event hurts more than a false alarm.
 
-The source is the real ESA training archive: 162,634 rows, 13,154 anonymized events, and 103 columns. After applying the local evaluation contract, 8,293 events remain. The official test input is cutoff-safe but unlabeled, so it verifies schema compatibility only. Every local download is tied to its ESA URL, byte count, timestamp, and SHA-256.
+The exact tie is not a bug. The guard copies today's report once it is already at or above -6. That is exactly the region ESA-style loss cares about. Therefore PRISM matches persistence there on purpose. The MAE win is mostly the boring middle of the risk range.
 
-Leakage prevention drives the pipeline. First, feature histories include only rows where `time_to_tca ≥ 2`. Second, the final target is never an engineered input. Third, event IDs are disjoint across 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Automated tests enforce those rules. A stricter robustness experiment also holds out all events from four missions.
+One sentence that carries the whole talk:
 
-One event row contains the last safe risk report, miss distance, relative speed, radial/tangential/normal state and covariance terms, observation counts, missingness, update recency, and multi-message slopes and deltas. Raw covariance determinants are converted to log-domain trends to avoid numerical overflow. Mission identity is excluded from the deployed exhibit because adding it provides negligible improvement (2.838 → 2.835) and does not materially change performance.
+"The model has useful signal beyond persistence, especially when the forecast is early, but that signal does not automatically become better high-risk decisions or honest uncertainty."
 
-The baselines are a training-set median, Ridge regression, and persistence. Persistence matters because the latest report already carries strong physical processing; a learned model must add value beyond copying it. The primary regressor is seed-fixed XGBoost. The exhibit’s selected policy takes the median of ten bootstrapped XGBoost models, but preserves the current reported risk once that report is already at or above the `−6` challenge class. That conservative guard prevents the learned correction from erasing an existing high-risk signal.
+Say that. Then show the horizon table.
 
-A separate calibration partition fits the high-risk-event probability map without seeing test labels. The bootstrap distribution supplies 50% and 90% spread bands. Their empirical coverage is only 26.4% and 48.6%, so they are explicitly labeled model spread, not statistical confidence intervals. That is a headline finding: ensemble disagreement is not equivalent to calibrated uncertainty. PRISM abstains when the outer band crosses the class threshold, when critical fields are missing, or when model disagreement exceeds 1.25 log-risk units.
+## Horizon table (put this on a slide)
 
-[Open the uncertain case.]
+Waiting helps persistence more than it helps PRISM. Learned forecasting is most useful when information is sparse.
 
-The initial payload contains no future messages or final outcome. The status strip puts current risk, forecast of the final reported `log10(Pc)`, both spread bands, and the calibrated estimate of high-risk-event probability together. That estimate is based on a very small positive class. The chart marks T−48 and hides the future region. The explanation ranks signed SHAP contributions and then renders deterministic plain language from those verified directions. SHAP tells us why this fitted model moved; it does not prove that a feature physically caused the encounter risk.
+| Horizon | XGBoost MAE | Persistence MAE |
+| --- | ---: | ---: |
+| T-72 | 3.241 | 7.748 |
+| T-48 | 2.838 | 5.080 |
+| T-24 | 2.097 | 2.634 |
+| T-12 | 1.390 | 1.444 |
 
-The geometry panel keeps miss distance next to uncertainty and observation count. The forecast/persistence control supports the scientific comparison. Reveal calls a dedicated route and releases the frozen later messages and final reported outcome. If the Python API is stopped, the complete curated flow still runs from versioned local JSON, which makes the exhibit independent of venue internet.
+At T-72 the gap is huge. At T-12 it is basically gone. That is the finding people remember.
 
-[Open the laboratory.]
+## Other numbers worth having in a pocket
 
-On the untouched 1,659-event test split, persistence MAE is 5.080 and the selected ensemble MAE is 3.052, a 39.9% reduction. Median absolute error is 0.474 and 50.8% of events fall within half a log unit. The difficult result is the high-risk tail: both selected ensemble and persistence score 0.167 on the ESA-style loss with F2 of 0.361. The acceptance contract requires lower MAE and lower ESA loss, so I keep the AI-superiority claim disabled.
+- History vs snapshot (single XGBoost): 2.960 snapshot, 2.842 after history, 2.838 after covariance trends. History is temporal transforms of snapshot fields, so that bump is evolution, not random extra columns.
+- Abstention: 78.2 percent coverage, 21.8 percent sent to review, accepted MAE 1.920. All nine test high-risk events are flagged or sent to review.
+- False reassurance: an accepted forecast below -6 while the final report is at or above -6. Count is zero.
+- Nominal 90 percent bootstrap band covers 48.6 percent of outcomes. 50 percent band covers 26.4 percent. Hence we call it model spread.
+- Mission holdout high-risk MAE: 18.1, on one held-out high-risk event. Random event splits do not prove the model works on a new spacecraft family.
+- `mission_id` changes MAE from 2.838 to 2.835. We left it out of the exhibit.
+- Failures: over-prediction 362, under-prediction 210, sparse history 62, collapse to the -30 floor 40, late high-risk jumps 2.
+- When the single XGBoost is off by two or more log units, tracking-completeness features have higher mean |SHAP| than on accurate cases. That is association in the explanation, not a physics proof.
 
-History provides a measurable gain, while covariance trends add little once snapshot and history features are present: snapshot-only MAE 2.960, snapshot plus history 2.842, then 2.838. The value of learned forecasting is highest when information is sparse: the learned advantage is largest at T−72 and nearly gone at T−12. Abstention is selective prediction: 78.2% coverage, 21.8% sent to review, accepted MAE 1.920. All nine test high-risk events are either flagged by the prediction or sent to review. False reassurance means an accepted forecast below −6 while the final reported value is ≥ −6; there are none. The −6 class follows ESA. The persistence guard and 1.25 disagreement threshold were fixed before test evaluation.
+## What to click
 
-The raw XGBoost model has lower aggregate MAE than the selected ensemble, but it misses the configured high-risk class and produces a very large ESA loss. The persistence guard intentionally trades some average accuracy for the same high-risk behavior as the baseline. That tradeoff is visible rather than hidden.
+Use the abstention case for the short path. Use the lab if they want receipts.
 
-Robustness slices report performance by object type, message count, miss distance, radial uncertainty, and snapshot age. Events with six or more messages have MAE 2.742, while sparse histories are worse. The four-mission holdout confirms that the model still generalizes poorly on rare high-risk outcomes: high-risk MAE 18.1 on one held-out high-risk event. Failure tables show the largest under-predictions, over-predictions, missed high-risk events, and false escalations. Tracking-completeness features have higher mean |SHAP| among errors of two or more log units than among accurate cases.
+### 90 seconds
 
-The defensible finding is that the model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions or calibrated uncertainty. PRISM remains a research prototype for offline, explainable conjunction-risk forecasting. Not flight software. It never recommends firing thrusters, and any operational response requires qualified human judgment.”
+Open the abstention case.
 
-## Likely questions
+"These six cases are real ESA events: two low, one that needs a person, three high. The page is frozen before T-48. You see today's reported risk, the live forecast of the later report, the high-risk estimate, and the spread across ten bootstrap models. The band crosses -6, so PRISM says review required. SHAP tells us why this fitted model moved. It does not tell us what physically caused the encounter. The future is hidden on purpose."
 
-**Why XGBoost instead of a transformer?** The research claim is about whether inspectable historical summaries contain signal beyond the latest snapshot. The dataset is structured tabular history, contains extensive missingness, and has only 8,293 eligible examples. XGBoost keeps those features named and the exhibit reproducible offline. A sequence model should replace it only after winning on the same frozen splits.
+Click Reveal.
 
-**Did PRISM beat the ESA competition winners?** No. The official test labels remain hidden, so PRISM reports only its frozen local event split and does not compare itself with the 2019 leaderboard.
+"Later messages and the final reported value show up now. Reveal is the only way to load that truth."
 
-**Why is the MAE numerically large?** Many events jump between the dataset floor of `−30` and a finite final risk. A few such errors add tens of log units, which strongly affects the mean; median absolute error is therefore shown beside MAE.
+If there is time: "In the lab, MAE drops from 5.080 to 3.052. ESA-style loss ties at 0.167 because of the guard. The 90 percent band only covers 48.6 percent of outcomes."
 
-**Is 48.6% coverage acceptable for a 90% interval?** No. That result proves the raw bootstrap spread is under-calibrated. The UI labels it model spread and uses it for abstention, while formal conformal calibration remains future work.
+### 3 minutes
 
-**Why keep persistence if the ensemble lowers MAE?** Persistence preserves existing high-risk reports better and ties the selected ensemble on ESA loss. Removing it would make the exhibit look better on average while weakening the safety-relevant tail.
+Add the data path (162,634 to 8,293 to 1,659), the leakage rule, persistence as the baseline, and the horizon story. Then the lab. Then the mission holdout: 18.1. Then sit down.
 
-**What still requires the presentation laptop?** A Wi-Fi-off rehearsal, projector check, measured start/load/inference timing on that exact machine, and recording the 90-second backup video.
+### 7 minutes
+
+Walk the same path slower. Open the lab tables in this order:
+
+1. Horizon. "Useful early. Persistence catches up late."
+2. History ablation. "Evolution of the same fields. Covariance trends barely help after that."
+3. Abstention. "78.2 percent coverage. Define false reassurance. Zero of those."
+4. Spread coverage. "48.6 percent is badly off. We did not relabel it as confidence."
+5. Failures and SHAP contrast.
+
+Close with the one-sentence finding. Credit ESA, ISRO NETRA, NASA CARA, and CCSDS as context. They did not endorse this project. You built it at City Montessori School, Kanpur Road Campus.
+
+## How the live website works
+
+The six cases are curated real events, not made-up rows. After deploy, the site should set `NEXT_PUBLIC_API_URL` and talk to FastAPI.
+
+- The queue and the lab load cases and metrics from the API.
+- Opening a case runs `POST /v1/risk/predict` on the cutoff-safe messages. That is a live model call.
+- Reveal still hides the later messages until you ask. That part is a research control, not a fake forecast.
+
+If the API is down, the production site should fail in the open. Local Next without the env file can still read the frozen JSON so you can rehearse offline.
+
+## Answers when they interrupt you
+
+**Did you beat the 2019 ESA winners?** We cannot say. Official test labels are still hidden. We report our own frozen split.
+
+**Why is MAE so big?** Some events jump between the dataset floor of -30 and a finite risk. A few of those wreck the mean. Median absolute error is 0.474. That is why both numbers exist.
+
+**Is 48.6 percent okay for a 90 percent interval?** No. That is the point. We labeled it model spread and used it to abstain.
+
+**Why keep persistence?** It protects the high-risk tail. Dropping the guard would make average error look nicer and would weaken the part ESA actually scores.
+
+**Why XGBoost?** Named features. Missing values. 8,293 rows. We wanted explanations we can read.
+
+**Does this fly a satellite?** It is a research exhibit. A qualified person has to review anything that looks like a decision.
+
+**Would it work on a mission you have never seen?** We tried holding out four missions. The rare high-risk tail was weak. High-risk MAE 18.1 on one event. That is an honest miss.
+
+## Rehearsal still on you
+
+Wi-Fi off. Projector at 1920x1080. Time a cold start. Time a case load. Time one live predict. Record a 90-second backup video on the presentation laptop. The repo cannot do that part for you.
