@@ -15,13 +15,15 @@ SRC = Path(__file__).resolve().parent
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from abstention import abstain_mask  # noqa: E402
 from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
 from constants import (  # noqa: E402
+    ABSTENTION_RULE,
     HIGH_RISK_THRESHOLD,
     MODEL_VERSION,
     RANDOM_STATE,
-    SNAPSHOT_COLUMNS,
+    RESEARCH_QUESTION,
     STORY_COPY,
 )
 from evaluate import (  # noqa: E402
@@ -30,6 +32,13 @@ from evaluate import (  # noqa: E402
     persistence_improvement,
     regression_metrics,
     reliability_bins,
+)
+from experiments import (  # noqa: E402
+    abstention_study,
+    cluster_test_failures,
+    forecast_horizon_table,
+    historical_ablation,
+    shap_outcome_contrast,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import case_briefing, predict_event, story_fit, write_json  # noqa: E402
@@ -235,12 +244,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     holdout_pred = predict_model(holdout_model, holdout_test)
     holdout_persist = persistence_predict(holdout_test)
 
-    snapshot_cols = [
-        col for col in SNAPSHOT_COLUMNS if col in train.columns and col != "c_object_type"
-    ]
-    snap_model = fit_xgboost(train[snapshot_cols + ["y", "event_id", "c_object_type"]])
-    snap_pred = predict_model(snap_model, test)
-
+    ablation = historical_ablation(train, test)
     classifier = fit_warning_classifier(train)
     joblib.dump(classifier, artifacts / "warning_classifier.joblib")
     raw_cal_scores = predict_model(booster, calibration)
@@ -252,15 +256,51 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     cal_labels = (calibration["y"].to_numpy() >= HIGH_RISK_THRESHOLD).astype(int)
     calibrator = fit_isotonic(cal_scores, cal_labels)
     test_proba = calibrator.predict_proba(ens_pred)
+    test_abstained, _, _ = abstain_mask(
+        ens_matrix,
+        test["risk"].to_numpy(dtype=float),
+        test["miss_distance"].to_numpy(dtype=float),
+    )
+    n_high_eligible = int((features["y"] >= HIGH_RISK_THRESHOLD).sum())
+    n_high_test = int((test["y"] >= HIGH_RISK_THRESHOLD).sum())
+    warning_metrics = classification_metrics(test["y"].to_numpy(), test_proba)
+    warning_metrics.update(
+        {
+            "nHighRiskEligible": n_high_eligible,
+            "nHighRiskTest": n_high_test,
+            "thresholdNote": (
+                "ESA challenge class log10(Pc) ≥ −6, not an operational threshold"
+            ),
+        }
+    )
+    horizon_primary = {
+        "cutoffHours": 48,
+        "eligibleEvents": len(features),
+        "trainEvents": len(train),
+        "testEvents": len(test),
+        "overlapTrain": len(train),
+        "overlapTest": len(test),
+        "model": regression_metrics(test["y"].to_numpy(), model_pred),
+        "persistence": regression_metrics(test["y"].to_numpy(), persist_test),
+        "maeImprovement": float(
+            regression_metrics(test["y"].to_numpy(), persist_test)["mae"]
+            - regression_metrics(test["y"].to_numpy(), model_pred)["mae"]
+        ),
+    }
 
     metrics = {
         "modelVersion": MODEL_VERSION,
+        "researchQuestion": RESEARCH_QUESTION,
         "dataSource": data_source,
         "dataSourceKind": source,
-        "selectedPolicy": "model correction with persistence guard at log-risk -6",
+        "selectedPolicy": (
+            "bootstrap xgboost median with a persistence guard at the ESA class; "
+            "the guard and abstention thresholds were locked before test evaluation"
+        ),
         "sourceRows": source_rows,
         "eligibleRows": len(frame),
         "nEvents": len(features),
+        "nHighRiskEligible": n_high_eligible,
         "splits": {
             "train": len(splits.train_ids),
             "validation": len(splits.validation_ids),
@@ -273,10 +313,14 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "xgboost": regression_metrics(test["y"].to_numpy(), model_pred),
         "ensemble": regression_metrics(test["y"].to_numpy(), ens_pred),
         "improvement": persistence_improvement(test["y"].to_numpy(), ens_pred, persist_test),
-        "warning": classification_metrics(test["y"].to_numpy(), test_proba),
+        "warning": warning_metrics,
         "calibration": reliability_bins(test["y"].to_numpy(), test_proba),
         "uncertainty": {
             "method": "spread across 10 bootstrap xgboost models",
+            "interpretation": (
+                "Bootstrap disagreement is ensemble spread, not calibrated "
+                "predictive uncertainty."
+            ),
             "interval50Coverage": float(
                 np.mean(
                     (test["y"].to_numpy() >= interval_50[0])
@@ -295,21 +339,44 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         },
         "robustness": _robustness_slices(test, ens_pred),
         "missionIdComparison": {
+            "why": (
+                "Adding mission_id provides negligible improvement and does not "
+                "materially change performance, so it is excluded from production."
+            ),
             "withoutMissionId": regression_metrics(test["y"].to_numpy(), model_pred),
             "withMissionId": regression_metrics(test["y"].to_numpy(), mission_pred),
         },
         "missionHoldout": {
+            "why": (
+                "Random event splits can hide distribution shift across mission "
+                "families, especially on the rare high-risk tail."
+            ),
             "heldOutMissions": [int(value) for value in sorted(held_out_missions)],
             "trainEvents": len(holdout_train),
             "testEvents": len(holdout_test),
+            "nHighRiskTest": int((holdout_test["y"] >= HIGH_RISK_THRESHOLD).sum()),
             "model": regression_metrics(holdout_test["y"].to_numpy(), holdout_pred),
             "persistence": regression_metrics(holdout_test["y"].to_numpy(), holdout_persist),
         },
-        "ablation": {
-            "snapshot_mae": float(regression_metrics(test["y"].to_numpy(), snap_pred)["mae"]),
-            "full_mae": float(regression_metrics(test["y"].to_numpy(), model_pred)["mae"]),
-            "ensemble_mae": float(regression_metrics(test["y"].to_numpy(), ens_pred)["mae"]),
-        },
+        "ablation": ablation,
+        "horizons": forecast_horizon_table(
+            frame,
+            splits.train_ids,
+            splits.test_ids,
+            primary=horizon_primary,
+        ),
+        "abstention": abstention_study(
+            test["y"].to_numpy(),
+            ens_pred,
+            persist_test,
+            ens_matrix,
+            test["risk"].to_numpy(dtype=float),
+            test["miss_distance"].to_numpy(dtype=float),
+            test_abstained,
+            test_proba,
+        ),
+        "shapContrast": shap_outcome_contrast(booster, test, model_pred),
+        "failureClusters": cluster_test_failures(test, ens_pred, persist_test),
         "featureGroups": grouped_importance(
             booster.feature_names,
             booster.model.get_booster().get_score(importance_type="gain"),
@@ -320,6 +387,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
             ens_pred,
             persist_test,
         ),
+        "abstentionRule": ABSTENTION_RULE,
     }
 
     event_by_id = {event["event_id"]: event for event in events}
@@ -332,12 +400,12 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         raw_all_ensemble,
     )
     all_point = np.median(all_ensemble, axis=1)
-    all_low, all_high = np.quantile(all_ensemble, [0.05, 0.95], axis=1)
     all_probability = calibrator.predict_proba(all_point)
-    all_disagreement = np.std(all_ensemble, axis=1)
-    all_missing = features["risk"].isna().to_numpy() | features["miss_distance"].isna().to_numpy()
-    all_crosses = (all_low < HIGH_RISK_THRESHOLD) & (all_high >= HIGH_RISK_THRESHOLD)
-    all_abstained = all_crosses | all_missing | (all_disagreement > 1.25)
+    all_abstained, _, _ = abstain_mask(
+        all_ensemble,
+        features["risk"].to_numpy(dtype=float),
+        features["miss_distance"].to_numpy(dtype=float),
+    )
     event_ids = features["event_id"].astype(int).to_numpy()
     id_to_position = {event_id: position for position, event_id in enumerate(event_ids)}
     predictions = {
@@ -459,16 +527,30 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         {
             "modelVersion": MODEL_VERSION,
             "dataSource": data_source,
-            "intendedUse": "Education and interpretability demonstration only.",
+            "intendedUse": (
+                "Research prototype for offline, explainable conjunction-risk forecasting."
+            ),
             "outOfScope": [
+                "flight software",
+                "operational decision systems",
                 "spacecraft operations",
                 "autonomous manoeuvres",
                 "claims about specific real satellites",
             ],
+            "researchQuestion": RESEARCH_QUESTION,
             "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
+            "highRiskThresholdNote": (
+                "ESA challenge class log10(Pc) ≥ −6, not an operational threshold"
+            ),
+            "abstentionRule": ABSTENTION_RULE,
+            "nHighRiskEligible": n_high_eligible,
+            "nHighRiskTest": n_high_test,
             "metrics": metrics["ensemble"],
             "uncertainty": metrics["uncertainty"],
             "missionHoldout": metrics["missionHoldout"],
+            "ablation": metrics["ablation"],
+            "horizons": metrics["horizons"],
+            "abstention": metrics["abstention"]["operatingPoint"],
             "beatsPersistence": bool(metrics["improvement"]["beats_persistence"]),
         },
     )

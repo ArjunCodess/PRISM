@@ -33,6 +33,13 @@ def _setup() -> None:
     )
 
 
+def _save(fig: plt.Figure, path: Path) -> Path:
+    fig.tight_layout()
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -52,11 +59,7 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
     ax.set_ylabel("Mean absolute error (log-risk units)")
     ax.set_title("Held-out model comparison", loc="left", pad=16)
     ax.spines[["top", "right"]].set_visible(False)
-    path = output_dir / "model-comparison.png"
-    fig.tight_layout()
-    fig.savefig(path, dpi=180)
-    plt.close(fig)
-    written.append(path)
+    written.append(_save(fig, output_dir / "model-comparison.png"))
 
     bins = metrics.get("calibration", [])
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -72,17 +75,13 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
     ax.set(
         xlim=(0, 1),
         ylim=(0, 1),
-        xlabel="Predicted warning probability",
+        xlabel="Predicted high-risk-event probability",
         ylabel="Observed frequency",
     )
-    ax.set_title("Warning reliability", loc="left", pad=16)
+    ax.set_title("High-risk-event probability reliability (small positive class)", loc="left", pad=16)
     ax.legend(frameon=False, labelcolor=TEXT)
     ax.spines[["top", "right"]].set_visible(False)
-    path = output_dir / "calibration-reliability.png"
-    fig.tight_layout()
-    fig.savefig(path, dpi=180)
-    plt.close(fig)
-    written.append(path)
+    written.append(_save(fig, output_dir / "calibration-reliability.png"))
 
     groups = metrics.get("featureGroups", [])[:9][::-1]
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -90,27 +89,124 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("XGBoost gain")
     ax.set_title("Grouped feature importance", loc="left", pad=16)
     ax.spines[["top", "right"]].set_visible(False)
-    path = output_dir / "feature-importance.png"
-    fig.tight_layout()
-    fig.savefig(path, dpi=180)
-    plt.close(fig)
-    written.append(path)
+    written.append(_save(fig, output_dir / "feature-importance.png"))
 
-    ablation = metrics.get("ablation", {})
-    labels = ["Snapshot only", "Snapshot + trends", "Ensemble"]
-    values = [ablation.get("snapshot_mae"), ablation.get("full_mae"), ablation.get("ensemble_mae")]
-    if all(value is not None for value in values):
-        fig, ax = plt.subplots(figsize=(8, 5))
-        bars = ax.bar(labels, values, color=["#476171", CYAN, AMBER])
+    families = metrics.get("ablation", {}).get("families", {})
+    family_order = [
+        ("snapshot", "Snapshot"),
+        ("snapshot_history", "Snapshot + history"),
+        ("snapshot_history_covariance", "History + covariance"),
+        ("full", "Full"),
+    ]
+    if families:
+        labels = [label for key, label in family_order if key in families]
+        values = [families[key]["mae"] for key, _label in family_order if key in families]
+        fig, ax = plt.subplots(figsize=(9, 5))
+        bars = ax.bar(
+            labels,
+            values,
+            color=[CYAN if label == "Full" else "#476171" for label in labels],
+        )
         ax.bar_label(bars, fmt="%.3f", padding=4, color=TEXT)
         ax.set_ylabel("Mean absolute error")
-        ax.set_title("Feature ablation", loc="left", pad=16)
+        ax.set_title("Does history add signal beyond the latest snapshot?", loc="left", pad=16)
         ax.spines[["top", "right"]].set_visible(False)
-        path = output_dir / "feature-ablation.png"
-        fig.tight_layout()
-        fig.savefig(path, dpi=180)
-        plt.close(fig)
-        written.append(path)
+        written.append(_save(fig, output_dir / "feature-ablation.png"))
+
+    horizons = [row for row in metrics.get("horizons", []) if "model" in row]
+    if horizons:
+        hours = [row["cutoffHours"] for row in horizons]
+        model_mae = [row["model"]["mae"] for row in horizons]
+        persist_mae = [row["persistence"]["mae"] for row in horizons]
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(hours, persist_mae, marker="o", color="#476171", label="Persistence")
+        ax.plot(hours, model_mae, marker="o", color=CYAN, label="XGBoost")
+        ax.invert_xaxis()
+        ax.set_xlabel("Forecast horizon (hours before TCA)")
+        ax.set_ylabel("Mean absolute error")
+        ax.set_title("Waiting helps persistence more than it helps PRISM", loc="left", pad=16)
+        ax.legend(frameon=False, labelcolor=TEXT)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "forecast-horizon.png"))
+
+    curve = metrics.get("abstention", {}).get("coverageCurve", [])
+    if curve:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(
+            [item["coverage"] for item in curve],
+            [item["maeAccepted"] for item in curve],
+            marker="o",
+            color=CYAN,
+        )
+        operating = next((item for item in curve if item.get("operatingPoint")), None)
+        if operating:
+            ax.scatter(
+                [operating["coverage"]],
+                [operating["maeAccepted"]],
+                color=AMBER,
+                s=80,
+                zorder=3,
+                label="operating point",
+            )
+            ax.legend(frameon=False, labelcolor=TEXT)
+        ax.set_xlabel("Coverage (fraction accepted)")
+        ax.set_ylabel("MAE among accepted events")
+        ax.set_title("Selective prediction: coverage vs error", loc="left", pad=16)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "abstention-coverage.png"))
+
+    modes = metrics.get("failureClusters", {}).get("modes", {})
+    failure_modes = {
+        name: payload for name, payload in modes.items() if name != "accurate" and payload.get("n")
+    }
+    if failure_modes:
+        ranked = sorted(failure_modes.items(), key=lambda item: item[1]["n"], reverse=True)[:8]
+        fig, ax = plt.subplots(figsize=(9, 5))
+        labels = [name.replace("_", " ") for name, _payload in ranked]
+        counts = [payload["n"] for _name, payload in ranked]
+        bars = ax.barh(labels[::-1], counts[::-1], color=AMBER)
+        ax.bar_label(bars, padding=4, color=TEXT)
+        ax.set_xlabel("Test events")
+        ax.set_title("How inaccurate forecasts cluster", loc="left", pad=16)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "failure-clusters.png"))
+
+    contrast = metrics.get("shapContrast", {})
+    correct_groups = {
+        item["group"]: item["meanAbsShap"]
+        for item in contrast.get("correct", {}).get("groups", [])
+    }
+    incorrect_groups = {
+        item["group"]: item["meanAbsShap"]
+        for item in contrast.get("incorrect", {}).get("groups", [])
+    }
+    ranked_incorrect = sorted(incorrect_groups.items(), key=lambda item: item[1], reverse=True)
+    names = [name for name, _value in ranked_incorrect[:6]]
+    if names:
+        fig, ax = plt.subplots(figsize=(9, 5))
+        y_pos = range(len(names))
+        ax.barh(
+            [y - 0.18 for y in y_pos],
+            [correct_groups.get(name, 0.0) for name in names],
+            height=0.35,
+            color="#476171",
+            label="|error| ≤ 0.5",
+        )
+        ax.barh(
+            [y + 0.18 for y in y_pos],
+            [incorrect_groups.get(name, 0.0) for name in names],
+            height=0.35,
+            color=AMBER,
+            label="|error| ≥ 2.0",
+        )
+        ax.set_yticks(list(y_pos))
+        ax.set_yticklabels(names)
+        ax.invert_yaxis()
+        ax.set_xlabel("Mean |SHAP|")
+        ax.set_title("What the model uses when it is right vs wrong", loc="left", pad=16)
+        ax.legend(frameon=False, labelcolor=TEXT)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "shap-contrast.png"))
 
     return written
 

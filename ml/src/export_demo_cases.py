@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from abstention import REASON_TEXT, decide_abstention
 from constants import CUTOFF_DAYS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
 from explain import explanation_text, local_factors
 from train_regressor import TrainedRegressor
@@ -35,10 +36,12 @@ def predict_event(
     point = float(np.median(ensemble_preds))
     lo, inner_lo, inner_hi, hi = np.quantile(ensemble_preds, [0.05, 0.25, 0.75, 0.95])
     proba = float(calibrator.predict_proba(np.array([point]))[0])
-    crosses = (lo < HIGH_RISK_THRESHOLD <= hi) or (hi < HIGH_RISK_THRESHOLD <= lo)
-    missing_critical = bool(pd.isna(row.get("risk")) or pd.isna(row.get("miss_distance")))
-    disagreement = float(np.std(ensemble_preds))
-    abstained = bool(crosses or missing_critical or disagreement > 1.25)
+    current_risk = float(row["risk"]) if pd.notna(row.get("risk")) else float("nan")
+    miss_distance = (
+        float(row["miss_distance"]) if pd.notna(row.get("miss_distance")) else float("nan")
+    )
+    decision = decide_abstention(ensemble_preds, current_risk, miss_distance)
+    abstained = decision.abstained
     _, factors = local_factors(trained, explainer, row)
     payload = {
         "eventId": str(event_id),
@@ -50,6 +53,7 @@ def predict_event(
         "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
         "riskBand": risk_band(proba, abstained, point),
         "abstained": abstained,
+        "abstentionReasons": [REASON_TEXT[reason] for reason in decision.reasons],
         "topFactors": [
             {
                 "feature": item.feature,
@@ -109,13 +113,13 @@ def story_fit(story: str, pred: float, persist: float, actual: float, abstained:
     pred_err = abs(pred - actual)
     persist_err = abs(persist - actual)
     if story == "low":
-        if abstained or actual >= -7 or pred >= -7 or persist >= -7:
+        if abstained or actual >= -7 or pred >= -7 or persist >= -7 or pred_err > 0.5:
             return -1.0
-        return 2.0 - 0.05 * pred_err
+        return 3.0 - pred_err - 0.1 * persist_err
     if story == "escalate":
-        if abstained or actual < -6 or pred <= persist:
+        if abstained or persist_err < 0.8 or pred_err > persist_err - 0.3:
             return -1.0
-        return 1.5 + (persist_err - pred_err)
+        return 2.0 + (persist_err - pred_err) - 0.2 * pred_err
     if story == "deescalate":
         if abstained or actual >= -6 or persist <= actual or pred >= persist:
             return -1.0
@@ -123,17 +127,19 @@ def story_fit(story: str, pred: float, persist: float, actual: float, abstained:
     if story == "uncertain":
         return 3.0 if abstained else -1.0
     if story == "failure":
-        if abstained:
+        if abstained or pred_err < 0.45:
             return -1.0
         late_jump = actual >= HIGH_RISK_THRESHOLD and persist < HIGH_RISK_THRESHOLD - 0.25
         missed = actual >= HIGH_RISK_THRESHOLD and pred < HIGH_RISK_THRESHOLD
-        under = pred < actual - 0.45
+        rare = 2.0 if actual >= HIGH_RISK_THRESHOLD else 0.0
         if missed and late_jump:
-            return 6.0 + (actual - pred)
+            return 6.0 + (actual - pred) + rare
         if missed:
-            return 4.0 + (actual - pred)
-        if late_jump and under:
-            return 3.0 + (actual - pred)
+            return 4.0 + (actual - pred) + rare
+        if late_jump and pred < actual - 0.45:
+            return 3.0 + (actual - pred) + rare
+        if pred_err >= 2.0:
+            return 1.0 + pred_err + rare
         return -1.0
     return -1.0
 

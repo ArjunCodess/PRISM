@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+
 from main import app
 
 ROOT = Path(__file__).resolve().parents[3]

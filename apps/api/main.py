@@ -63,6 +63,7 @@ class PredictResponse(BaseModel):
     highRiskThresholdLog10: float
     riskBand: str
     abstained: bool
+    abstentionReasons: list[str] | None = None
     topFactors: list[FactorModel]
     explanation: str | None = None
     modelVersion: str
