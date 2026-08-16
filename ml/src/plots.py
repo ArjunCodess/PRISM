@@ -78,7 +78,11 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
         xlabel="Predicted high-risk-event probability",
         ylabel="Observed frequency",
     )
-    ax.set_title("High-risk-event probability reliability (small positive class)", loc="left", pad=16)
+    ax.set_title(
+        "High-risk-event probability reliability (small positive class)",
+        loc="left",
+        pad=16,
+    )
     ax.legend(frameon=False, labelcolor=TEXT)
     ax.spines[["top", "right"]].set_visible(False)
     written.append(_save(fig, output_dir / "calibration-reliability.png"))
@@ -122,9 +126,15 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
         ax.plot(hours, persist_mae, marker="o", color="#476171", label="Persistence")
         ax.plot(hours, model_mae, marker="o", color=CYAN, label="XGBoost")
         ax.invert_xaxis()
-        ax.set_xlabel("Forecast horizon (hours before TCA)")
-        ax.set_ylabel("Mean absolute error")
-        ax.set_title("Waiting helps persistence more than it helps PRISM", loc="left", pad=16)
+        ax.set_xlabel("Forecast horizon (hours before closest approach)")
+        ax.set_ylabel("MAE (log10 Pc)")
+        ax.set_title(
+            "The value of learned forecasting is highest when information is sparse",
+            loc="left",
+            pad=16,
+        )
+        ax.axvline(48, color="#526574", linestyle="--", linewidth=1)
+        ax.text(48, max(persist_mae) * 0.92, "T−48 exhibit cutoff", color=MUTED, fontsize=8)
         ax.legend(frameon=False, labelcolor=TEXT)
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "forecast-horizon.png"))
@@ -144,14 +154,23 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
                 [operating["coverage"]],
                 [operating["maeAccepted"]],
                 color=AMBER,
-                s=80,
+                s=90,
                 zorder=3,
                 label="operating point",
             )
+            ax.annotate(
+                f"{operating['coverage'] * 100:.1f}% coverage\n"
+                f"accepted MAE {operating['maeAccepted']:.3f}",
+                xy=(operating["coverage"], operating["maeAccepted"]),
+                xytext=(operating["coverage"] - 0.22, operating["maeAccepted"] + 0.45),
+                color=TEXT,
+                fontsize=8,
+                arrowprops={"arrowstyle": "->", "color": AMBER},
+            )
             ax.legend(frameon=False, labelcolor=TEXT)
-        ax.set_xlabel("Coverage (fraction accepted)")
-        ax.set_ylabel("MAE among accepted events")
-        ax.set_title("Selective prediction: coverage vs error", loc="left", pad=16)
+        ax.set_xlabel("Coverage (fraction that receive a firm forecast)")
+        ax.set_ylabel("MAE among accepted events (log10 Pc)")
+        ax.set_title("Selective prediction: coverage versus accepted error", loc="left", pad=16)
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "abstention-coverage.png"))
 
@@ -192,18 +211,25 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
             color="#476171",
             label="|error| ≤ 0.5",
         )
+        incorrect_colors = [
+            CYAN if "complete the tracking" in name else AMBER for name in names
+        ]
         ax.barh(
             [y + 0.18 for y in y_pos],
             [incorrect_groups.get(name, 0.0) for name in names],
             height=0.35,
-            color=AMBER,
+            color=incorrect_colors,
             label="|error| ≥ 2.0",
         )
         ax.set_yticks(list(y_pos))
         ax.set_yticklabels(names)
         ax.invert_yaxis()
-        ax.set_xlabel("Mean |SHAP|")
-        ax.set_title("What the model uses when it is right vs wrong", loc="left", pad=16)
+        ax.set_xlabel("Mean |SHAP| (association, not physical cause)")
+        ax.set_title(
+            "Tracking-completeness |SHAP| is higher among large errors",
+            loc="left",
+            pad=16,
+        )
         ax.legend(frameon=False, labelcolor=TEXT)
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "shap-contrast.png"))
