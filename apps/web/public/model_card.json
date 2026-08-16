@@ -13,15 +13,16 @@
   "highRiskThresholdLog10": -6.0,
   "highRiskThresholdNote": "ESA challenge class log10(Pc) \u2265 \u22126, not an operational threshold",
   "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
+  "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
   "nHighRiskEligible": 66,
   "nHighRiskTest": 9,
   "metrics": {
-    "mae": 3.051505121688089,
-    "rmse": 5.918171610095936,
-    "median_ae": 0.4739265441894531,
-    "within_0_5": 0.5075346594333936,
-    "within_1_0": 0.5738396624472574,
-    "mae_high_risk": 3.7643461542746746,
+    "mae": 3.054789985306168,
+    "rmse": 5.924766419110763,
+    "median_ae": 0.4653472900390625,
+    "within_0_5": 0.5081374321880651,
+    "within_1_0": 0.5768535262206148,
+    "mae_high_risk": 3.7302149982009984,
     "esa_loss": 0.1669832237710995,
     "mse_hr": 0.06025167868029364,
     "f2": 0.36082474226804123
@@ -29,10 +30,10 @@
   "uncertainty": {
     "method": "spread across 10 bootstrap xgboost models",
     "interpretation": "Bootstrap disagreement is ensemble spread, not calibrated predictive uncertainty.",
-    "interval50Coverage": 0.2640144665461121,
-    "interval90Coverage": 0.48583484026522,
-    "meanInterval50Width": 0.9231434812597513,
-    "meanInterval90Width": 2.0642649837543328,
+    "interval50Coverage": 0.25678119349005424,
+    "interval90Coverage": 0.4798071127185051,
+    "meanInterval50Width": 0.9115551582943466,
+    "meanInterval90Width": 2.0451528709146034,
     "nModels": 10
   },
   "missionHoldout": {
@@ -47,12 +48,12 @@
     "testEvents": 756,
     "nHighRiskTest": 1,
     "model": {
-      "mae": 2.7489947357500486,
-      "rmse": 4.972512635861768,
-      "median_ae": 0.5335617065429688,
-      "within_0_5": 0.49074074074074076,
-      "within_1_0": 0.5846560846560847,
-      "mae_high_risk": 18.100551669500696,
+      "mae": 2.7126404925958822,
+      "rmse": 4.95747516489924,
+      "median_ae": 0.4677858352661133,
+      "within_0_5": 0.5092592592592593,
+      "within_1_0": 0.582010582010582,
+      "mae_high_risk": 17.87541586627804,
       "esa_loss": 1658700.1982148984,
       "mse_hr": 1.6587001982148983,
       "f2": 0.0
@@ -71,42 +72,43 @@
   },
   "ablation": {
     "question": "Does historical evolution add predictive information beyond the latest snapshot?",
+    "historyBlock": "The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency.",
     "families": {
       "snapshot": {
         "nFeatures": 66,
-        "mae": 2.9603964385528263,
+        "mae": 2.930024845906416,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.711410914783563,
+        "mae_high_risk": 14.240555095929125,
         "deltaFromPreviousMae": null,
         "beatsPersistenceMae": true
       },
       "snapshot_history": {
         "nFeatures": 134,
-        "mae": 2.8417912167415476,
+        "mae": 2.8629728462153885,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 12.726422702198114,
-        "deltaFromPreviousMae": 0.11860522181127875,
+        "mae_high_risk": 13.546832476978388,
+        "deltaFromPreviousMae": 0.06705199969102749,
         "beatsPersistenceMae": true
       },
       "snapshot_history_covariance": {
         "nFeatures": 222,
-        "mae": 2.837923999301585,
+        "mae": 2.811757230637402,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.086305904644945,
-        "deltaFromPreviousMae": 0.0038672174399625447,
+        "mae_high_risk": 13.675111209278192,
+        "deltaFromPreviousMae": 0.05121561557798637,
         "beatsPersistenceMae": true
       },
       "full": {
         "nFeatures": 222,
-        "mae": 2.837923999301585,
+        "mae": 2.811757230637402,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.086305904644945,
+        "mae_high_risk": 13.675111209278192,
         "deltaFromPreviousMae": 0.0,
         "beatsPersistenceMae": true
       }
     },
     "persistenceMae": 5.0795360010082655,
-    "historyDeltaMae": 0.11860522181127875,
+    "historyDeltaMae": 0.06705199969102749,
     "historyHelps": true
   },
   "horizons": [
@@ -118,12 +120,12 @@
       "overlapTrain": 3484,
       "overlapTest": 1545,
       "model": {
-        "mae": 3.2414324625790405,
-        "rmse": 5.541945947438435,
-        "median_ae": 1.033966064453125,
-        "within_0_5": 0.37022653721682847,
-        "within_1_0": 0.49514563106796117,
-        "mae_high_risk": 15.894987839802285,
+        "mae": 3.2457659925863664,
+        "rmse": 5.544974052029666,
+        "median_ae": 1.0883350372314453,
+        "within_0_5": 0.35145631067961164,
+        "within_1_0": 0.487378640776699,
+        "mae_high_risk": 16.09716529624934,
         "esa_loss": 1092792.5837486216,
         "mse_hr": 1.0927925837486216,
         "f2": 0.0
@@ -139,7 +141,7 @@
         "mse_hr": 0.046533228376003676,
         "f2": 0.1485148514851485
       },
-      "maeImprovement": 4.506246167709061
+      "maeImprovement": 4.501912637701735
     },
     {
       "cutoffHours": 48,
@@ -149,12 +151,12 @@
       "overlapTrain": 3731,
       "overlapTest": 1659,
       "model": {
-        "mae": 2.837923999301585,
-        "rmse": 5.023260298696936,
-        "median_ae": 0.6391315460205078,
-        "within_0_5": 0.459915611814346,
-        "within_1_0": 0.5702230259192285,
-        "mae_high_risk": 13.086305904644945,
+        "mae": 2.811757230637402,
+        "rmse": 5.006797466676233,
+        "median_ae": 0.5819435119628906,
+        "within_0_5": 0.47739602169981915,
+        "within_1_0": 0.5714285714285714,
+        "mae_high_risk": 13.675111209278192,
         "esa_loss": 1132201.8878005068,
         "mse_hr": 1.1322018878005067,
         "f2": 0.0
@@ -170,7 +172,7 @@
         "mse_hr": 0.06025167868029364,
         "f2": 0.36082474226804123
       },
-      "maeImprovement": 2.2416120017066805
+      "maeImprovement": 2.2677787703708634
     },
     {
       "cutoffHours": 24,
@@ -180,12 +182,12 @@
       "overlapTrain": 3731,
       "overlapTest": 1659,
       "model": {
-        "mae": 2.0973786800184473,
-        "rmse": 4.365545807988741,
-        "median_ae": 0.20554161071777344,
-        "within_0_5": 0.6166365280289331,
+        "mae": 2.107526413915374,
+        "rmse": 4.4026802637389295,
+        "median_ae": 0.1909027099609375,
+        "within_0_5": 0.6208559373116335,
         "within_1_0": 0.6895720313441832,
-        "mae_high_risk": 8.483529907059225,
+        "mae_high_risk": 8.895279111059061,
         "esa_loss": 1132201.8878005068,
         "mse_hr": 1.1322018878005067,
         "f2": 0.0
@@ -201,7 +203,7 @@
         "mse_hr": 0.1815998378679036,
         "f2": 0.5797101449275363
       },
-      "maeImprovement": 0.5362433161560283
+      "maeImprovement": 0.5260955822591016
     },
     {
       "cutoffHours": 12,
@@ -211,15 +213,15 @@
       "overlapTrain": 3519,
       "overlapTest": 1564,
       "model": {
-        "mae": 1.3903441130207081,
-        "rmse": 3.541994174047606,
-        "median_ae": 0.11757564544677734,
-        "within_0_5": 0.7257033248081841,
-        "within_1_0": 0.780690537084399,
-        "mae_high_risk": 6.413721875551039,
-        "esa_loss": 1066389.5989987077,
-        "mse_hr": 1.0663895989987078,
-        "f2": 0.0
+        "mae": 1.391538376348452,
+        "rmse": 3.5504149034339534,
+        "median_ae": 0.1123361587524414,
+        "within_0_5": 0.719309462915601,
+        "within_1_0": 0.7921994884910486,
+        "mae_high_risk": 6.856139020326429,
+        "esa_loss": 6.312248325112265,
+        "mse_hr": 0.9282718125165096,
+        "f2": 0.14705882352941177
       },
       "persistence": {
         "mae": 1.4441061602767171,
@@ -232,49 +234,49 @@
         "mse_hr": 0.026428112178579252,
         "f2": 0.6730769230769231
       },
-      "maeImprovement": 0.05376204725600897
+      "maeImprovement": 0.05256778392826522
     }
   ],
   "abstention": {
     "n": 1659,
-    "nAccepted": 1298,
-    "nAbstained": 361,
-    "coverage": 0.7823990355635925,
-    "maeAll": 3.051505121688089,
-    "maeAccepted": 1.9197233138118734,
-    "maeAbstained": 7.120903422583737,
-    "persistenceMaeAccepted": 3.507281136644887,
+    "nAccepted": 1306,
+    "nAbstained": 353,
+    "coverage": 0.7872212176009644,
+    "maeAll": 3.054789985306168,
+    "maeAccepted": 1.930438103966252,
+    "maeAbstained": 7.214573432983029,
+    "persistenceMaeAccepted": 3.5778730884364127,
     "nHighRisk": 9,
-    "nHighRiskAbstained": 2,
-    "nHighRiskAccepted": 7,
-    "highRiskRecallAccepted": 1.0,
-    "highRiskCapture": 1.0,
-    "falseReassurance": 0,
-    "falseReassuranceRate": 0.0,
+    "nHighRiskAbstained": 1,
+    "nHighRiskAccepted": 8,
+    "highRiskRecallAccepted": 0.875,
+    "highRiskCapture": 0.8888888888888888,
+    "falseReassurance": 1,
+    "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
+    "falseReassuranceRate": 0.1111111111111111,
     "accepted": {
-      "mae": 1.9197233138118734,
-      "rmse": 5.129776965857572,
-      "median_ae": 0.22802448272705078,
-      "within_0_5": 0.6463790446841294,
-      "within_1_0": 0.7272727272727273,
-      "mae_high_risk": 0.19070822294632578,
-      "esa_loss": 0.13875585891410455,
-      "mse_hr": 0.054566910808917526,
-      "f2": 0.39325842696629215
+      "mae": 1.930438103966252,
+      "rmse": 5.1062998193185045,
+      "median_ae": 0.23785114288330078,
+      "within_0_5": 0.6431852986217458,
+      "within_1_0": 0.7281776416539051,
+      "mae_high_risk": 2.3525614933735066,
+      "esa_loss": 0.12743204160400298,
+      "mse_hr": 0.04795829522731295,
+      "f2": 0.3763440860215054
     },
     "abstained": {
-      "mae": 7.120903422583737,
-      "rmse": 8.145100812515741,
-      "median_ae": 6.445926666259766,
-      "within_0_5": 0.008310249307479225,
-      "within_1_0": 0.0221606648199446,
-      "mae_high_risk": 16.2720789139239,
-      "esa_loss": 80148.36623010997,
-      "mse_hr": 0.08014836623010997,
+      "mae": 7.214573432983029,
+      "rmse": 8.276833257812534,
+      "median_ae": 6.561319351196289,
+      "within_0_5": 0.0084985835694051,
+      "within_1_0": 0.0169971671388102,
+      "mae_high_risk": 14.751443036820934,
+      "esa_loss": 158598.746304139,
+      "mse_hr": 0.158598746304139,
       "f2": 0.0
     },
-    "meanHighRiskProbabilityAccepted": 0.013601935182199843
+    "meanHighRiskProbabilityAccepted": 0.01350217832225952
   },
-  "beatsPersistence": false,
-  "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126."
+  "beatsPersistence": false
 }
