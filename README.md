@@ -8,16 +8,22 @@ It is a research prototype for offline, explainable conjunction-risk forecasting
 
 ## Result
 
-Held-out performance on 1,659 events:
+Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units.
 
 | | Persistence | PRISM |
 |---|---:|---:|
 | MAE | 5.080 | **3.052** |
 | ESA-style loss | **0.167** | **0.167** |
 
-PRISM’s nominal 90% bootstrap band covers only **48.6%** of outcomes.
+ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both.
 
-**Yes for MAE. No for ESA-style loss.** History adds signal, and the learned advantage is largest when information is sparse. The model is not universally trustworthy: abstention helps, while mission shift and rare high-risk cases remain weak.
+PRISM’s nominal 90% bootstrap band covers only **48.6%** of outcomes. It is therefore shown as model spread, not predictive probability.
+
+On four missions held out of training, high-risk MAE is **18.1** (one held-out high-risk event). Random-event accuracy does not establish mission-level generalization.
+
+**Yes for MAE. No for ESA-style loss.** The 39.9% MAE reduction is driven mainly by continuous-risk accuracy and does not translate into fewer errors under the challenge’s risk-weighted objective.
+
+The model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
 
 The result is a demonstrable forecasting system whose limits remain visible.
 
@@ -31,15 +37,19 @@ PRISM freezes the clock 48 hours before closest approach and asks:
 
 PRISM therefore studies forecasting under a fixed information constraint. It does not predict manoeuvres or operational collision outcomes. The target is the later reported `log10(Pc)`, not a physical collision probability.
 
-T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The pipeline also reports T−72, T−24, and T−12. History features encode recent change, slope, range, variability, and observation-count evolution across the pre-cutoff CDM sequence.
+T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The pipeline also reports T−72, T−24, and T−12.
+
+The contribution is a controlled evaluation of whether historical CDM evolution provides actionable early-warning signal at T−48, including horizon analysis, selective prediction, failure analysis, and mission-held-out testing.
 
 ## Findings
 
-1. **Average accuracy and decision quality are not the same thing.** The guarded ensemble reduces MAE from 5.080 to 3.052 (39.9%) and still ties persistence at ESA-style loss 0.167, F2 0.361.
+### What the model can do
 
-2. **History provides a measurable gain, while covariance trends add little marginal information once snapshot and history features are present.** On the single XGBoost model, snapshot-only MAE is 2.960. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.842. Covariance trends after that add almost nothing (2.838).
+1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error.
 
-3. **Waiting helps persistence more than it helps PRISM.** The value of learned forecasting is highest when information is sparse:
+2. **History provides a measurable gain, while covariance trends add little marginal information once snapshot and history features are present.** The history block consists of temporal transforms of variables already available in the latest snapshot, allowing the ablation to isolate information from their evolution rather than simply adding unrelated measurements. On the single XGBoost model, snapshot-only MAE is 2.960. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.842. Covariance trends after that add almost nothing (2.838).
+
+3. **The value of learned forecasting is highest when information is sparse.** Waiting helps persistence more than it helps PRISM: the learned advantage is largest at T−72 and nearly gone at T−12.
 
    | Horizon | XGBoost | Persistence |
    |---|---:|---:|
@@ -48,15 +58,17 @@ T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The p
    | T−24 | 2.097 | 2.634 |
    | T−12 | 1.390 | 1.444 |
 
-4. **Abstention is selective prediction.** The rule was locked from the ESA class and a priori disagreement threshold, not from test outcomes: abstain if the 90% bootstrap band crosses `log10(Pc) ≥ −6`, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. That keeps 78.2% coverage (21.8% abstention) and drops accepted MAE from 3.052 to 1.920. All nine test high-risk events are either flagged by the prediction or sent to review. There is no accepted false reassurance.
+4. **Abstention is selective prediction.** The `−6` class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split. PRISM abstains if the 90% bootstrap band crosses `log10(Pc) ≥ −6`, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. That keeps 78.2% coverage (21.8% abstention) and drops accepted MAE from 3.052 to 1.920. All nine test high-risk events are either flagged by the prediction or sent to review. False reassurance means an accepted forecast with predicted `log10(Pc) < −6` while the final reported value is `≥ −6`. There are none.
 
-5. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out remains weak on the rare high-risk tail (one held-out high-risk event; high-risk MAE 18.1). Adding `mission_id` provides negligible improvement (2.838 → 2.835) and does not materially change performance, so it is excluded from production.
+### Where it is weak
+
+5. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out remains weak on the rare high-risk tail (one held-out high-risk event; high-risk MAE 18.1). Adding `mission_id` provides negligible improvement (2.838 → 2.835) and does not materially change performance, so it is excluded from the deployed exhibit.
 
 6. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 26.4% and 48.6% of outcomes. The interface labels them as model spread.
 
-7. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Treat the calibrated estimate of high-risk-event probability as a scarce-label fit, not an operational warning system.
+7. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Because only nine test events are positive, this probability estimate should be treated as a scarce-label fit, not an operational warning system.
 
-8. **Failures are not one bucket.** Inaccurate forecasts cluster into over-prediction (362), under-prediction (210), sparse-history errors (62), and 40 events where the final reported risk collapses to the dataset floor of −30. Only two test events are late high-risk jumps. When the single XGBoost model is wrong by two or more log units, tracking-completeness features rise in mean |SHAP| relative to accurate cases.
+8. **Failures are not one bucket.** Inaccurate forecasts cluster into over-prediction (362), under-prediction (210), sparse-history errors (62), and 40 events where the final reported risk collapses to the dataset floor of −30. Only two test events are late high-risk jumps. Tracking-completeness features have higher mean |SHAP| among errors of two or more log units than among accurate cases.
 
 ## Experimental setup
 
@@ -64,11 +76,13 @@ T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The p
 
 **Information constraint.** Features use only messages with `time_to_tca ≥` the cutoff. The later update is the label, never an input.
 
-**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events → 1,659 test events. Event IDs are disjoint across train, validation, calibration, and test.
+**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle from 16 August 2026 uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection.
 
-**Model.** Event-level XGBoost on inspectable summaries. A sequence model is not used so temporal signals can be inspected directly and the exhibit stays reproducible offline.
+**Model.** Event-level XGBoost on inspectable summaries. A sequence model is not used so temporal signals can be inspected directly and the exhibit stays reproducible offline. Inference is a CPU-only 10-model XGBoost ensemble on a few hundred tabular features; no GPU is required.
 
-**Baselines.** Persistence, training-set median, and Ridge. The exhibit’s selected policy is a ten-model bootstrap XGBoost median with a persistence guard when the current report is already at or above `−6`. The guard, the `−6` class, and the 1.25 disagreement threshold were locked from the ESA challenge definition and design choices. They were not tuned on test outcomes.
+**Baselines.** Persistence, training-set median, and Ridge. The exhibit’s selected policy is a ten-model bootstrap XGBoost median with a persistence guard when the current report is already at or above `−6`. The `−6` class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.
+
+**License.** The PRISM code in this repository is MIT-licensed. The ESA Collision Avoidance Challenge dataset remains under ESA’s terms.
 
 ## Limitations
 
@@ -81,6 +95,8 @@ T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The p
 ## Exhibit
 
 Five frozen real-data cases: easy correct, hard correct, de-escalation, abstention, and confident failure. Each shows the current report, the forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
+
+The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
 
 ## Running
 
@@ -114,10 +130,6 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 - [`ml/artifacts/model_card.json`](ml/artifacts/model_card.json) and [`docs/model-card.md`](docs/model-card.md).
 - [`docs/figures`](docs/figures): comparison, ablation, horizon, abstention, failure, and SHAP charts.
 - [`data/processed/events.csv`](data/processed/events.csv): event-level feature table.
-
-## Latest full run
-
-The frozen bundle was produced on 16 August 2026 with `python main.py --build-only`. It used 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events.
 
 ## Repository layout
 
