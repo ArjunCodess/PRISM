@@ -7,8 +7,9 @@ packages = []
 
 [project]
 name = "prism"
-version = "0.1.0"
+version = "0.2.0"
 description = "Predictive Risk Intelligence for Space Monitoring"
+license = {text = "MIT"}
 requires-python = ">=3.11"
 dependencies = [
   "pandas>=2.2",
