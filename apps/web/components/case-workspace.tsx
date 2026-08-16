@@ -91,7 +91,7 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
           <p className="eyebrow">Later update</p>
           <h2 className="display mt-2 text-3xl">Reveal when ready</h2>
           <p className="mt-4 text-sm leading-6 text-stone-600">
-            Today's report and the forecast are already in the strip above. Persistence is today's value carried forward. The later messages stay hidden until you ask.
+            Today&apos;s report and the forecast are already in the strip above. Persistence is today&apos;s value carried forward. The later messages stay hidden until you ask.
           </p>
           <button type="button" onClick={revealOutcome} disabled={Boolean(outcome) || isRevealing} className="interactive mt-6 w-full rounded-md bg-ink px-4 py-3 text-sm text-white hover:bg-cyan disabled:opacity-50">
             {outcome ? "Outcome revealed" : isRevealing ? "Loading outcome…" : "Reveal final outcome"}
