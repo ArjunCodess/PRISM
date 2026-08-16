@@ -7,14 +7,13 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from xgboost import XGBRegressor
-
 from build_events import build_event_histories
-from constants import MODEL_VERSION
+from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION
 from explain import shap_explainer
 from export_demo_cases import predict_event
 from features import build_feature_table
 from train_regressor import TrainedRegressor
+from xgboost import XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "ml" / "artifacts"
@@ -29,7 +28,9 @@ class PrismModel:
         bundle = joblib.load(ARTIFACTS / "warning_calibrator.joblib")
         self.calibrator = bundle["calibrator"]
         self.ensemble: list[XGBRegressor] = bundle["ensemble"]
-        self.trained = TrainedRegressor(model=model, feature_names=self.feature_names, kind="xgboost")
+        self.trained = TrainedRegressor(
+            model=model, feature_names=self.feature_names, kind="xgboost"
+        )
         background = pd.DataFrame(
             np.zeros((20, len(self.feature_names))), columns=self.feature_names
         )
@@ -58,6 +59,8 @@ class PrismModel:
         )
         series = aligned.iloc[0]
         ens = np.array([model.predict(aligned)[0] for model in self.ensemble])
+        if float(series["risk"]) >= HIGH_RISK_THRESHOLD:
+            ens.fill(float(series["risk"]))
         return predict_event(
             trained=self.trained,
             ensemble_preds=ens,

@@ -4,9 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from constants import NEGLIGIBLE_RISK, RANDOM_STATE
-
 
 OBJECT_TYPES = np.array(["DEBRIS", "ROCKET BODY", "PAYLOAD", "UNKNOWN"])
 

@@ -3,9 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.isotonic import IsotonicRegression
-
 from constants import HIGH_RISK_THRESHOLD
+from sklearn.isotonic import IsotonicRegression
 
 
 @dataclass

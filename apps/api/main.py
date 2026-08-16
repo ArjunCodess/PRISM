@@ -30,21 +30,21 @@ app.add_middleware(
 class Message(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    timeToTcaDays: float = Field(ge=0)
-    riskLog10: float
-    missDistanceM: float = Field(gt=0)
-    relativeSpeedMps: float = Field(gt=0)
-    tSigmaR: float | None = None
-    cSigmaR: float | None = None
-    tObsUsed: float | None = None
-    cObsUsed: float | None = None
+    timeToTcaDays: float = Field(ge=0, le=365)
+    riskLog10: float = Field(ge=-30, le=0)
+    missDistanceM: float = Field(gt=0, le=10_000_000)
+    relativeSpeedMps: float = Field(gt=0, le=100_000)
+    tSigmaR: float | None = Field(default=None, ge=0)
+    cSigmaR: float | None = Field(default=None, ge=0)
+    tObsUsed: float | None = Field(default=None, ge=0)
+    cObsUsed: float | None = Field(default=None, ge=0)
     cObjectType: str | None = None
 
 
 class PredictRequest(BaseModel):
     eventId: str
     cutoffHours: int = 48
-    messages: list[Message]
+    messages: list[Message] = Field(min_length=1)
 
 
 class FactorModel(BaseModel):
@@ -58,6 +58,7 @@ class PredictResponse(BaseModel):
     predictedFinalRiskLog10: float
     predictedFinalPc: float
     interval90Log10: list[float]
+    interval50Log10: list[float]
     configuredHighRiskProbability: float
     highRiskThresholdLog10: float
     riskBand: str

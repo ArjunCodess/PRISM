@@ -26,8 +26,10 @@ def validate_cdm_frame(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("cdm frame is empty")
     if frame["event_id"].isna().any():
         raise ValueError("event_id contains nulls")
-    if (frame["time_to_tca"] < 0).any():
-        raise ValueError("time_to_tca cannot be negative")
+    # ESA includes a small number of final CDMs issued shortly after nominal TCA.
+    # They are valid targets, but can never enter the pre-T−48 feature history.
+    if (frame["time_to_tca"] < -1.0).any():
+        raise ValueError("time_to_tca cannot be more than one day after TCA")
     duplicates = frame.duplicated(subset=["event_id", "time_to_tca"]).sum()
     if duplicates:
         raise ValueError(f"duplicate event/time rows: {duplicates}")

@@ -4,10 +4,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from xgboost import XGBClassifier
-
 from constants import HIGH_RISK_THRESHOLD, RANDOM_STATE
 from train_regressor import numeric_columns
+from xgboost import XGBClassifier
 
 
 @dataclass

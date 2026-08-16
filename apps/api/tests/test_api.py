@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-
 from main import app
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -50,3 +49,29 @@ def test_rejects_post_cutoff_messages() -> None:
         json={"eventId": "leak", "cutoffHours": 48, "messages": messages},
     )
     assert response.status_code == 400
+
+
+def test_rejects_empty_and_out_of_range_inputs() -> None:
+    client = TestClient(app)
+    empty = client.post(
+        "/v1/risk/predict",
+        json={"eventId": "empty", "cutoffHours": 48, "messages": []},
+    )
+    assert empty.status_code == 422
+
+    invalid_risk = client.post(
+        "/v1/risk/predict",
+        json={
+            "eventId": "invalid-risk",
+            "cutoffHours": 48,
+            "messages": [
+                {
+                    "timeToTcaDays": 2.5,
+                    "riskLog10": 0.5,
+                    "missDistanceM": 500.0,
+                    "relativeSpeedMps": 8000.0,
+                }
+            ],
+        },
+    )
+    assert invalid_risk.status_code == 422

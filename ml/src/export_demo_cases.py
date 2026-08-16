@@ -6,9 +6,9 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from constants import CUTOFF_DAYS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
 from explain import explanation_text, local_factors
+from train_regressor import TrainedRegressor
 
 
 def risk_band(prob: float, abstained: bool) -> str:
@@ -32,7 +32,7 @@ def predict_event(
     event_id: str,
 ) -> dict[str, Any]:
     point = float(np.median(ensemble_preds))
-    lo, hi = np.quantile(ensemble_preds, [0.05, 0.95])
+    lo, inner_lo, inner_hi, hi = np.quantile(ensemble_preds, [0.05, 0.25, 0.75, 0.95])
     proba = float(calibrator.predict_proba(np.array([point]))[0])
     crosses = (lo < HIGH_RISK_THRESHOLD <= hi) or (hi < HIGH_RISK_THRESHOLD <= lo)
     missing_critical = bool(pd.isna(row.get("risk")) or pd.isna(row.get("miss_distance")))
@@ -44,6 +44,7 @@ def predict_event(
         "predictedFinalRiskLog10": point,
         "predictedFinalPc": float(10**point),
         "interval90Log10": [float(lo), float(hi)],
+        "interval50Log10": [float(inner_lo), float(inner_hi)],
         "configuredHighRiskProbability": proba,
         "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
         "riskBand": risk_band(proba, abstained),
@@ -89,7 +90,9 @@ def case_briefing(story: str, persist: float, pred: float, actual: float, abstai
     guess = _spoken_chance(pred)
     later = _spoken_chance(actual)
     if abstained:
-        return f"Today {today}. Guesses cross the 1-in-a-million line, so a person should review this."
+        return (
+            f"Today {today}. Guesses cross the 1-in-a-million line, so a person should review this."
+        )
     if story == "low":
         return f"Today {today}. Forecast stays quiet ({guess})."
     if story == "escalate":

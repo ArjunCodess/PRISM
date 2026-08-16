@@ -4,15 +4,13 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from constants import RANDOM_STATE
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBRegressor
-
-from constants import RANDOM_STATE
-
 
 EXCLUDE = {"event_id", "y", "story", "c_object_type"}
 

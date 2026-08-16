@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import shap
-
 from constants import FEATURE_DICTIONARY
 from train_regressor import TrainedRegressor
 
@@ -125,7 +124,10 @@ def feature_group(name: str) -> str:
     lowered = name.lower()
     if lowered in {"f10", "f3m", "ap", "ssn"}:
         return "space weather"
-    if any(token in lowered for token in ("obs_", "od_span", "weighted_rms", "hours_since", "hours_before")):
+    if any(
+        token in lowered
+        for token in ("obs_", "od_span", "weighted_rms", "hours_since", "hours_before")
+    ):
         return "how complete the tracking is"
     if any(token in lowered for token in ("sigma", "cov_det", "log_t_cov", "log_c_cov")):
         return "how uncertain the positions still are"
@@ -140,12 +142,17 @@ def feature_group(name: str) -> str:
         return "today's reported risk"
     if name.startswith("risk_") or name.startswith("max_risk"):
         return "whether risk is climbing or falling"
-    if any(token in lowered for token in ("ecc", "j2k", "h_apo", "h_per", "rcs", "area_over", "t_span", "c_span")):
+    if any(
+        token in lowered
+        for token in ("ecc", "j2k", "h_apo", "h_per", "rcs", "area_over", "t_span", "c_span")
+    ):
         return "orbit shape and size"
     return "other"
 
 
-def grouped_importance(feature_names: list[str], scores: dict[str, float]) -> list[dict[str, float | str]]:
+def grouped_importance(
+    feature_names: list[str], scores: dict[str, float]
+) -> list[dict[str, float | str]]:
     totals: dict[str, float] = {}
     for key, score in scores.items():
         if key in feature_names:

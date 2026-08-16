@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from constants import CUTOFF_DAYS, SNAPSHOT_COLUMNS, TREND_COLUMNS
 
 
@@ -25,9 +24,17 @@ def _safe_div(num: float, den: float) -> float:
     return num / den
 
 
-def event_features(event: dict[str, object], include_mission: bool = False) -> dict[str, float | str]:
-    history: pd.DataFrame = event["history"]  # type: ignore[assignment]
+def event_features(
+    event: dict[str, object], include_mission: bool = False
+) -> dict[str, float | str]:
+    history: pd.DataFrame = event["history"].copy()  # type: ignore[union-attr]
     snapshot: pd.Series = event["snapshot"]  # type: ignore[assignment]
+    history["log_t_position_covariance_det"] = np.log(
+        history["t_position_covariance_det"].clip(lower=1e-12)
+    )
+    history["log_c_position_covariance_det"] = np.log(
+        history["c_position_covariance_det"].clip(lower=1e-12)
+    )
     features: dict[str, float | str] = {
         "event_id": snapshot["event_id"],
         "y": float(event["y"]),
@@ -72,9 +79,15 @@ def event_features(event: dict[str, object], include_mission: bool = False) -> d
         + np.sqrt(snapshot["t_sigma_t"] ** 2 + snapshot["c_sigma_t"] ** 2)
         + np.sqrt(snapshot["t_sigma_n"] ** 2 + snapshot["c_sigma_n"] ** 2)
     )
-    features["normalized_separation"] = _safe_div(float(snapshot["miss_distance"]), combined_sigma + 1e-6)
-    features["t_obs_usage_ratio"] = _safe_div(float(snapshot["t_obs_used"]), float(snapshot["t_obs_available"]))
-    features["c_obs_usage_ratio"] = _safe_div(float(snapshot["c_obs_used"]), float(snapshot["c_obs_available"]))
+    features["normalized_separation"] = _safe_div(
+        float(snapshot["miss_distance"]), combined_sigma + 1e-6
+    )
+    features["t_obs_usage_ratio"] = _safe_div(
+        float(snapshot["t_obs_used"]), float(snapshot["t_obs_available"])
+    )
+    features["c_obs_usage_ratio"] = _safe_div(
+        float(snapshot["c_obs_used"]), float(snapshot["c_obs_available"])
+    )
     features["log_t_cov_det"] = float(np.log(snapshot["t_position_covariance_det"] + 1e-12))
     features["log_c_cov_det"] = float(np.log(snapshot["c_position_covariance_det"] + 1e-12))
 
@@ -107,6 +120,8 @@ def event_features(event: dict[str, object], include_mission: bool = False) -> d
     return features
 
 
-def build_feature_table(events: list[dict[str, object]], include_mission: bool = False) -> pd.DataFrame:
+def build_feature_table(
+    events: list[dict[str, object]], include_mission: bool = False
+) -> pd.DataFrame:
     rows = [event_features(event, include_mission=include_mission) for event in events]
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows).replace([np.inf, -np.inf], np.nan)

@@ -7,12 +7,10 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 TRAIN_URL = (
-    "https://kelvins.esa.int/media/public/competitions/"
-    "collision-avoidance-challenge/train_data.zip"
+    "https://kelvins.esa.int/media/public/competitions/collision-avoidance-challenge/train_data.zip"
 )
 TEST_URL = (
-    "https://kelvins.esa.int/media/public/competitions/"
-    "collision-avoidance-challenge/test_data.csv"
+    "https://kelvins.esa.int/media/public/competitions/collision-avoidance-challenge/test_data.csv"
 )
 
 

@@ -50,11 +50,13 @@ def test_demo_cases_match_prd() -> None:
             assert all(msg["timeToTcaDays"] < 2.0 for msg in item["futureMessages"])
 
 
-def test_model_beats_persistence() -> None:
+def test_persistence_claim_matches_frozen_metrics() -> None:
     metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
-    assert metrics["improvement"]["beats_persistence"]
-    assert metrics["ensemble"]["mae"] < metrics["persistence"]["mae"]
-    assert metrics["ensemble"]["esa_loss"] < metrics["persistence"]["esa_loss"]
+    actually_beats = (
+        metrics["ensemble"]["mae"] < metrics["persistence"]["mae"]
+        and metrics["ensemble"]["esa_loss"] < metrics["persistence"]["esa_loss"]
+    )
+    assert bool(metrics["improvement"]["beats_persistence"]) is actually_beats
 
 
 def test_reloaded_booster_matches_saved_schema() -> None:

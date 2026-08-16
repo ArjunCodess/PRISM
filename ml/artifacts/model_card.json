@@ -1,5 +1,6 @@
 {
   "modelVersion": "prism-0.1.0",
+  "dataSource": "ESA Collision Avoidance Challenge training archive",
   "intendedUse": "Education and interpretability demonstration only.",
   "outOfScope": [
     "spacecraft operations",
@@ -8,15 +9,55 @@
   ],
   "highRiskThresholdLog10": -6.0,
   "metrics": {
-    "mae": 0.4300377772765122,
-    "rmse": 0.5747828128637089,
-    "median_ae": 0.3570198373624489,
-    "within_0_5": 0.7023809523809523,
-    "within_1_0": 0.9285714285714286,
-    "mae_high_risk": 0.32416326863049966,
-    "esa_loss": 0.28025286631931334,
-    "mse_hr": 0.2224229097772328,
-    "f2": 0.7936507936507936
+    "mae": 3.0534851586667235,
+    "rmse": 5.923657605668324,
+    "median_ae": 0.47612571716308594,
+    "within_0_5": 0.5081374321880651,
+    "within_1_0": 0.5720313441832429,
+    "mae_high_risk": 3.663165653820302,
+    "esa_loss": 0.1669832237710995,
+    "mse_hr": 0.06025167868029364,
+    "f2": 0.36082474226804123
   },
-  "beatsPersistence": true
+  "uncertainty": {
+    "method": "spread across 10 bootstrap xgboost models",
+    "interval50Coverage": 0.27787823990355637,
+    "interval90Coverage": 0.4918625678119349,
+    "meanInterval50Width": 0.9016494355049386,
+    "meanInterval90Width": 2.0595954176889544,
+    "nModels": 10
+  },
+  "missionHoldout": {
+    "heldOutMissions": [
+      9,
+      13,
+      19,
+      23
+    ],
+    "trainEvents": 7537,
+    "testEvents": 756,
+    "model": {
+      "mae": 2.7625962968075113,
+      "rmse": 4.985301663746818,
+      "median_ae": 0.5018339157104492,
+      "within_0_5": 0.49867724867724866,
+      "within_1_0": 0.5886243386243386,
+      "mae_high_risk": 17.397478167913782,
+      "esa_loss": 1658700.1982148984,
+      "mse_hr": 1.6587001982148983,
+      "f2": 0.0
+    },
+    "persistence": {
+      "mae": 4.8433526654661625,
+      "rmse": 9.260691816089222,
+      "median_ae": 0.0,
+      "within_0_5": 0.6388888888888888,
+      "within_1_0": 0.6521164021164021,
+      "mae_high_risk": 0.11415037279946905,
+      "esa_loss": 0.09381821479385588,
+      "mse_hr": 0.013030307610257762,
+      "f2": 0.1388888888888889
+    }
+  },
+  "beatsPersistence": false
 }

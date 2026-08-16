@@ -4,9 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GroupShuffleSplit
-
 from constants import RANDOM_STATE
+from sklearn.model_selection import GroupShuffleSplit
 
 
 @dataclass(frozen=True)

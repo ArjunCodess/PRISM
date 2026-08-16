@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -16,7 +17,13 @@ if str(SRC) not in sys.path:
 
 from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
-from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION, RANDOM_STATE, SNAPSHOT_COLUMNS, STORY_COPY  # noqa: E402
+from constants import (  # noqa: E402
+    HIGH_RISK_THRESHOLD,
+    MODEL_VERSION,
+    RANDOM_STATE,
+    SNAPSHOT_COLUMNS,
+    STORY_COPY,
+)
 from evaluate import (  # noqa: E402
     classification_metrics,
     error_gallery,
@@ -28,6 +35,11 @@ from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import case_briefing, predict_event, story_fit, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
+from ingest import (  # noqa: E402
+    load_esa_training,
+    realistic_training_events,
+    validate_official_test_compatibility,
+)
 from split import grouped_splits, subset  # noqa: E402
 from train_classifier import fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
@@ -72,7 +84,7 @@ def _messages(history: pd.DataFrame) -> list[dict[str, float | str]]:
     return rows
 
 
-def _bootstrap_models(train: pd.DataFrame, n_models: int = 8) -> list[XGBRegressor]:
+def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
     rng = np.random.default_rng(RANDOM_STATE)
     models: list[XGBRegressor] = []
     for _ in range(n_models):
@@ -82,16 +94,105 @@ def _bootstrap_models(train: pd.DataFrame, n_models: int = 8) -> list[XGBRegress
     return models
 
 
-def run_pipeline(n_events: int = 420) -> dict[str, object]:
+def _slice_metrics(
+    frame: pd.DataFrame, predictions: np.ndarray, mask: pd.Series | np.ndarray
+) -> dict[str, float | int]:
+    selected = np.asarray(mask, dtype=bool)
+    if not selected.any():
+        return {"n": 0, "highRiskEvents": 0}
+    selected_frame = frame.iloc[np.flatnonzero(selected)]
+    result: dict[str, float | int] = {
+        "n": int(selected.sum()),
+        "highRiskEvents": int((selected_frame["y"] >= HIGH_RISK_THRESHOLD).sum()),
+    }
+    result.update(regression_metrics(selected_frame["y"].to_numpy(), predictions[selected]))
+    return result
+
+
+def _robustness_slices(test: pd.DataFrame, predictions: np.ndarray) -> dict[str, object]:
+    combined_sigma = test["t_sigma_r"].fillna(0).abs() + test["c_sigma_r"].fillna(0).abs()
+    return {
+        "byObjectType": {
+            str(name): _slice_metrics(test, predictions, test["c_object_type"] == name)
+            for name in sorted(test["c_object_type"].dropna().unique())
+        },
+        "byMessageCount": {
+            "one": _slice_metrics(test, predictions, test["n_messages"] <= 1),
+            "twoToFive": _slice_metrics(
+                test, predictions, (test["n_messages"] >= 2) & (test["n_messages"] <= 5)
+            ),
+            "sixOrMore": _slice_metrics(test, predictions, test["n_messages"] >= 6),
+        },
+        "byMissDistance": {
+            "under500m": _slice_metrics(test, predictions, test["miss_distance"] < 500),
+            "500mTo2km": _slice_metrics(
+                test,
+                predictions,
+                (test["miss_distance"] >= 500) & (test["miss_distance"] < 2_000),
+            ),
+            "2kmOrMore": _slice_metrics(test, predictions, test["miss_distance"] >= 2_000),
+        },
+        "byRadialUncertainty": {
+            "under500m": _slice_metrics(test, predictions, combined_sigma < 500),
+            "500mTo5km": _slice_metrics(
+                test, predictions, (combined_sigma >= 500) & (combined_sigma < 5_000)
+            ),
+            "5kmOrMore": _slice_metrics(test, predictions, combined_sigma >= 5_000),
+        },
+        "bySnapshotAge": {
+            "under6h": _slice_metrics(test, predictions, test["hours_before_cutoff"] < 6),
+            "6hTo24h": _slice_metrics(
+                test,
+                predictions,
+                (test["hours_before_cutoff"] >= 6) & (test["hours_before_cutoff"] < 24),
+            ),
+            "24hOrMore": _slice_metrics(test, predictions, test["hours_before_cutoff"] >= 24),
+        },
+    }
+
+
+def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]:
     artifacts = ROOT / "ml" / "artifacts"
     artifacts.mkdir(parents=True, exist_ok=True)
-    raw = generate_synthetic_cdms(n_events=n_events)
+    processed = ROOT / "data" / "processed"
+    interim = ROOT / "data" / "interim"
+    processed.mkdir(parents=True, exist_ok=True)
+    interim.mkdir(parents=True, exist_ok=True)
+
+    if source == "real":
+        raw = load_esa_training(ROOT / "data" / "raw")
+        source_rows = len(raw)
+        raw = realistic_training_events(raw)
+        data_source = "ESA Collision Avoidance Challenge training archive"
+        compatibility = validate_official_test_compatibility(
+            ROOT / "data" / "raw", set(raw.columns) - {"t_ecc", "c_ecc"}
+        )
+    elif source == "synthetic":
+        raw = generate_synthetic_cdms(n_events=n_events)
+        source_rows = len(raw)
+        data_source = "Synthetic ESA-schema data"
+        compatibility = None
+        raw.to_csv(interim / "synthetic_cdms.csv", index=False)
+    else:
+        raise ValueError(f"unsupported source {source!r}; choose 'real' or 'synthetic'")
+
     frame = validate_cdm_frame(raw)
-    frame.to_csv(ROOT / "data" / "interim" / "synthetic_cdms.csv", index=False)
     events = build_event_histories(frame)
     features = build_feature_table(events)
     features["story"] = [event.get("story") for event in events]
-    features.to_csv(ROOT / "data" / "processed" / "events.csv", index=False)
+    mission_features = build_feature_table(events, include_mission=True)
+    mission_features["story"] = features["story"].to_numpy()
+    features.to_csv(processed / "events.csv", index=False)
+    write_json(
+        interim / "training_manifest.json",
+        {
+            "dataSource": data_source,
+            "sourceRows": source_rows,
+            "eligibleRows": len(frame),
+            "eligibleEvents": len(events),
+            "officialTestCompatibility": compatibility,
+        },
+    )
 
     splits = grouped_splits(features)
     train = subset(features, splits.train_ids)
@@ -108,22 +209,57 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
     x_test = test[booster.feature_names].apply(pd.to_numeric, errors="coerce")
 
     ensemble = _bootstrap_models(pd.concat([train, validation], ignore_index=True))
-    ens_matrix = np.column_stack([model.predict(x_test) for model in ensemble])
+    raw_ens_matrix = np.column_stack([model.predict(x_test) for model in ensemble])
+    persist_guard = test["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
+    ens_matrix = np.where(
+        persist_guard[:, None], test["risk"].to_numpy(dtype=float)[:, None], raw_ens_matrix
+    )
     ens_pred = np.median(ens_matrix, axis=1)
+    interval_50 = np.quantile(ens_matrix, [0.25, 0.75], axis=1)
+    interval_90 = np.quantile(ens_matrix, [0.05, 0.95], axis=1)
 
-    snapshot_cols = [col for col in SNAPSHOT_COLUMNS if col in train.columns and col != "c_object_type"]
+    mission_train = subset(mission_features, splits.train_ids)
+    mission_test = subset(mission_features, splits.test_ids)
+    mission_model = fit_xgboost(mission_train)
+    mission_pred = predict_model(mission_model, mission_test)
+
+    rng = np.random.default_rng(RANDOM_STATE)
+    mission_ids = np.asarray(sorted(mission_features["mission_id"].dropna().unique()))
+    rng.shuffle(mission_ids)
+    n_held_out = max(1, int(np.ceil(len(mission_ids) * 0.2)))
+    held_out_missions = mission_ids[:n_held_out]
+    held_out_mask = mission_features["mission_id"].isin(held_out_missions).to_numpy()
+    holdout_train = features.iloc[np.flatnonzero(~held_out_mask)]
+    holdout_test = features.iloc[np.flatnonzero(held_out_mask)]
+    holdout_model = fit_xgboost(holdout_train)
+    holdout_pred = predict_model(holdout_model, holdout_test)
+    holdout_persist = persistence_predict(holdout_test)
+
+    snapshot_cols = [
+        col for col in SNAPSHOT_COLUMNS if col in train.columns and col != "c_object_type"
+    ]
     snap_model = fit_xgboost(train[snapshot_cols + ["y", "event_id", "c_object_type"]])
     snap_pred = predict_model(snap_model, test)
 
     classifier = fit_warning_classifier(train)
     joblib.dump(classifier, artifacts / "warning_classifier.joblib")
-    cal_scores = predict_model(booster, calibration)
+    raw_cal_scores = predict_model(booster, calibration)
+    cal_scores = np.where(
+        calibration["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD,
+        calibration["risk"].to_numpy(dtype=float),
+        raw_cal_scores,
+    )
     cal_labels = (calibration["y"].to_numpy() >= HIGH_RISK_THRESHOLD).astype(int)
     calibrator = fit_isotonic(cal_scores, cal_labels)
     test_proba = calibrator.predict_proba(ens_pred)
 
     metrics = {
         "modelVersion": MODEL_VERSION,
+        "dataSource": data_source,
+        "dataSourceKind": source,
+        "selectedPolicy": "model correction with persistence guard at log-risk -6",
+        "sourceRows": source_rows,
+        "eligibleRows": len(frame),
         "nEvents": len(features),
         "splits": {
             "train": len(splits.train_ids),
@@ -139,6 +275,36 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         "improvement": persistence_improvement(test["y"].to_numpy(), ens_pred, persist_test),
         "warning": classification_metrics(test["y"].to_numpy(), test_proba),
         "calibration": reliability_bins(test["y"].to_numpy(), test_proba),
+        "uncertainty": {
+            "method": "spread across 10 bootstrap xgboost models",
+            "interval50Coverage": float(
+                np.mean(
+                    (test["y"].to_numpy() >= interval_50[0])
+                    & (test["y"].to_numpy() <= interval_50[1])
+                )
+            ),
+            "interval90Coverage": float(
+                np.mean(
+                    (test["y"].to_numpy() >= interval_90[0])
+                    & (test["y"].to_numpy() <= interval_90[1])
+                )
+            ),
+            "meanInterval50Width": float(np.mean(interval_50[1] - interval_50[0])),
+            "meanInterval90Width": float(np.mean(interval_90[1] - interval_90[0])),
+            "nModels": len(ensemble),
+        },
+        "robustness": _robustness_slices(test, ens_pred),
+        "missionIdComparison": {
+            "withoutMissionId": regression_metrics(test["y"].to_numpy(), model_pred),
+            "withMissionId": regression_metrics(test["y"].to_numpy(), mission_pred),
+        },
+        "missionHoldout": {
+            "heldOutMissions": [int(value) for value in sorted(held_out_missions)],
+            "trainEvents": len(holdout_train),
+            "testEvents": len(holdout_test),
+            "model": regression_metrics(holdout_test["y"].to_numpy(), holdout_pred),
+            "persistence": regression_metrics(holdout_test["y"].to_numpy(), holdout_persist),
+        },
         "ablation": {
             "snapshot_mae": float(regression_metrics(test["y"].to_numpy(), snap_pred)["mae"]),
             "full_mae": float(regression_metrics(test["y"].to_numpy(), model_pred)["mae"]),
@@ -156,35 +322,46 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         ),
     }
 
-    explainer = shap_explainer(booster, train)
     event_by_id = {event["event_id"]: event for event in events}
-    predictions: dict[int, dict[str, object]] = {}
-    for _, feature_row in features.iterrows():
-        event_id = int(feature_row["event_id"])
-        event = event_by_id[event_id]
-        aligned = pd.DataFrame([{name: float(feature_row[name]) for name in booster.feature_names}])
-        boot = np.array([model.predict(aligned)[0] for model in ensemble])
-        predictions[event_id] = predict_event(
-            trained=booster,
-            ensemble_preds=boot,
-            calibrator=calibrator,
-            explainer=explainer,
-            row=aligned.iloc[0],
-            messages=_messages(event["history"]),
-            event_id=f"demo-{event_id}",
-        )
+    aligned_all = features[booster.feature_names].apply(pd.to_numeric, errors="coerce")
+    raw_all_ensemble = np.column_stack([model.predict(aligned_all) for model in ensemble])
+    all_persist_guard = features["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
+    all_ensemble = np.where(
+        all_persist_guard[:, None],
+        features["risk"].to_numpy(dtype=float)[:, None],
+        raw_all_ensemble,
+    )
+    all_point = np.median(all_ensemble, axis=1)
+    all_low, all_high = np.quantile(all_ensemble, [0.05, 0.95], axis=1)
+    all_probability = calibrator.predict_proba(all_point)
+    all_disagreement = np.std(all_ensemble, axis=1)
+    all_missing = features["risk"].isna().to_numpy() | features["miss_distance"].isna().to_numpy()
+    all_crosses = (all_low < HIGH_RISK_THRESHOLD) & (all_high >= HIGH_RISK_THRESHOLD)
+    all_abstained = all_crosses | all_missing | (all_disagreement > 1.25)
+    event_ids = features["event_id"].astype(int).to_numpy()
+    id_to_position = {event_id: position for position, event_id in enumerate(event_ids)}
+    predictions = {
+        event_id: {
+            "predictedFinalRiskLog10": float(all_point[position]),
+            "configuredHighRiskProbability": float(all_probability[position]),
+            "abstained": bool(all_abstained[position]),
+        }
+        for position, event_id in enumerate(event_ids)
+    }
+    features_by_id = features.set_index("event_id", drop=False)
 
     stories_needed = ["low", "escalate", "deescalate", "uncertain", "failure"]
     used: set[int] = set()
     test_ids = set(splits.test_ids)
     demo_cases: list[dict[str, object]] = []
+    explainer = shap_explainer(booster, train)
     for story in stories_needed:
         ranked: list[tuple[float, int]] = []
         fallback: list[tuple[float, int]] = []
         for event_id, prediction in predictions.items():
             if event_id in used:
                 continue
-            feature_row = features[features["event_id"] == event_id].iloc[0]
+            feature_row = features_by_id.loc[event_id]
             persist = float(feature_row["risk"])
             actual = float(feature_row["y"])
             pred = float(prediction["predictedFinalRiskLog10"])
@@ -206,7 +383,7 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
             for event_id, prediction in predictions.items():
                 if event_id in used:
                     continue
-                feature_row = features[features["event_id"] == event_id].iloc[0]
+                feature_row = features_by_id.loc[event_id]
                 persist = float(feature_row["risk"])
                 actual = float(feature_row["y"])
                 pred = float(prediction["predictedFinalRiskLog10"])
@@ -218,8 +395,17 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         event_id = pool[0][1]
         used.add(event_id)
         event = event_by_id[event_id]
-        feature_row = features[features["event_id"] == event_id].iloc[0]
-        prediction = predictions[event_id]
+        feature_row = features_by_id.loc[event_id]
+        position = id_to_position[event_id]
+        prediction = predict_event(
+            trained=booster,
+            ensemble_preds=all_ensemble[position],
+            calibrator=calibrator,
+            explainer=explainer,
+            row=aligned_all.iloc[position],
+            messages=_messages(event["history"]),
+            event_id=f"demo-{event_id}",
+        )
         persist = float(feature_row["risk"])
         actual = float(feature_row["y"])
         copy = STORY_COPY[story]
@@ -241,7 +427,9 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
                 "baselineRiskLog10": persist,
                 "actualFinalRiskLog10": actual,
                 "messages": _messages(event["history"]),
-                "futureMessages": _messages(event["full_history"][event["full_history"]["time_to_tca"] < 2.0]),
+                "futureMessages": _messages(
+                    event["full_history"][event["full_history"]["time_to_tca"] < 2.0]
+                ),
             }
         )
 
@@ -270,6 +458,7 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
         artifacts / "model_card.json",
         {
             "modelVersion": MODEL_VERSION,
+            "dataSource": data_source,
             "intendedUse": "Education and interpretability demonstration only.",
             "outOfScope": [
                 "spacecraft operations",
@@ -278,6 +467,8 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
             ],
             "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
             "metrics": metrics["ensemble"],
+            "uncertainty": metrics["uncertainty"],
+            "missionHoldout": metrics["missionHoldout"],
             "beatsPersistence": bool(metrics["improvement"]["beats_persistence"]),
         },
     )
@@ -285,6 +476,10 @@ def run_pipeline(n_events: int = 420) -> dict[str, object]:
 
 
 if __name__ == "__main__":
-    result = run_pipeline()
+    parser = argparse.ArgumentParser(description="Train and export PRISM artifacts")
+    parser.add_argument("--source", choices=("real", "synthetic"), default="real")
+    parser.add_argument("--synthetic-events", type=int, default=420)
+    args = parser.parse_args()
+    result = run_pipeline(source=args.source, n_events=args.synthetic_events)
     print(json.dumps(result["improvement"], indent=2))
     print(json.dumps(result["ensemble"], indent=2))

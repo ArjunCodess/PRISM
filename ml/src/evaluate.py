@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+from constants import HIGH_RISK_THRESHOLD, LOW_RISK_CLIP
 from sklearn.metrics import (
     brier_score_loss,
     fbeta_score,
@@ -9,8 +10,6 @@ from sklearn.metrics import (
     precision_recall_curve,
     roc_auc_score,
 )
-
-from constants import HIGH_RISK_THRESHOLD, LOW_RISK_CLIP
 
 
 def esa_loss(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
@@ -49,7 +48,9 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, floa
     return metrics
 
 
-def classification_metrics(y_true: np.ndarray, proba: np.ndarray, threshold: float = 0.5) -> dict[str, float]:
+def classification_metrics(
+    y_true: np.ndarray, proba: np.ndarray, threshold: float = 0.5
+) -> dict[str, float]:
     labels = (y_true >= HIGH_RISK_THRESHOLD).astype(int)
     preds = (proba >= threshold).astype(int)
     precision, recall, _ = precision_recall_curve(labels, proba)
@@ -67,18 +68,27 @@ def classification_metrics(y_true: np.ndarray, proba: np.ndarray, threshold: flo
     }
 
 
-def persistence_improvement(y_true: np.ndarray, y_model: np.ndarray, y_persist: np.ndarray) -> dict[str, float]:
+def persistence_improvement(
+    y_true: np.ndarray, y_model: np.ndarray, y_persist: np.ndarray
+) -> dict[str, float]:
     mae_model = float(mean_absolute_error(y_true, y_model))
     mae_persist = float(mean_absolute_error(y_true, y_persist))
+    esa_model = esa_loss(y_true, clip_for_esa(y_model))["esa_loss"]
+    esa_persist = esa_loss(y_true, clip_for_esa(y_persist))["esa_loss"]
     return {
         "mae_model": mae_model,
         "mae_persist": mae_persist,
         "mae_improvement": mae_persist - mae_model,
-        "beats_persistence": float(mae_model < mae_persist),
+        "esa_loss_model": esa_model,
+        "esa_loss_persist": esa_persist,
+        "esa_loss_improvement": esa_persist - esa_model,
+        "beats_persistence": float(mae_model < mae_persist and esa_model < esa_persist),
     }
 
 
-def reliability_bins(y_true: np.ndarray, proba: np.ndarray, n_bins: int = 8) -> list[dict[str, float]]:
+def reliability_bins(
+    y_true: np.ndarray, proba: np.ndarray, n_bins: int = 8
+) -> list[dict[str, float]]:
     labels = (y_true >= HIGH_RISK_THRESHOLD).astype(float)
     edges = np.linspace(0.0, 1.0, n_bins + 1)
     rows: list[dict[str, float]] = []
