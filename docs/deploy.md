@@ -1,9 +1,11 @@
 # Deploy the PRISM exhibit and API
 
-PRISM is two services:
+PRISM is two services. After a public deploy, the website must talk to the live API. Frozen JSON is only a local fallback when you run Next in development without `NEXT_PUBLIC_API_URL`.
 
-- **Website** (`apps/web`): Next.js exhibit. The five curated cases, laboratory, and figures load from frozen JSON in `apps/web/public/`. This is enough for a public read of the research exhibit.
-- **API** (`apps/api`): FastAPI. Needed only for live `/v1/risk/predict` and for serving cases/metrics from `ml/artifacts/` instead of the web bundle.
+- **Website** (`apps/web`): Next.js exhibit.
+- **API** (`apps/api`): FastAPI. Serves cases, metrics, and live `POST /v1/risk/predict`.
+
+Copy `.env.example` to `.env.local` (website) or set the same names on the host. See `apps/web/.env.example`.
 
 There is no public host in this repository. After you deploy, put the website URL in the README.
 
@@ -18,13 +20,21 @@ Do not deploy `data/raw/`. The ESA archive is large and is not required at infer
 
 ## 1. Website (Vercel)
 
-The exhibit can go live with no API. If `NEXT_PUBLIC_API_URL` is unset, the site reads `apps/web/public/*.json`.
+The public site needs the API. Set this **before** you build:
+
+| Name | Value |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | `https://your-api-host.example` with no trailing slash |
+
+`NEXT_PUBLIC_*` is inlined at **build** time. After you add or change it, redeploy the website.
 
 1. Install the Vercel CLI and log in: `npm i -g vercel` then `vercel login`.
 2. From the repository root:
 
 ```powershell
 cd apps/web
+copy .env.example .env.local
+# edit .env.local so NEXT_PUBLIC_API_URL is your live API
 vercel
 ```
 
@@ -34,6 +44,7 @@ vercel
    - **Build Command:** `npm run build`
    - **Install Command:** `npm ci`
    - **Node version:** 20.x
+   - **Environment variable:** `NEXT_PUBLIC_API_URL`
 
 4. Production deploy:
 
@@ -42,17 +53,9 @@ cd apps/web
 vercel --prod
 ```
 
-Git integration also works: import the GitHub repo in Vercel, set the root directory to `apps/web`, and production deploys from `main`.
+Git integration also works: import the GitHub repo in Vercel, set the root directory to `apps/web`, and production deploys from `main`. Add `NEXT_PUBLIC_API_URL` in Vercel env settings for Production.
 
-Optional, only if the API is already public:
-
-| Name | Value |
-| --- | --- |
-| `NEXT_PUBLIC_API_URL` | `https://your-api-host.example` with no trailing slash |
-
-`NEXT_PUBLIC_*` is inlined at **build** time. After you add or change it, redeploy the website.
-
-The site will keep working if the API is down: `loadCases` and `loadMetrics` fall back to the frozen JSON.
+Each case page calls `POST /v1/risk/predict` so the forecast on screen is a live model run. The lab and case list load from `GET /v1/cases` and `GET /v1/model-card`. If the API is down, the production site will error instead of showing a silent cache.
 
 ## 2. API (any Python host)
 
@@ -121,7 +124,7 @@ Do not use `npx convex deploy` for this project. There is no Convex backend.
 2. Set `NEXT_PUBLIC_API_URL` on the website project to that origin.
 3. Redeploy the website.
 4. Confirm:
-   - exhibit home still lists five cases
+   - exhibit home still lists six cases
    - `https://your-api/health` is ok
    - case reveal still works (reveal uses the Next route, not the Python API)
    - live predict, if you expose it, hits `POST /v1/risk/predict`
@@ -150,6 +153,6 @@ npm run start -- --hostname 127.0.0.1 --port 3000
 
 ## 5. After it is live
 
-Add the public website URL to the README **Exhibit** and **Running** sections so a reader does not have to clone the repo to see the five cases.
+Add the public website URL to the README **Exhibit** and **Running** sections so a reader does not have to clone the repo to see the six cases.
 
 Keep the disclaimer on the deployed site: research prototype, not flight software, not an operational decision system.

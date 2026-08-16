@@ -110,7 +110,7 @@ The first run verifies or downloads the real data, trains, evaluates, draws figu
 - Web exhibit: `http://127.0.0.1:3000`
 - API documentation: `http://127.0.0.1:8000/docs`
 
-The five curated cases also run from frozen JSON if the API is down. There is no public host in this repository. To publish the exhibit and API, see [`docs/deploy.md`](docs/deploy.md).
+A public deploy must set `NEXT_PUBLIC_API_URL` so the site loads cases from FastAPI and each case page runs live `POST /v1/risk/predict`. Frozen JSON is only a local fallback in development. Copy [`apps/web/.env.example`](apps/web/.env.example). See [`docs/deploy.md`](docs/deploy.md).
 
 ```powershell
 python main.py --build-only
@@ -124,7 +124,7 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 ## Outputs
 
 - [`ml/artifacts/metrics.json`](ml/artifacts/metrics.json): metrics, ablations, horizons, abstention, calibration, coverage, robustness, mission tests, failure clusters, SHAP contrast.
-- [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): five curated real-data cases.
+- [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): six curated real-data cases (two low, one review, three high).
 - [`ml/artifacts/model_card.json`](ml/artifacts/model_card.json) and [`docs/model-card.md`](docs/model-card.md).
 - [`docs/figures`](docs/figures): comparison, ablation, horizon, abstention, failure, and SHAP charts.
 - [`data/processed/events.csv`](data/processed/events.csv): event-level feature table.
