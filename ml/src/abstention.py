@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from constants import ABSTENTION_DISAGREEMENT, HIGH_RISK_THRESHOLD
+from constants import (
+    ABSTENTION_DISAGREEMENT,
+    FALSE_REASSURANCE_DEFINITION,
+    HIGH_RISK_THRESHOLD,
+)
 from evaluate import regression_metrics
 
 REASON_CROSSES = "spread_crosses_threshold"
@@ -117,6 +121,7 @@ def selective_metrics(
         ),
         "highRiskCapture": float(high_risk_captured / n_high) if n_high else float("nan"),
         "falseReassurance": false_reassurance,
+        "falseReassuranceDefinition": FALSE_REASSURANCE_DEFINITION,
         "falseReassuranceRate": float(false_reassurance / n_high) if n_high else 0.0,
         "accepted": (
             regression_metrics(y_true[accepted], y_pred[accepted]) if n_accepted else {}

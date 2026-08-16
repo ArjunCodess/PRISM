@@ -1,8 +1,8 @@
 CUTOFF_DAYS = 2.0
 CUTOFF_HOURS = 48
 HORIZON_HOURS = (72, 48, 24, 12)
-# Persistence guard and abstention use the ESA class and a locked disagreement
-# threshold. They are not tuned on the held-out test split.
+# The −6 class follows the ESA challenge definition. The persistence guard and
+# 1.25 disagreement threshold are fixed design choices, not test-tuned.
 HIGH_RISK_THRESHOLD = -6.0
 LOW_RISK_CLIP = -6.001
 NEGLIGIBLE_RISK = -30.0
@@ -16,8 +16,17 @@ DISCLAIMER = (
 ABSTENTION_RULE = (
     "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class "
     "log10(Pc) ≥ −6, when current risk or miss distance is missing, or when "
-    "bootstrap disagreement exceeds 1.25 log-risk units. The class, guard, and "
-    "disagreement threshold were locked before evaluating the test split."
+    "bootstrap disagreement exceeds 1.25 log-risk units. The −6 class follows "
+    "the ESA challenge definition. The persistence guard and 1.25 disagreement "
+    "threshold were fixed design choices before evaluating the test split."
+)
+FALSE_REASSURANCE_DEFINITION = (
+    "An accepted forecast (no abstention) with predicted log10(Pc) < −6 while "
+    "the final reported value is ≥ −6."
+)
+ESA_LOSS_DEFINITION = (
+    "ESA-style loss is high-risk MSE divided by F2 (F-beta with β=2), so recall "
+    "of the log10(Pc) ≥ −6 class is weighted more than precision."
 )
 RESEARCH_QUESTION = (
     "Do pre-T−48 conjunction histories contain enough predictive signal to "

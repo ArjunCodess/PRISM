@@ -47,6 +47,10 @@ def historical_ablation(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, ob
         "question": (
             "Does historical evolution add predictive information beyond the latest snapshot?"
         ),
+        "historyBlock": (
+            "The history block consists of temporal transforms of variables already "
+            "available in the latest snapshot, plus message count and recency."
+        ),
         "families": families,
         "persistenceMae": persist_metrics["mae"],
         "historyDeltaMae": float(snapshot_mae - history_mae),
@@ -255,8 +259,14 @@ def abstention_study(
         "rule": (
             "Abstain if the 90% bootstrap band crosses log10(Pc) ≥ −6, "
             "if current risk or miss distance is missing, or if bootstrap "
-            "disagreement exceeds 1.25 log-risk units. These thresholds were "
-            "locked before test evaluation."
+            "disagreement exceeds 1.25 log-risk units. The −6 class follows "
+            "the ESA challenge definition. The persistence guard and 1.25 "
+            "disagreement threshold were fixed design choices before "
+            "evaluating the test split."
+        ),
+        "falseReassuranceDefinition": (
+            "An accepted forecast (no abstention) with predicted log10(Pc) < −6 "
+            "while the final reported value is ≥ −6."
         ),
         "operatingPoint": operating,
         "coverageCurve": curve,

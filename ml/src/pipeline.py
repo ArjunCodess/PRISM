@@ -20,6 +20,8 @@ from build_events import build_event_histories  # noqa: E402
 from calibrate import fit_isotonic  # noqa: E402
 from constants import (  # noqa: E402
     ABSTENTION_RULE,
+    ESA_LOSS_DEFINITION,
+    FALSE_REASSURANCE_DEFINITION,
     HIGH_RISK_THRESHOLD,
     MODEL_VERSION,
     RANDOM_STATE,
@@ -291,11 +293,17 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     metrics = {
         "modelVersion": MODEL_VERSION,
         "researchQuestion": RESEARCH_QUESTION,
+        "definitions": {
+            "mae": "Mean absolute error in log10(Pc) units on the final reported risk.",
+            "esaLoss": ESA_LOSS_DEFINITION,
+            "falseReassurance": FALSE_REASSURANCE_DEFINITION,
+        },
         "dataSource": data_source,
         "dataSourceKind": source,
         "selectedPolicy": (
-            "bootstrap xgboost median with a persistence guard at the ESA class; "
-            "the guard and abstention thresholds were locked before test evaluation"
+            "bootstrap xgboost median with a persistence guard at the ESA −6 class; "
+            "the −6 class follows the ESA challenge definition, while the guard and "
+            "1.25 disagreement threshold were fixed before test evaluation"
         ),
         "sourceRows": source_rows,
         "eligibleRows": len(frame),
@@ -341,7 +349,8 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "missionIdComparison": {
             "why": (
                 "Adding mission_id provides negligible improvement and does not "
-                "materially change performance, so it is excluded from production."
+                "materially change performance, so it is excluded from the "
+                "deployed exhibit."
             ),
             "withoutMissionId": regression_metrics(test["y"].to_numpy(), model_pred),
             "withMissionId": regression_metrics(test["y"].to_numpy(), mission_pred),
@@ -543,6 +552,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
                 "ESA challenge class log10(Pc) ≥ −6, not an operational threshold"
             ),
             "abstentionRule": ABSTENTION_RULE,
+            "falseReassuranceDefinition": FALSE_REASSURANCE_DEFINITION,
             "nHighRiskEligible": n_high_eligible,
             "nHighRiskTest": n_high_test,
             "metrics": metrics["ensemble"],

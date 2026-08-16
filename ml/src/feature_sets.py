@@ -99,3 +99,6 @@ def assert_trend_stems_are_known() -> None:
     unknown = [column for column in TREND_COLUMNS if column not in HISTORY_STEMS + COVARIANCE_STEMS]
     if unknown:
         raise ValueError(f"trend columns missing from ablation stems: {unknown}")
+    missing_snapshot = [stem for stem in HISTORY_STEMS if stem not in SNAPSHOT_COLUMNS]
+    if missing_snapshot:
+        raise ValueError(f"history stems missing from the latest snapshot: {missing_snapshot}")

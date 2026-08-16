@@ -91,6 +91,12 @@ def test_selective_prediction_improves_when_hard_cases_are_dropped() -> None:
     assert metrics["maeAccepted"] < metrics["maeAll"]
     assert metrics["falseReassurance"] == 0
     assert metrics["nHighRiskAbstained"] == 1
+    missed = np.array([False, False, False, False])
+    pred_miss = np.array([-8.1, -7.9, -20.0, -8.0])
+    y_high = np.array([-8.0, -8.0, -4.0, -5.0])
+    accepted_miss = selective_metrics(y_high, pred_miss, persist, missed)
+    assert accepted_miss["falseReassurance"] == 2
+    assert "predicted log10(Pc) <" in str(accepted_miss["falseReassuranceDefinition"])
 
 
 def test_coverage_curve_contains_operating_point() -> None:
