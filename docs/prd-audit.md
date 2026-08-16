@@ -13,12 +13,13 @@ Audited 16 August 2026 against `prd.md` version 1.0. Automated checks prove repo
 - The labeled ESA archive is downloaded and checksummed. The real-data pipeline reads all 162,634 rows, retains 8,293 realistic labeled events, verifies the official test schema, trains frozen artifacts, and generates evaluation figures.
 - The evaluation bundle exports empirical 50% and 90% spread coverage, mission-ID ablation, a four-mission hold-out, and robustness slices by object type, history length, miss distance, radial uncertainty, and snapshot age.
 - Root `main.py` performs verified download reuse, training, graph generation, artifact syncing, automated checks, production build, and coordinated API/web startup without requiring PowerShell scripts.
+- `docs/presentation.md` contains complete 90-second, 3-minute, and 7-minute scripts with the frozen real-data results and likely judge questions.
+- The user explicitly superseded the PRD's dark mission-control visual language with a minimal editorial direction. The redesigned app keeps the required screens, risk semantics, monospaced telemetry, and accessibility behavior while removing the decorative console treatment.
 
 ## Blocking full PRD conformance
 
 - **M3 / AI-improvement claim:** on the frozen real-data hold-out, the selected conservative ensemble reduces MAE from 5.080 to 3.053 log-risk units but ties persistence on ESA-style loss at 0.167. The product correctly disables the claim that it beats persistence until both required metrics improve.
 - **Exhibit operations:** a Wi-Fi-off rehearsal, sub-60-second cold-start measurement, sub-200-ms cached-load measurement, sub-2-second live-inference measurement, projector test at 1920×1080, and the 90-second backup recording require the presentation laptop and are not repository-verifiable.
-- **Presentation assets:** `docs/presentation.md` contains the talk structure, but the 3-minute and 7-minute sections are prompts rather than fully rehearsable scripts.
 
 ## Release decision
 
