@@ -15,17 +15,13 @@ Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units
 | MAE | 5.080 | **3.052** |
 | ESA-style loss | **0.167** | **0.167** |
 
-ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both.
+ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both. That exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`, which is the region ESA-style loss scores, so PRISM matches persistence on the high-risk tail by design. The 39.9% MAE reduction is therefore continuous-risk accuracy, not a better risk-weighted decision score.
 
 PRISM’s nominal 90% bootstrap band covers only **48.6%** of outcomes. It is therefore shown as model spread, not predictive probability.
 
 On four missions held out of training, high-risk MAE is **18.1** (one held-out high-risk event). Random-event accuracy does not establish mission-level generalization.
 
-**Yes for MAE. No for ESA-style loss.** The 39.9% MAE reduction is driven mainly by continuous-risk accuracy and does not translate into fewer errors under the challenge’s risk-weighted objective.
-
 The model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
-
-The result is a demonstrable forecasting system whose limits remain visible.
 
 ## Research question
 
@@ -39,13 +35,13 @@ PRISM therefore studies forecasting under a fixed information constraint. It doe
 
 T−48 is the ESA challenge information cutoff (`time_to_tca ≥ 2` days). The pipeline also reports T−72, T−24, and T−12.
 
-The contribution is a controlled evaluation of whether historical CDM evolution provides actionable early-warning signal at T−48, including horizon analysis, selective prediction, failure analysis, and mission-held-out testing.
+The contribution is a controlled evaluation of whether historical CDM evolution provides useful early-warning signal at T−48, including horizon analysis, selective prediction, failure analysis, and mission-held-out testing.
 
 ## Findings
 
 ### What the model can do
 
-1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error.
+1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error. The exact F2 and ESA-style loss tie is the persistence guard working, not a scoring bug.
 
 2. **History provides a measurable gain, while covariance trends add little marginal information once snapshot and history features are present.** The history block consists of temporal transforms of variables already available in the latest snapshot, allowing the ablation to isolate information from their evolution rather than simply adding unrelated measurements. On the single XGBoost model, snapshot-only MAE is 2.960. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.842. Covariance trends after that add almost nothing (2.838).
 
@@ -114,6 +110,8 @@ The first run verifies or downloads the real data, trains, evaluates, draws figu
 - Web exhibit: `http://127.0.0.1:3000`
 - API documentation: `http://127.0.0.1:8000/docs`
 
+The five curated cases also run from frozen JSON if the API is down. There is no public host in this repository. To publish the exhibit and API, see [`docs/deploy.md`](docs/deploy.md).
+
 ```powershell
 python main.py --build-only
 python main.py --skip-download --skip-train --skip-graphs --skip-checks
@@ -138,7 +136,7 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 - [`ml/artifacts`](ml/artifacts): frozen models and evidence.
 - [`apps/api`](apps/api): FastAPI service.
 - [`apps/web`](apps/web): Next.js exhibit with an offline artifact fallback.
-- [`docs`](docs): model card, data guide, PRD audit, presentation scripts, figures.
+- [`docs`](docs): model card, data guide, deploy guide, PRD audit, presentation scripts, figures.
 - [`prd.md`](prd.md): locked product specification.
 
 ## Acknowledgments and sources
