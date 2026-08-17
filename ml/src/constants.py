@@ -7,18 +7,27 @@ HIGH_RISK_THRESHOLD = -6.0
 LOW_RISK_CLIP = -6.001
 NEGLIGIBLE_RISK = -30.0
 RANDOM_STATE = 42
-MODEL_VERSION = "prism-0.2.0"
+MODEL_VERSION = "prism-0.3.0"
 ABSTENTION_DISAGREEMENT = 1.25
+FLOOR_MARGIN = 0.5
+OBJECT_TYPE_LEVELS = (
+    ("DEBRIS", "c_object_type_DEBRIS"),
+    ("PAYLOAD", "c_object_type_PAYLOAD"),
+    ("ROCKET BODY", "c_object_type_ROCKET_BODY"),
+    ("UNKNOWN", "c_object_type_UNKNOWN"),
+)
 DISCLAIMER = (
     "Research prototype for offline, explainable conjunction-risk forecasting. "
     "Not flight software. Not an operational decision system."
 )
 ABSTENTION_RULE = (
-    "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class "
-    "log10(Pc) ≥ −6, when current risk or miss distance is missing, or when "
-    "bootstrap disagreement exceeds 1.25 log-risk units. The −6 class follows "
-    "the ESA challenge definition. The persistence guard and 1.25 disagreement "
-    "threshold were fixed design choices before evaluating the test split."
+    "PRISM abstains when the 90% conformal band crosses the ESA challenge class "
+    "log10(Pc) ≥ −6, when current risk or miss distance is missing, when "
+    "bootstrap disagreement exceeds 1.25 log-risk units, or when the model "
+    "forecasts the dataset floor while today's report is still far from "
+    "negligible. The −6 class follows the ESA challenge definition. The "
+    "persistence guard and 1.25 disagreement threshold were fixed design "
+    "choices before evaluating the test split."
 )
 FALSE_REASSURANCE_DEFINITION = (
     "An accepted forecast (no abstention) with predicted log10(Pc) < −6 while "
@@ -120,6 +129,17 @@ FEATURE_DICTIONARY = {
     "miss_distance": "predicted miss distance",
     "relative_speed": "closing speed",
     "normalized_separation": "miss size versus uncertainty",
+    "mahalanobis_r2": "how many uncertainty-sigmas the miss is",
+    "miss_over_sigma_r": "radial miss versus uncertainty",
+    "miss_over_sigma_t": "along-track miss versus uncertainty",
+    "miss_over_sigma_n": "cross-track miss versus uncertainty",
+    "log_combined_sigma_det": "combined position uncertainty volume",
+    "hbr_proxy": "combined object size",
+    "miss_over_hbr": "miss distance versus object size",
+    "c_object_type_DEBRIS": "the other object is debris",
+    "c_object_type_PAYLOAD": "the other object is a payload",
+    "c_object_type_ROCKET_BODY": "the other object is a rocket body",
+    "c_object_type_UNKNOWN": "the other object type is unknown",
     "t_obs_used": "satellite observations used",
     "c_obs_used": "other-object observations used",
     "t_position_covariance_det": "satellite position uncertainty",

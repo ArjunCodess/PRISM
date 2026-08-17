@@ -46,6 +46,17 @@ SNAPSHOT_DERIVED = (
     "log_t_cov_det",
     "log_c_cov_det",
     "hours_before_cutoff",
+    "mahalanobis_r2",
+    "miss_over_sigma_r",
+    "miss_over_sigma_t",
+    "miss_over_sigma_n",
+    "log_combined_sigma_det",
+    "hbr_proxy",
+    "miss_over_hbr",
+    "c_object_type_DEBRIS",
+    "c_object_type_PAYLOAD",
+    "c_object_type_ROCKET_BODY",
+    "c_object_type_UNKNOWN",
 )
 
 HISTORY_META = ("n_messages", "hours_since_prev")

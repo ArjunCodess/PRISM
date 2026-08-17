@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from constants import CUTOFF_DAYS, SNAPSHOT_COLUMNS, TREND_COLUMNS
+from constants import CUTOFF_DAYS, OBJECT_TYPE_LEVELS, SNAPSHOT_COLUMNS, TREND_COLUMNS
 
 
 def _slope(values: np.ndarray, times: np.ndarray) -> float:
@@ -91,6 +91,46 @@ def event_features(
     )
     features["log_t_cov_det"] = float(np.log(snapshot["t_position_covariance_det"] + 1e-12))
     features["log_c_cov_det"] = float(np.log(snapshot["c_position_covariance_det"] + 1e-12))
+    t_sig = np.array(
+        [snapshot["t_sigma_r"], snapshot["t_sigma_t"], snapshot["t_sigma_n"]],
+        dtype=float,
+    )
+    c_sig = np.array(
+        [snapshot["c_sigma_r"], snapshot["c_sigma_t"], snapshot["c_sigma_n"]],
+        dtype=float,
+    )
+    combined_var = np.clip(np.square(t_sig) + np.square(c_sig), 1e-12, None)
+    if np.isfinite(pos).all() and np.isfinite(combined_var).all():
+        features["mahalanobis_r2"] = float(np.sum(np.square(pos) / combined_var))
+        features["miss_over_sigma_r"] = float(abs(pos[0]) / np.sqrt(combined_var[0]))
+        features["miss_over_sigma_t"] = float(abs(pos[1]) / np.sqrt(combined_var[1]))
+        features["miss_over_sigma_n"] = float(abs(pos[2]) / np.sqrt(combined_var[2]))
+        features["log_combined_sigma_det"] = float(np.sum(np.log(combined_var)))
+    else:
+        features["mahalanobis_r2"] = np.nan
+        features["miss_over_sigma_r"] = np.nan
+        features["miss_over_sigma_t"] = np.nan
+        features["miss_over_sigma_n"] = np.nan
+        features["log_combined_sigma_det"] = np.nan
+    t_span = float(snapshot["t_span"]) if pd.notna(snapshot.get("t_span")) else np.nan
+    c_span = float(snapshot["c_span"]) if pd.notna(snapshot.get("c_span")) else np.nan
+    hbr = (
+        0.5 * (t_span + c_span)
+        if np.isfinite(t_span) and np.isfinite(c_span)
+        else np.nan
+    )
+    features["hbr_proxy"] = float(hbr) if np.isfinite(hbr) else np.nan
+    features["miss_over_hbr"] = (
+        _safe_div(float(snapshot["miss_distance"]), float(hbr) + 1e-6)
+        if np.isfinite(hbr)
+        else np.nan
+    )
+    object_type = str(snapshot.get("c_object_type", "UNKNOWN"))
+    known = {label for label, _column in OBJECT_TYPE_LEVELS}
+    if object_type not in known:
+        object_type = "UNKNOWN"
+    for label, column in OBJECT_TYPE_LEVELS:
+        features[column] = float(object_type == label)
 
     for column in TREND_COLUMNS:
         series = history[column].astype(float).to_numpy()
