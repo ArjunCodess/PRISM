@@ -68,7 +68,7 @@ Minimum files on the host:
 
 ```
 apps/api/main.py
-ml/src/          # inference, hurdle, features, constants, ...
+ml/src/          # inference, features, constants, ...
 ml/artifacts/    # trained models and frozen JSON
 requirements.txt
 ```
