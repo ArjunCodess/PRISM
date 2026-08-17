@@ -1,5 +1,4 @@
 import { formatPc } from "./format";
-import type { DemoCase } from "./types";
 
 export function chanceWords(logRisk: number): string {
   const pc = formatPc(10 ** logRisk);
@@ -14,13 +13,3 @@ export function factorDirection(direction: string): string {
   return direction === "higher" ? "more worrying" : "calmer";
 }
 
-export function fallbackBriefing(
-  item: Pick<DemoCase, "baselineRiskLog10" | "prediction">,
-): string {
-  const today = chanceWords(item.baselineRiskLog10);
-  const guess = chanceWords(item.prediction.predictedFinalRiskLog10);
-  if (item.prediction.abstained) {
-    return `Today ${today}. Guesses disagree enough that a person should review this.`;
-  }
-  return `Today ${today}. Forecast ${guess}.`;
-}

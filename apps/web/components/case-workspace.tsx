@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Band } from "@/components/band";
 import { Explanation } from "@/components/explanation";
-import { chanceWords, fallbackBriefing } from "@/lib/plain";
+import { chanceWords } from "@/lib/plain";
 import type { CdmMessage, DemoCase } from "@/lib/types";
 
 type CutoffSafeCase = Omit<DemoCase, "futureMessages" | "actualFinalRiskLog10">;
@@ -44,14 +44,14 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
     <div className="space-y-8">
       <section className="flex flex-col gap-4 border-b hairline pb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="max-w-[70ch] text-lg leading-8 text-stone-600">{item.briefing ?? fallbackBriefing(item)}</p>
+          <p className="max-w-[70ch] text-lg leading-8 text-stone-600">{item.briefing}</p>
           <p className="mt-2 text-xs text-stone-500">Locked at T−{(latest.timeToTcaDays * 24).toFixed(1)} hours · {item.messages.length} messages used · forecast of the final reported log₁₀(Pc)</p>
         </div>
         <Band value={item.prediction.riskBand} abstained={item.prediction.abstained} />
       </section>
       {item.prediction.abstained ? (
         <p className="max-w-[70ch] text-sm leading-6 text-amber">
-          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% bootstrap band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
+          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% conformal band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
         </p>
       ) : null}
 
