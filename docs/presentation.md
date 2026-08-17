@@ -2,7 +2,7 @@
 
 Print this. Keep it next to the keyboard. Numbers stay the same even if your brain does not.
 
-Model version `prism-0.2.1`. Selected policy: T−48 bootstrap XGBoost median of the later reported `log10(Pc)`, with a persistence guard at −6.
+Selected policy: T−48 bootstrap XGBoost median of the later reported `log10(Pc)`, with a persistence guard at −6.
 
 ## If you blank
 

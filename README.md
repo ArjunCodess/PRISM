@@ -6,7 +6,7 @@ PRISM tests whether pre-T−48 conjunction histories contain enough predictive s
 
 It is a research prototype for explainable conjunction-risk forecasting. **Not flight software. Not an operational decision system.**
 
-Model version `prism-0.2.1`. The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the later reported `log10(Pc)` from cutoff-safe CDM summaries, then copies today's report when that report is already at or above the ESA `−6` class.
+The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the later reported `log10(Pc)` from cutoff-safe CDM summaries, then copies today's report when that report is already at or above the ESA `−6` class.
 
 ## Result
 

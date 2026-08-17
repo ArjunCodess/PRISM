@@ -6,7 +6,7 @@ Audited 18 August 2026 against `prd.md` version 1.0 plus the 18 August addendum.
 
 - The event builder enforces the T−48 cutoff, creates one row per event, and keeps event IDs disjoint across train, validation, calibration, and test splits.
 - Persistence, median, Ridge, XGBoost, calibrated estimate of high-risk-event probability, 10-model bootstrap spread, deterministic SHAP explanations, explicit abstention, serialized artifacts, and six curated cases covering the required scenario types are implemented.
-- Snapshot features include encounter-plane geometry and object-type dummies. Model version is `prism-0.2.1`. A hurdle residual policy was removed so the exhibit stays a T−48 forecast of final `log10(Pc)`.
+- Snapshot features include encounter-plane geometry and object-type dummies. The selected policy is a T−48 bootstrap XGBoost median of final `log10(Pc)`.
 - The laboratory includes held-out baseline metrics, ESA-style loss, snapshot-versus-history ablation, forecast-horizon evaluation, abstention coverage, failure clusters, SHAP contrast, calibration, grouped importance, both under- and over-prediction galleries, missed high-risk events, false escalations, provenance, and limitations.
 - FastAPI rejects post-cutoff messages, empty histories, invalid log-risk values, negative uncertainty, and unreasonable geometry or speed values.
 - The Next.js app provides the event queue, case workspace, and model laboratory, loads cases and metrics from FastAPI only, and makes reveal-outcome the only route for post-T−48 truth. If the API is down, `app/error.tsx` surfaces the failure. There is no silent JSON fallback.

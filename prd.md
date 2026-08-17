@@ -19,14 +19,16 @@ An explainable AI copilot for T-48-hour space-debris conjunction risk forecastin
 
 ### Addendum — 18 August 2026 (exhibit as built)
 
-Version 1.0 below remains the original contract. The frozen exhibit diverges in these documented ways:
+Version 1.0 below remains the original contract. The frozen exhibit is:
 
-1. **Selected model** is a T−48 bootstrap XGBoost median (`prism-0.2.1`) of the later reported `log10(Pc)`, with a persistence guard at `log10(Pc) ≥ −6`. A hurdle residual mix was tried and removed because it stopped the exhibit from being a T−48 forecast.
+1. **Selected model** is a T−48 bootstrap XGBoost median of the later reported `log10(Pc)`, with a persistence guard at `log10(Pc) ≥ −6`.
 2. **Held-out numbers:** persistence MAE 5.080 → ensemble MAE 3.059; ESA-style loss and F2 still tie at 0.167 / 0.361. Unguarded XGBoost is 2.808 with F2 = 0. Nominal 90% bootstrap coverage is 47.7%.
 3. **G6 / A8 / N7 superseded.** The website requires FastAPI (`NEXT_PUBLIC_API_URL`). There is no JSON fallback when the API is stopped. The laptop exhibit still runs with Wi-Fi off if both processes are local.
 4. **False reassurance is 1** on the frozen test split (1 of 9 high-risk events).
 5. **Snapshot features** include encounter-plane geometry and object-type dummies.
 6. **M3 remains unmet:** MAE improves; ESA-style loss does not.
+
+Do not quote 3.052. That was an earlier freeze of the same T−48 policy before this retrain.
 
 Numbers and scripts: `README.md`, `docs/model-card.md`, `docs/presentation.md`, `ml/artifacts/metrics.json`.
 
@@ -626,7 +628,7 @@ Each requirement is mandatory unless marked Stretch.
 |---|---|
 | A1 | FastAPI `POST /v1/risk/predict` accepts cutoff-safe CDM histories. |
 | A2 | API rejects any message with `timeToTcaDays < 2`. |
-| A3 | API returns forecast, \(P_c\), interval, warning probability, risk band, abstention, top factors, model version, and disclaimer. |
+| A3 | API returns forecast, \(P_c\), interval, warning probability, risk band, abstention, top factors, and disclaimer. |
 | A4 | Next.js UI provides Event Queue, Case Workspace, and Model Laboratory. |
 | A5 | Reveal-outcome is the only way to see post-T-48 truth. |
 | A6 | Baseline-versus-model comparison is one click. |
@@ -784,12 +786,11 @@ Response:
     {"feature": "normalized_separation", "direction": "higher", "contribution": 0.34},
     {"feature": "miss_distance", "direction": "lower", "contribution": -0.21}
   ],
-  "modelVersion": "prism-0.1.0",
   "disclaimer": "Educational research prototype; not for operational decisions."
 }
 ```
 
-The API validates names, units, ranges, model version, and cutoff.
+The API validates names, units, ranges, and cutoff.
 
 ---
 
@@ -887,7 +888,7 @@ Today is **15 August 2026**. The exhibit target is **18 August 2026**. Freeze th
 | 15 Aug | Data downloaded and checksummed. Event-level cutoff pipeline + leakage tests. Persistence, median, and Ridge baselines. First XGBoost snapshot model. |
 | 16 Aug | Trend + physics features, grouped evaluation, model selection, calibration, ensemble spread, SHAP, five demo cases exported. |
 | 17 Aug | FastAPI + Next.js queue/workspace/laboratory, first freeze of bootstrap exhibit. |
-| 18 Aug | Dropped hurdle residual; restored T−48 ensemble; API-only website; documentation. |
+| 18 Aug | Restored T−48 ensemble freeze (MAE 3.059); API-only website; documentation. |
 
 If an organiser later names 20 August as a paperwork deadline, 18–19 August are for documentation polish only.
 

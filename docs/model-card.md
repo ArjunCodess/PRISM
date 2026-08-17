@@ -1,7 +1,5 @@
 # PRISM model card
 
-**Version.** `prism-0.2.1`
-
 **Research question.** Do pre-T−48 conjunction histories contain enough predictive signal to improve forecasts of later reported `log10(Pc)` over persistence?
 
 **Intended use.** Research prototype for explainable conjunction-risk forecasting. The exhibit laptop runs Next.js plus FastAPI; the website has no JSON fallback.
