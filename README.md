@@ -6,7 +6,7 @@ PRISM tests whether pre-T−48 conjunction histories contain enough predictive s
 
 It is a research prototype for explainable conjunction-risk forecasting. **Not flight software. Not an operational decision system.**
 
-Model version `prism-0.3.0`. The selected policy is a **hurdle residual**: XGBoost trained on MAE of the residual `Δ = y − current risk`, mixed with a collapse-to-floor classifier, then a persistence guard at the ESA `−6` class.
+Model version `prism-0.2.1`. The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the later reported `log10(Pc)` from cutoff-safe CDM summaries, then copies today's report when that report is already at or above the ESA `−6` class.
 
 ## Result
 
@@ -14,18 +14,18 @@ Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units
 
 | | Persistence | PRISM |
 |---|---:|---:|
-| MAE | 5.080 | **2.800** |
+| MAE | 5.080 | **3.059** |
 | ESA-style loss | **0.167** | **0.167** |
 
-That is a 44.9% MAE cut. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both. The exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`, and invented high-risk forecasts are clamped just below `−6`, so PRISM matches persistence on the high-risk tail by design. The MAE reduction is continuous-risk accuracy, not a better risk-weighted decision score.
+That is a 39.8% MAE cut. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both. The exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`, which is the region ESA-style loss scores. The MAE reduction is continuous-risk accuracy, not a better risk-weighted decision score.
 
-A single unguarded MAE XGBoost scores 2.550 MAE but F2 = 0. The constant training-set median scores 3.002 MAE.
+A single unguarded XGBoost scores 2.808 MAE but F2 = 0. The constant training-set median scores 3.002 MAE.
 
-Nominal 50% and 90% **split-conformal** bands cover **82.0%** and **91.4%** of outcomes (localized by whether the hurdle predicts a floor collapse). Bootstrap disagreement is still an abstention trigger, not the interval itself.
+PRISM’s nominal 90% bootstrap band covers **47.7%** of outcomes (50% band **25.8%**). It is therefore shown as model spread, not predictive probability.
 
-On four missions held out of training, overall MAE is 3.588 versus persistence 4.843. There is one held-out high-risk event; high-risk MAE ties persistence at 0.114 because of the guard. Random-event accuracy does not establish mission-level generalization.
+On four missions held out of training, overall MAE is 2.688 versus persistence 4.843. High-risk MAE is **19.2** on one held-out high-risk event. Random-event accuracy does not establish mission-level generalization.
 
-The model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions. Two of nine test high-risk events remain false reassurance: accepted forecasts below `−6` while the later report is `≥ −6`.
+The model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
 
 ## Research question
 
@@ -45,51 +45,52 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 ### What the model can do
 
-1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error. The exact F2 and ESA-style loss tie is the persistence guard (and high-risk clamp) working, not a scoring bug.
+1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error. The exact F2 and ESA-style loss tie is the persistence guard working, not a scoring bug.
 
-2. **Geometry and object type are in the snapshot.** Encounter-plane Mahalanobis distance, miss/σ, a combined-size proxy, and dummy flags for debris / payload / rocket body / unknown are tree features. The raw `c_object_type` string is not passed as a numeric column.
+2. **History provides a measurable gain, while covariance trends add little after that.** The history block consists of temporal transforms of variables already available in the latest snapshot, allowing the ablation to isolate information from their evolution. Snapshot also includes encounter-plane geometry and object-type dummies. On the single XGBoost model, snapshot-only MAE is 2.904. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.851. Covariance trends after that reach 2.808.
 
-3. **On the MAE residual model, extra history does not help average error.** Snapshot-only MAE is 2.509. Adding historical summaries of risk, miss distance, speed, and observation counts moves it to 2.535. Covariance trends after that are 2.526. The history block is still temporal transforms of snapshot fields; under MAE loss it does not buy a further average-error cut the way it did under the older squared-error exhibit.
+3. **The value of learned forecasting is highest when information is sparse.** Waiting helps persistence more than it helps PRISM: the learned advantage is largest at T−72 and nearly gone at T−12. Horizon numbers below are single XGBoost (the T−48 row of the selected ensemble is 3.059).
 
-4. **The value of learned forecasting is highest when information is sparse.** Waiting helps persistence more than it helps PRISM. Horizon numbers below are the selected hurdle policy, not the unguarded booster.
-
-   | Horizon | Hurdle | Persistence |
+   | Horizon | XGBoost | Persistence |
    |---|---:|---:|
-   | T−72 | 4.578 | 7.748 |
-   | T−48 | 2.800 | 5.080 |
-   | T−24 | 2.199 | 2.634 |
-   | T−12 | 1.385 | 1.444 |
+   | T−72 | 3.214 | 7.748 |
+   | T−48 | 2.808 | 5.080 |
+   | T−24 | 2.110 | 2.634 |
+   | T−12 | 1.384 | 1.444 |
 
-5. **Abstention is selective prediction.** The `−6` class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split. PRISM abstains if the 90% conformal band crosses `log10(Pc) ≥ −6`, if current risk or miss distance is missing, if bootstrap disagreement exceeds 1.25 log-risk units, if it forecasts the dataset floor while today's report is still far from negligible, or if the warning head is elevated while the point forecast stays below `−6`. That keeps **88.97%** coverage (183 of 1,659 sent to review) and drops accepted MAE from 2.800 to **2.085**. Seven of nine test high-risk events are sent to review.
+4. **Abstention is selective prediction.** The `−6` class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split. PRISM abstains if the 90% bootstrap band crosses `log10(Pc) ≥ −6`, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. That keeps **77.7%** coverage (370 of 1,659 sent to review) and drops accepted MAE from 3.059 to **1.902**.
 
 ### Where it is weak
 
-6. **False reassurance is not zero.** Two accepted forecasts stay below `−6` while the final report is `≥ −6` (2/9 high-risk test events). Those are late jumps the conformal band did not cross. Do not claim the exhibit never misses a high-risk event on accepted cases.
+5. **False reassurance is not zero.** One accepted forecast stays below `−6` while the final report is `≥ −6` (1/9 high-risk test events). Eight of nine high-risk events are flagged or sent to review.
 
-7. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out still has only one high-risk event. Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.550 → 2.570) and is excluded from the deployed exhibit.
+6. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out remains weak on the rare high-risk tail (one held-out high-risk event; high-risk MAE 19.2). Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the deployed exhibit.
 
-8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Treat that probability as a scarce-label fit, not an operational warning system. Warning-head PR-AUC is 0.046; ROC-AUC is 0.941.
+7. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 25.8% and 47.7% of outcomes. The interface labels them as model spread.
 
-9. **Failures are not one bucket.** Of 1,659 test events, 1,275 are accurate to 0.5 log units. Dominant errors: 135 floor collapses to −30, 107 under-predictions, 41 over-predictions, 38 moderate errors, 28 sparse-history errors, 20 false high-risk calls, 13 close-approach errors, and 2 late high-risk jumps. SHAP on large errors puts more weight on risk trend and tracking completeness than on today's reported risk.
+8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Treat that probability as a scarce-label fit, not an operational warning system.
+
+9. **Failures are not one bucket.** Of 1,659 test events, 837 are accurate to 0.5 log units. Dominant errors: 366 over-predictions, 209 under-predictions, 97 moderate errors, 63 sparse-history errors, 39 floor collapses to −30, 26 close-approach errors, 20 false high-risk calls, and 2 late high-risk jumps.
 
 ## Experimental setup
 
-**Target.** Forecast of the final reported `log10(Pc)` after the cutoff.
+**Target.** Forecast of the final reported `log10(Pc)` after the T−48 cutoff.
 
 **Information constraint.** Features use only messages with `time_to_tca ≥` the cutoff. The later update is the label, never an input.
 
 **Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection.
 
-**Model.** Event-level XGBoost on inspectable summaries (`reg:absoluteerror` on the residual from current risk), a collapse-to-floor classifier mixed with a hard threshold of 0.35, a warning classifier with isotonic calibration, split-conformal intervals, and a 10-model bootstrap used for disagreement. A sequence model is not used so temporal signals can be inspected directly. Inference is CPU-only; no GPU is required. SHAP explains the residual booster, not the mixed point forecast.
+**Model.** Event-level XGBoost on inspectable summaries. A sequence model is not used so temporal signals can be inspected directly. Inference is a CPU-only 10-model XGBoost ensemble on a few hundred tabular features; no GPU is required.
 
-**Baselines.** Persistence, training-set median, and Ridge. The exhibit’s selected policy is the hurdle mix with a persistence guard when the current report is already at or above `−6`.
+**Baselines.** Persistence, training-set median, and Ridge. The exhibit’s selected policy is a ten-model bootstrap XGBoost median with a persistence guard when the current report is already at or above `−6`.
 
 **License.** The PRISM code in this repository is MIT-licensed. The ESA Collision Avoidance Challenge dataset remains under ESA’s terms.
 
 ## Limitations
 
 - Persistence remains competitive under the loss that motivated the original challenge.
-- Two accepted high-risk misses remain on this split.
+- Bootstrap intervals are miscalibrated; they are used for abstention, not as 90% probability statements.
+- One accepted high-risk miss remains on this split.
 - Mission-level generalization, especially on high-risk events, is not established.
 - The dataset is historical anonymized ESA-supported events from 2015–2019, not live catalogue data.
 - Manoeuvre decisions are out of scope.
@@ -97,7 +98,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 ## Exhibit
 
-Six frozen real-data cases (two low, one review, three high). Each shows the current report, the forecast of the final reported `log10(Pc)`, conformal bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
+Six frozen real-data cases (two low, one review, three high). Each shows the current report, the T−48 forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
 
 The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
 
@@ -133,7 +134,7 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 ## Outputs
 
 - [`ml/artifacts/metrics.json`](ml/artifacts/metrics.json): metrics, ablations, horizons, abstention, calibration, coverage, robustness, mission tests, failure clusters, SHAP contrast.
-- [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): six curated real-data cases (two low, one review, three high). The API serves these; the website does not read them as a fallback.
+- [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): six curated real-data cases. The API serves these; the website does not read them as a fallback.
 - [`ml/artifacts/model_card.json`](ml/artifacts/model_card.json) and [`docs/model-card.md`](docs/model-card.md).
 - [`docs/figures`](docs/figures): comparison, ablation, horizon, abstention, failure, and SHAP charts.
 - [`data/processed/events.csv`](data/processed/events.csv): event-level feature table.
@@ -141,12 +142,12 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 ## Repository layout
 
 - [`main.py`](main.py): project orchestrator.
-- [`ml/src`](ml/src): acquisition, features, hurdle training, evaluation, experiments, explanations, inference.
+- [`ml/src`](ml/src): acquisition, features, training, evaluation, experiments, explanations, inference.
 - [`ml/artifacts`](ml/artifacts): frozen models and evidence.
 - [`apps/api`](apps/api): FastAPI service (required for the exhibit).
 - [`apps/web`](apps/web): Next.js exhibit (API-only).
 - [`docs`](docs): model card, data guide, deploy guide, PRD audit, presentation scripts, figures.
-- [`prd.md`](prd.md): locked product specification, with an 18 August 2026 addendum for the hurdle exhibit.
+- [`prd.md`](prd.md): locked product specification, with an 18 August 2026 addendum.
 
 ## Acknowledgments and sources
 
