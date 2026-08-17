@@ -137,12 +137,12 @@ export default async function LabPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             <HeroBox label="Coverage" value={coverage === null ? "—" : `${(coverage * 100).toFixed(1)}%`} note={coverage === null ? "events that receive a firm forecast" : `${((1 - coverage) * 100).toFixed(1)}% sent to review`} />
             <HeroBox label="Accepted MAE" value={maeAccepted === null ? "—" : maeAccepted.toFixed(3)} note={`all-event MAE ${metrics.ensemble.mae.toFixed(3)}`} />
-            <HeroBox label="High-risk events" value={nHighRiskTest === null ? "—" : nHighRiskTest.toString()} note="all nine are either flagged or sent to review" />
+            <HeroBox label="High-risk events" value={nHighRiskTest === null ? "—" : nHighRiskTest.toString()} note="nine in the test split; check false reassurance in metrics" />
           </div>
         </Section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers 48.6% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
+          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers about 48% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
             <div className="panel grid grid-cols-2 gap-6 p-6">
               <Coverage label="50% band" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
               <Coverage label="90% band" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
