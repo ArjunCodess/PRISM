@@ -15,6 +15,7 @@ from abstention import (  # noqa: E402
     REASON_CROSSES,
     REASON_DISAGREEMENT,
     REASON_MISSING,
+    REASON_SUSPICIOUS_FLOOR,
     abstain_mask,
     coverage_curve,
     decide_abstention,
@@ -80,6 +81,10 @@ def test_abstention_rule_is_explicit() -> None:
 
     missing = decide_abstention(quiet, current_risk=float("nan"), miss_distance=800.0)
     assert REASON_MISSING in missing.reasons
+    floor = decide_abstention(
+        quiet, current_risk=-7.0, miss_distance=400.0, point=-30.0
+    )
+    assert REASON_SUSPICIOUS_FLOOR in floor.reasons
 
 
 def test_selective_prediction_improves_when_hard_cases_are_dropped() -> None:
@@ -149,6 +154,26 @@ def test_failure_clusters_tag_late_jumps() -> None:
 def test_default_cutoff_remains_two_days() -> None:
     assert CUTOFF_DAYS == 2.0
     assert HIGH_RISK_THRESHOLD == -6.0
+
+
+def test_geometry_features_are_finite() -> None:
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=30, seed=4))
+    features = build_feature_table(build_event_histories(frame))
+    assert "mahalanobis_r2" in features.columns
+    assert "c_object_type_DEBRIS" in features.columns
+    assert features["mahalanobis_r2"].notna().any()
+    assert features.filter(regex=r"^c_object_type_").sum(axis=1).max() == 1
+
+
+def test_hurdle_mix_can_send_confident_collapses_to_the_floor() -> None:
+    from hurdle import mix_residual
+
+    risk = np.array([-12.0, -8.0])
+    delta = np.array([0.5, 0.5])
+    p_floor = np.array([0.95, 0.05])
+    hard = mix_residual(risk, delta, p_floor, mix_kind="hard", floor_threshold=0.5)
+    assert hard[0] == pytest.approx(-30.0)
+    assert hard[1] == pytest.approx(-7.5)
 
 
 def test_abstain_mask_matches_scalar_rule() -> None:
