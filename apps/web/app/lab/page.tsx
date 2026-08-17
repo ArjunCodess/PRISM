@@ -28,7 +28,6 @@ const MODE_LABEL: Record<string, string> = {
 
 export default async function LabPage() {
   const metrics = await loadMetrics();
-  if (!metrics) return <Shell title="Model evidence is unavailable." kicker="Model laboratory"><p className="panel p-6 text-stone-600">The frozen metrics file could not be loaded.</p></Shell>;
 
   const improvement = metrics.improvement.mae_improvement / metrics.persistence.mae * 100;
   const featureGroups = metrics.featureGroups ?? [];
@@ -67,7 +66,7 @@ export default async function LabPage() {
               <PrintButton />
             </div>
             <dl className="mt-8 grid gap-6 sm:grid-cols-3">
-              <HeroMetric label="Ensemble MAE" value={metrics.ensemble.mae} note={`persistence ${metrics.persistence.mae.toFixed(3)}`} />
+              <HeroMetric label="Hurdle MAE" value={metrics.ensemble.mae} note={`persistence ${metrics.persistence.mae.toFixed(3)}`} />
               <HeroMetric label="ESA-style loss" value={metrics.ensemble.esa_loss} note={`persistence ${metrics.persistence.esa_loss.toFixed(3)}`} />
               <HeroMetric label="90% band coverage" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="nominal 90%" />
             </dl>
@@ -161,7 +160,7 @@ export default async function LabPage() {
         </section>
 
         {failureModes.length > 0 ? (
-          <Section title="How failures cluster" copy="These are mutually exclusive tags on the guarded ensemble. Accurate cases are included so the shares sum to the test set.">
+          <Section title="How failures cluster" copy="These are mutually exclusive tags on the selected hurdle policy. Accurate cases are included so the shares sum to the test set.">
             <div className="overflow-x-auto rounded-lg border hairline bg-panel">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">Mode</th><th>n</th><th>Share</th><th>MAE</th><th>Mean messages</th><th>Mean miss (m)</th></tr></thead>
@@ -203,11 +202,11 @@ export default async function LabPage() {
           </Section>
         ) : null}
 
-        <Section title="Baseline comparison" copy="Lower is better. One log unit is a tenfold probability error. The guarded ensemble is selected because raw XGBoost misses the ESA high-risk class.">
+        <Section title="Baseline comparison" copy="Lower is better. One log unit is a tenfold probability error. The selected policy is a hurdle residual model with a persistence guard on the ESA −6 class.">
           <div className="overflow-x-auto rounded-lg border hairline bg-panel">
             <table className="w-full min-w-[650px] text-left text-sm">
               <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">System</th><th>MAE</th><th>RMSE</th><th>High-risk MAE</th><th>Within 1 unit</th><th>ESA loss</th></tr></thead>
-              <tbody><ModelRow name="Persistence" data={metrics.persistence} /><ModelRow name="Ridge" data={metrics.ridge} /><ModelRow name="XGBoost" data={metrics.xgboost} /><ModelRow name="Guarded ensemble" data={metrics.ensemble} selected /></tbody>
+              <tbody><ModelRow name="Persistence" data={metrics.persistence} /><ModelRow name="Ridge" data={metrics.ridge} /><ModelRow name="XGBoost" data={metrics.xgboost} /><ModelRow name="Hurdle residual" data={metrics.ensemble} selected /></tbody>
             </table>
           </div>
         </Section>
