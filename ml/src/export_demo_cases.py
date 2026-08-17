@@ -32,15 +32,35 @@ def predict_event(
     row: pd.Series,
     messages: list[dict[str, Any]],
     event_id: str,
+    point: float | None = None,
+    interval90: tuple[float, float] | None = None,
+    interval50: tuple[float, float] | None = None,
+    warning_score: float | None = None,
 ) -> dict[str, Any]:
-    point = float(np.median(ensemble_preds))
-    lo, inner_lo, inner_hi, hi = np.quantile(ensemble_preds, [0.05, 0.25, 0.75, 0.95])
-    proba = float(calibrator.predict_proba(np.array([point]))[0])
+    if point is None:
+        point = float(np.median(ensemble_preds))
+    if interval90 is None:
+        lo, hi = np.quantile(ensemble_preds, [0.05, 0.95])
+    else:
+        lo, hi = float(interval90[0]), float(interval90[1])
+    if interval50 is None:
+        inner_lo, inner_hi = np.quantile(ensemble_preds, [0.25, 0.75])
+    else:
+        inner_lo, inner_hi = float(interval50[0]), float(interval50[1])
+    score = point if warning_score is None else float(warning_score)
+    proba = float(calibrator.predict_proba(np.array([score]))[0])
     current_risk = float(row["risk"]) if pd.notna(row.get("risk")) else float("nan")
     miss_distance = (
         float(row["miss_distance"]) if pd.notna(row.get("miss_distance")) else float("nan")
     )
-    decision = decide_abstention(ensemble_preds, current_risk, miss_distance)
+    decision = decide_abstention(
+        ensemble_preds,
+        current_risk,
+        miss_distance,
+        interval90=(lo, hi),
+        point=point,
+        warning_proba=None if warning_score is None else float(warning_score),
+    )
     abstained = decision.abstained
     _, factors = local_factors(trained, explainer, row)
     payload = {
@@ -247,6 +267,10 @@ def assemble_demo_cases(
     calibrator: Any,
     explainer: Any,
     test_ids: set[int],
+    points: np.ndarray | None = None,
+    interval90: np.ndarray | None = None,
+    interval50: np.ndarray | None = None,
+    warning_scores: np.ndarray | None = None,
 ) -> list[dict[str, Any]]:
     event_ids = features["event_id"].map(_as_int_id).to_numpy()
     id_to_position = {int(event_id): position for position, event_id in enumerate(event_ids)}
@@ -271,6 +295,18 @@ def assemble_demo_cases(
             row=aligned.iloc[position],
             messages=history,
             event_id=f"demo-{event_id}",
+            point=None if points is None else float(points[position]),
+            interval90=(
+                None
+                if interval90 is None
+                else (float(interval90[0, position]), float(interval90[1, position]))
+            ),
+            interval50=(
+                None
+                if interval50 is None
+                else (float(interval50[0, position]), float(interval50[1, position]))
+            ),
+            warning_score=None if warning_scores is None else float(warning_scores[position]),
         )
         persist = float(feature_row["risk"])
         actual = float(feature_row["y"])
@@ -312,23 +348,20 @@ def refresh_from_frozen() -> list[dict[str, Any]]:
     splits = json.loads(split_path.read_text(encoding="utf-8"))
     test_ids = {int(event_id) for event_id in splits["test"]}
     model = PrismModel()
-    aligned = features[model.feature_names].apply(pd.to_numeric, errors="coerce")
-    raw_ensemble = np.column_stack([member.predict(aligned) for member in model.ensemble])
+    out = model.predict_frame(features)
     persist = features["risk"].to_numpy(dtype=float)
-    ensemble_matrix = np.where(
-        (persist >= HIGH_RISK_THRESHOLD)[:, None],
-        persist[:, None],
-        raw_ensemble,
-    )
-    point = np.median(ensemble_matrix, axis=1)
     abstained, _, _ = abstain_mask(
-        ensemble_matrix,
+        out.ensemble,
         persist,
         features["miss_distance"].to_numpy(dtype=float),
+        interval90=out.interval90,
+        point=out.point,
+        warning_proba=out.warning_proba,
+        warning_threshold=model.policy.f2_threshold,
     )
     predictions = {
         int(event_id): {
-            "predictedFinalRiskLog10": float(point[index]),
+            "predictedFinalRiskLog10": float(out.point[index]),
             "abstained": bool(abstained[index]),
         }
         for index, event_id in enumerate(features["event_id"].to_numpy())
@@ -339,17 +372,22 @@ def refresh_from_frozen() -> list[dict[str, Any]]:
     raw = raw[raw["event_id"].map(_as_int_id).isin(selected_ids)].copy()
     events = build_event_histories(validate_cdm_frame(raw))
     event_by_id = {_as_int_id(event["event_id"]): event for event in events}
+    aligned = features.reindex(columns=model.feature_names).apply(pd.to_numeric, errors="coerce")
     cases = assemble_demo_cases(
         slots=DEMO_SLOTS,
         predictions=predictions,
         features=features,
         event_by_id=event_by_id,
         aligned=aligned,
-        ensemble_matrix=ensemble_matrix,
+        ensemble_matrix=out.ensemble,
         trained=model.trained,
         calibrator=model.calibrator,
         explainer=model.explainer,
         test_ids=test_ids,
+        points=out.point,
+        interval90=out.interval90,
+        interval50=out.interval50,
+        warning_scores=out.warning_proba,
     )
     write_json(root / "ml" / "artifacts" / "demo_cases.json", cases)
     write_json(root / "apps" / "web" / "public" / "demo_cases.json", cases)

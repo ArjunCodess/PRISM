@@ -8,7 +8,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from xgboost import XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = Path(__file__).resolve().parent
@@ -17,7 +16,7 @@ if str(SRC) not in sys.path:
 
 from abstention import abstain_mask  # noqa: E402
 from build_events import build_event_histories  # noqa: E402
-from calibrate import fit_isotonic  # noqa: E402
+from calibrate import fit_isotonic_proba  # noqa: E402
 from constants import (  # noqa: E402
     ABSTENTION_RULE,
     DEMO_SLOTS,
@@ -46,13 +45,13 @@ from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import assemble_demo_cases, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
+from hurdle import fit_hurdle_policy, predict_hurdle  # noqa: E402
 from ingest import (  # noqa: E402
     load_esa_training,
     realistic_training_events,
     validate_official_test_compatibility,
 )
 from split import grouped_splits, subset  # noqa: E402
-from train_classifier import fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
     fit_ridge,
     fit_xgboost,
@@ -61,16 +60,6 @@ from train_regressor import (  # noqa: E402
     predict_model,
 )
 from validate import validate_cdm_frame  # noqa: E402
-
-
-def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
-    rng = np.random.default_rng(RANDOM_STATE)
-    models: list[XGBRegressor] = []
-    for _ in range(n_models):
-        idx = rng.integers(0, len(train), size=len(train))
-        sample = train.iloc[idx]
-        models.append(fit_xgboost(sample).model)
-    return models
 
 
 def _slice_metrics(
@@ -183,23 +172,18 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     median_test = median_predict(train, len(test))
     ridge = fit_ridge(train)
     ridge_pred = predict_model(ridge, test)
-    booster = fit_xgboost(train)
+    booster = fit_xgboost(train, eval_frame=validation)
     model_pred = predict_model(booster, test)
-    x_test = test[booster.feature_names].apply(pd.to_numeric, errors="coerce")
-
-    ensemble = _bootstrap_models(pd.concat([train, validation], ignore_index=True))
-    raw_ens_matrix = np.column_stack([model.predict(x_test) for model in ensemble])
-    persist_guard = test["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
-    ens_matrix = np.where(
-        persist_guard[:, None], test["risk"].to_numpy(dtype=float)[:, None], raw_ens_matrix
-    )
-    ens_pred = np.median(ens_matrix, axis=1)
-    interval_50 = np.quantile(ens_matrix, [0.25, 0.75], axis=1)
-    interval_90 = np.quantile(ens_matrix, [0.05, 0.95], axis=1)
+    policy = fit_hurdle_policy(train, validation, calibration)
+    selected = predict_hurdle(policy, test)
+    ens_pred = selected.point
+    ens_matrix = selected.ensemble
+    interval_50 = selected.interval50
+    interval_90 = selected.interval90
 
     mission_train = subset(mission_features, splits.train_ids)
     mission_test = subset(mission_features, splits.test_ids)
-    mission_model = fit_xgboost(mission_train)
+    mission_model = fit_xgboost(mission_train, eval_frame=subset(mission_features, splits.validation_ids))
     mission_pred = predict_model(mission_model, mission_test)
 
     rng = np.random.default_rng(RANDOM_STATE)
@@ -210,34 +194,45 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     held_out_mask = mission_features["mission_id"].isin(held_out_missions).to_numpy()
     holdout_train = features.iloc[np.flatnonzero(~held_out_mask)]
     holdout_test = features.iloc[np.flatnonzero(held_out_mask)]
-    holdout_model = fit_xgboost(holdout_train)
-    holdout_pred = predict_model(holdout_model, holdout_test)
+    holdout_split = grouped_splits(holdout_train)
+    holdout_fit = subset(holdout_train, holdout_split.train_ids)
+    holdout_val = subset(holdout_train, holdout_split.validation_ids)
+    if len(holdout_fit) < 80:
+        holdout_fit = holdout_train
+        holdout_val = holdout_train
+    holdout_policy = fit_hurdle_policy(holdout_fit, holdout_val, search=False, n_bootstrap=4)
+    holdout_pred = predict_hurdle(holdout_policy, holdout_test).point
     holdout_persist = persistence_predict(holdout_test)
 
     ablation = historical_ablation(train, test)
-    classifier = fit_warning_classifier(train)
+    classifier = policy.warning
     joblib.dump(classifier, artifacts / "warning_classifier.joblib")
-    raw_cal_scores = predict_model(booster, calibration)
-    cal_scores = np.where(
-        calibration["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD,
-        calibration["risk"].to_numpy(dtype=float),
-        raw_cal_scores,
-    )
+    cal_out = predict_hurdle(policy, calibration)
     cal_labels = (calibration["y"].to_numpy() >= HIGH_RISK_THRESHOLD).astype(int)
-    calibrator = fit_isotonic(cal_scores, cal_labels)
-    test_proba = calibrator.predict_proba(ens_pred)
+    calibrator = fit_isotonic_proba(cal_out.warning_proba, cal_labels)
+    test_proba = calibrator.predict_proba(selected.warning_proba)
     test_abstained, _, _ = abstain_mask(
         ens_matrix,
         test["risk"].to_numpy(dtype=float),
         test["miss_distance"].to_numpy(dtype=float),
+        interval90=interval_90,
+        point=ens_pred,
+        warning_proba=selected.warning_proba,
+        warning_threshold=policy.f2_threshold,
     )
     n_high_eligible = int((features["y"] >= HIGH_RISK_THRESHOLD).sum())
     n_high_test = int((test["y"] >= HIGH_RISK_THRESHOLD).sum())
-    warning_metrics = classification_metrics(test["y"].to_numpy(), test_proba)
+    warning_metrics = classification_metrics(
+        test["y"].to_numpy(), test_proba, threshold=policy.f2_threshold
+    )
     warning_metrics.update(
         {
             "nHighRiskEligible": n_high_eligible,
             "nHighRiskTest": n_high_test,
+            "operatingThreshold": policy.f2_threshold,
+            "mixKind": policy.mix_kind,
+            "floorThreshold": policy.floor_threshold,
+            "promoteHighRisk": policy.promote_high_risk,
             "thresholdNote": (
                 "ESA challenge class log10(Pc) ≥ −6, not an operational threshold"
             ),
@@ -250,11 +245,11 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "testEvents": len(test),
         "overlapTrain": len(train),
         "overlapTest": len(test),
-        "model": regression_metrics(test["y"].to_numpy(), model_pred),
+        "model": regression_metrics(test["y"].to_numpy(), ens_pred),
         "persistence": regression_metrics(test["y"].to_numpy(), persist_test),
         "maeImprovement": float(
             regression_metrics(test["y"].to_numpy(), persist_test)["mae"]
-            - regression_metrics(test["y"].to_numpy(), model_pred)["mae"]
+            - regression_metrics(test["y"].to_numpy(), ens_pred)["mae"]
         ),
     }
 
@@ -269,9 +264,12 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "dataSource": data_source,
         "dataSourceKind": source,
         "selectedPolicy": (
-            "bootstrap xgboost median with a persistence guard at the ESA −6 class; "
-            "the −6 class follows the ESA challenge definition, while the guard and "
-            "1.25 disagreement threshold were fixed before test evaluation"
+            "hurdle residual xgboost (MAE loss) mixed with a collapse-to-floor "
+            "classifier, persistence guard at the ESA −6 class, and conformal "
+            "intervals; object type and encounter-plane geometry are in the "
+            "snapshot features. The −6 class follows the ESA challenge "
+            "definition. The guard and 1.25 disagreement threshold were fixed "
+            "before test evaluation."
         ),
         "sourceRows": source_rows,
         "eligibleRows": len(frame),
@@ -292,10 +290,11 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         "warning": warning_metrics,
         "calibration": reliability_bins(test["y"].to_numpy(), test_proba),
         "uncertainty": {
-            "method": "spread across 10 bootstrap xgboost models",
+            "method": "split conformal bands localized by predicted floor vs moving events",
             "interpretation": (
-                "Bootstrap disagreement is ensemble spread, not calibrated "
-                "predictive uncertainty."
+                "Intervals are split-conformal residuals on the calibration "
+                "set, localized by whether the hurdle predicts a floor collapse. "
+                "Bootstrap disagreement remains an abstention trigger."
             ),
             "interval50Coverage": float(
                 np.mean(
@@ -311,7 +310,9 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
             ),
             "meanInterval50Width": float(np.mean(interval_50[1] - interval_50[0])),
             "meanInterval90Width": float(np.mean(interval_90[1] - interval_90[0])),
-            "nModels": len(ensemble),
+            "nModels": len(policy.ensemble),
+            "mixKind": policy.mix_kind,
+            "floorThreshold": policy.floor_threshold,
         },
         "robustness": _robustness_slices(test, ens_pred),
         "missionIdComparison": {
@@ -351,12 +352,13 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
             test["miss_distance"].to_numpy(dtype=float),
             test_abstained,
             test_proba,
+            interval90=interval_90,
         ),
-        "shapContrast": shap_outcome_contrast(booster, test, model_pred),
+        "shapContrast": shap_outcome_contrast(policy.residual, test, ens_pred),
         "failureClusters": cluster_test_failures(test, ens_pred, persist_test),
         "featureGroups": grouped_importance(
-            booster.feature_names,
-            booster.model.get_booster().get_score(importance_type="gain"),
+            policy.residual.feature_names,
+            policy.residual.model.get_booster().get_score(importance_type="gain"),
         ),
         "failures": error_gallery(
             test["event_id"].to_numpy(),
@@ -368,54 +370,64 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     }
 
     event_by_id = {int(event["event_id"]): event for event in events}
-    aligned_all = features[booster.feature_names].apply(pd.to_numeric, errors="coerce")
-    raw_all_ensemble = np.column_stack([model.predict(aligned_all) for model in ensemble])
-    all_persist_guard = features["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
-    all_ensemble = np.where(
-        all_persist_guard[:, None],
-        features["risk"].to_numpy(dtype=float)[:, None],
-        raw_all_ensemble,
+    all_out = predict_hurdle(policy, features)
+    aligned_all = features.reindex(columns=policy.feature_names).apply(
+        pd.to_numeric, errors="coerce"
     )
-    all_point = np.median(all_ensemble, axis=1)
-    all_probability = calibrator.predict_proba(all_point)
+    all_probability = calibrator.predict_proba(all_out.warning_proba)
     all_abstained, _, _ = abstain_mask(
-        all_ensemble,
+        all_out.ensemble,
         features["risk"].to_numpy(dtype=float),
         features["miss_distance"].to_numpy(dtype=float),
+        interval90=all_out.interval90,
+        point=all_out.point,
+        warning_proba=all_out.warning_proba,
+        warning_threshold=policy.f2_threshold,
     )
     event_ids = features["event_id"].astype(int).to_numpy()
     predictions = {
         int(event_id): {
-            "predictedFinalRiskLog10": float(all_point[position]),
+            "predictedFinalRiskLog10": float(all_out.point[position]),
             "configuredHighRiskProbability": float(all_probability[position]),
             "abstained": bool(all_abstained[position]),
         }
         for position, event_id in enumerate(event_ids)
     }
-    explainer = shap_explainer(booster, train)
+    explainer = shap_explainer(policy.residual, train)
     demo_cases = assemble_demo_cases(
         slots=DEMO_SLOTS,
         predictions=predictions,
         features=features,
         event_by_id=event_by_id,
         aligned=aligned_all,
-        ensemble_matrix=all_ensemble,
-        trained=booster,
+        ensemble_matrix=all_out.ensemble,
+        trained=policy.residual,
         calibrator=calibrator,
         explainer=explainer,
         test_ids=set(int(event_id) for event_id in splits.test_ids),
+        points=all_out.point,
+        interval90=all_out.interval90,
+        interval50=all_out.interval50,
+        warning_scores=all_out.warning_proba,
     )
 
-    booster.model.save_model(artifacts / "risk_regressor.json")
+    policy.residual.model.save_model(artifacts / "risk_regressor.json")
     joblib.dump(
         {
             "calibrator": calibrator,
-            "feature_names": booster.feature_names,
-            "ensemble": ensemble,
+            "feature_names": policy.feature_names,
+            "ensemble": policy.ensemble,
+            "collapse": policy.collapse,
+            "warning": policy.warning,
+            "mix_kind": policy.mix_kind,
+            "floor_threshold": policy.floor_threshold,
+            "f2_threshold": policy.f2_threshold,
+            "promote_high_risk": policy.promote_high_risk,
+            "conformal": policy.conformal,
         },
         artifacts / "warning_calibrator.joblib",
     )
-    write_json(artifacts / "feature_schema.json", {"features": booster.feature_names})
+    write_json(artifacts / "feature_schema.json", {"features": policy.feature_names})
     write_json(artifacts / "metrics.json", metrics)
     write_json(
         artifacts / "split_manifest.json",
