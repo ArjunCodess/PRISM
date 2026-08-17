@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from abstention import REASON_TEXT, decide_abstention
-from constants import CUTOFF_DAYS, DEMO_SLOTS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION
+from constants import CUTOFF_DAYS, DEMO_SLOTS, DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_NAME
 from explain import explanation_text, local_factors
 from train_regressor import TrainedRegressor
 
@@ -64,7 +64,7 @@ def predict_event(
             for item in factors[:6]
         ],
         "explanation": explanation_text(factors),
-        "modelVersion": MODEL_VERSION,
+        "modelVersion": MODEL_NAME,
         "disclaimer": DISCLAIMER,
         "cutoffHours": int(CUTOFF_DAYS * 24),
         "nMessagesUsed": len(messages),

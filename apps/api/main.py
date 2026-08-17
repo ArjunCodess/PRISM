@@ -15,10 +15,10 @@ ML_SRC = ROOT / "ml" / "src"
 if str(ML_SRC) not in sys.path:
     sys.path.insert(0, str(ML_SRC))
 
-from constants import DISCLAIMER, HIGH_RISK_THRESHOLD, MODEL_VERSION  # noqa: E402
+from constants import DISCLAIMER, HIGH_RISK_THRESHOLD  # noqa: E402
 from inference import PrismModel  # noqa: E402
 
-app = FastAPI(title="PRISM API", version=MODEL_VERSION)
+app = FastAPI(title="PRISM API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -85,7 +85,7 @@ def demo_cases() -> list[dict[str, Any]]:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "modelVersion": MODEL_VERSION}
+    return {"status": "ok"}
 
 
 @app.get("/v1/model-card")
