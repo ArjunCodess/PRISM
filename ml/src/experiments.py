@@ -11,7 +11,6 @@ from feature_sets import FAMILIES, columns_for_family
 from features import build_feature_table
 from split import subset
 from train_regressor import fit_xgboost, persistence_predict, predict_model
-from hurdle import fit_hurdle_policy, predict_hurdle
 
 
 def _keep_columns(frame: pd.DataFrame, family: str) -> pd.DataFrame:
@@ -89,8 +88,8 @@ def forecast_horizon_table(
                 }
             )
             continue
-        policy = fit_hurdle_policy(train, train, n_bootstrap=4, search=False)
-        pred = predict_hurdle(policy, test).point
+        trained = fit_xgboost(train)
+        pred = predict_model(trained, test)
         persist = persistence_predict(test)
         y = test["y"].to_numpy(dtype=float)
         model_metrics = regression_metrics(y, pred)
@@ -251,21 +250,14 @@ def abstention_study(
     miss_distance: np.ndarray,
     abstained: np.ndarray,
     proba: np.ndarray,
-    interval90: np.ndarray | None = None,
 ) -> dict[str, object]:
     operating = selective_metrics(y_true, y_pred, persist, abstained, proba=proba)
     curve = coverage_curve(
-        y_true,
-        y_pred,
-        persist,
-        ensemble_matrix,
-        current_risk,
-        miss_distance,
-        interval90=interval90,
+        y_true, y_pred, persist, ensemble_matrix, current_risk, miss_distance
     )
     return {
         "rule": (
-            "Abstain if the 90% conformal band crosses log10(Pc) ≥ −6, "
+            "Abstain if the 90% bootstrap band crosses log10(Pc) ≥ −6, "
             "if current risk or miss distance is missing, or if bootstrap "
             "disagreement exceeds 1.25 log-risk units. The −6 class follows "
             "the ESA challenge definition. The persistence guard and 1.25 "

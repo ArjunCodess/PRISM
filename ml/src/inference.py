@@ -8,11 +8,10 @@ import joblib
 import numpy as np
 import pandas as pd
 from build_events import build_event_histories
-from constants import MODEL_VERSION
+from constants import HIGH_RISK_THRESHOLD, MODEL_VERSION
 from explain import shap_explainer
 from export_demo_cases import predict_event
 from features import build_feature_table
-from hurdle import ConformalBands, HurdlePolicy, predict_hurdle
 from train_regressor import TrainedRegressor
 from xgboost import XGBRegressor
 
@@ -27,37 +26,16 @@ class PrismModel:
         model = XGBRegressor()
         model.load_model(ARTIFACTS / "risk_regressor.json")
         bundle = joblib.load(ARTIFACTS / "warning_calibrator.joblib")
-        residual = TrainedRegressor(
+        self.calibrator = bundle["calibrator"]
+        self.ensemble: list[XGBRegressor] = bundle["ensemble"]
+        self.trained = TrainedRegressor(
             model=model, feature_names=self.feature_names, kind="xgboost"
         )
-        conformal = bundle.get("conformal")
-        if isinstance(conformal, dict):
-            conformal = ConformalBands(**conformal)
-        if conformal is None:
-            conformal = ConformalBands(-1.0, 1.0, -1.0, 1.0, -0.4, 0.4, -0.4, 0.4)
-        self.policy = HurdlePolicy(
-            residual=residual,
-            collapse=bundle["collapse"],
-            warning=bundle["warning"],
-            feature_names=self.feature_names,
-            mix_kind=str(bundle.get("mix_kind", "soft")),
-            floor_threshold=float(bundle.get("floor_threshold", 1.0)),
-            f2_threshold=float(bundle.get("f2_threshold", 0.5)),
-            promote_high_risk=bool(bundle.get("promote_high_risk", False)),
-            conformal=conformal,
-            ensemble=list(bundle["ensemble"]),
-        )
-        self.calibrator = bundle["calibrator"]
-        self.ensemble = self.policy.ensemble
-        self.trained = residual
         background = pd.DataFrame(
             np.zeros((20, len(self.feature_names))), columns=self.feature_names
         )
         self.explainer = shap_explainer(self.trained, background)
         self.model_version = MODEL_VERSION
-
-    def predict_frame(self, features: pd.DataFrame):
-        return predict_hurdle(self.policy, features)
 
     def predict_messages(
         self, event_id: str, messages: list[dict[str, Any]], cutoff_hours: int = 48
@@ -72,20 +50,27 @@ class PrismModel:
         if not events:
             raise ValueError("no eligible pre-cutoff messages")
         features = build_feature_table(events)
-        out = self.predict_frame(features)
-        series = features.iloc[0]
+        row = features.iloc[0]
+        aligned = pd.DataFrame(
+            [
+                {
+                    name: float(row[name]) if name in row and pd.notna(row[name]) else np.nan
+                    for name in self.feature_names
+                }
+            ]
+        )
+        series = aligned.iloc[0]
+        ens = np.array([model.predict(aligned)[0] for model in self.ensemble])
+        if float(series["risk"]) >= HIGH_RISK_THRESHOLD:
+            ens.fill(float(series["risk"]))
         return predict_event(
             trained=self.trained,
-            ensemble_preds=out.ensemble[0],
+            ensemble_preds=ens,
             calibrator=self.calibrator,
             explainer=self.explainer,
             row=series,
             messages=messages,
             event_id=event_id,
-            point=float(out.point[0]),
-            interval90=(float(out.interval90[0, 0]), float(out.interval90[1, 0])),
-            interval50=(float(out.interval50[0, 0]), float(out.interval50[1, 0])),
-            warning_score=float(out.warning_proba[0]),
         )
 
 
