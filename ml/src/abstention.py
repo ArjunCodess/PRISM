@@ -6,21 +6,31 @@ import numpy as np
 from constants import (
     ABSTENTION_DISAGREEMENT,
     FALSE_REASSURANCE_DEFINITION,
+    FLOOR_MARGIN,
     HIGH_RISK_THRESHOLD,
+    NEGLIGIBLE_RISK,
 )
 from evaluate import regression_metrics
 
 REASON_CROSSES = "spread_crosses_threshold"
 REASON_MISSING = "missing_critical_fields"
 REASON_DISAGREEMENT = "ensemble_disagreement"
+REASON_SUSPICIOUS_FLOOR = "floor_forecast_while_current_risk_elevated"
+REASON_WARNING_CONFLICT = "warning_head_flags_a_safe_point_forecast"
 
 REASON_TEXT = {
     REASON_CROSSES: (
-        "the 90% bootstrap band crosses the ESA challenge class log10(Pc) ≥ −6"
+        "the 90% conformal band crosses the ESA challenge class log10(Pc) ≥ −6"
     ),
     REASON_MISSING: "current reported risk or miss distance is missing",
     REASON_DISAGREEMENT: (
         f"bootstrap models disagree by more than {ABSTENTION_DISAGREEMENT} log-risk units"
+    ),
+    REASON_SUSPICIOUS_FLOOR: (
+        "the model forecasts the dataset floor while today's report is still far from negligible"
+    ),
+    REASON_WARNING_CONFLICT: (
+        "the high-risk warning head is elevated while the point forecast stays below −6"
     ),
 }
 
@@ -39,9 +49,16 @@ def decide_abstention(
     current_risk: float,
     miss_distance: float,
     disagreement_threshold: float = ABSTENTION_DISAGREEMENT,
+    interval90: tuple[float, float] | None = None,
+    point: float | None = None,
+    warning_proba: float | None = None,
+    warning_threshold: float = 0.15,
 ) -> AbstentionDecision:
     preds = np.asarray(ensemble_preds, dtype=float)
-    lo, hi = np.quantile(preds, [0.05, 0.95])
+    if interval90 is None:
+        lo, hi = np.quantile(preds, [0.05, 0.95])
+    else:
+        lo, hi = float(interval90[0]), float(interval90[1])
     disagreement = float(np.std(preds))
     crosses = bool((lo < HIGH_RISK_THRESHOLD <= hi) or (hi < HIGH_RISK_THRESHOLD <= lo))
     missing = bool(not np.isfinite(current_risk) or not np.isfinite(miss_distance))
@@ -52,6 +69,23 @@ def decide_abstention(
         reasons.append(REASON_MISSING)
     if disagreement > disagreement_threshold:
         reasons.append(REASON_DISAGREEMENT)
+    if (
+        point is not None
+        and np.isfinite(point)
+        and np.isfinite(current_risk)
+        and point <= NEGLIGIBLE_RISK + FLOOR_MARGIN
+        and current_risk > -10.0
+    ):
+        reasons.append(REASON_SUSPICIOUS_FLOOR)
+    if (
+        warning_proba is not None
+        and point is not None
+        and np.isfinite(warning_proba)
+        and np.isfinite(point)
+        and warning_proba >= warning_threshold
+        and point < HIGH_RISK_THRESHOLD
+    ):
+        reasons.append(REASON_WARNING_CONFLICT)
     return AbstentionDecision(
         abstained=bool(reasons),
         reasons=reasons,
@@ -66,13 +100,35 @@ def abstain_mask(
     current_risk: np.ndarray,
     miss_distance: np.ndarray,
     disagreement_threshold: float = ABSTENTION_DISAGREEMENT,
+    interval90: np.ndarray | None = None,
+    point: np.ndarray | None = None,
+    warning_proba: np.ndarray | None = None,
+    warning_threshold: float = 0.15,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    lo = np.quantile(ensemble_matrix, 0.05, axis=1)
-    hi = np.quantile(ensemble_matrix, 0.95, axis=1)
+    if interval90 is None:
+        lo = np.quantile(ensemble_matrix, 0.05, axis=1)
+        hi = np.quantile(ensemble_matrix, 0.95, axis=1)
+    else:
+        lo = np.asarray(interval90[0], dtype=float)
+        hi = np.asarray(interval90[1], dtype=float)
     disagreement = np.std(ensemble_matrix, axis=1)
     crosses = (lo < HIGH_RISK_THRESHOLD) & (hi >= HIGH_RISK_THRESHOLD)
     missing = ~np.isfinite(current_risk) | ~np.isfinite(miss_distance)
     abstained = crosses | missing | (disagreement > disagreement_threshold)
+    if point is not None:
+        values = np.asarray(point, dtype=float)
+        suspicious = (
+            (values <= NEGLIGIBLE_RISK + FLOOR_MARGIN)
+            & np.isfinite(current_risk)
+            & (current_risk > -10.0)
+        )
+        abstained = abstained | suspicious
+    if warning_proba is not None and point is not None:
+        conflict = (
+            (np.asarray(warning_proba, dtype=float) >= warning_threshold)
+            & (np.asarray(point, dtype=float) < HIGH_RISK_THRESHOLD)
+        )
+        abstained = abstained | conflict
     return abstained.astype(bool), disagreement, crosses
 
 
@@ -145,6 +201,7 @@ def coverage_curve(
     current_risk: np.ndarray,
     miss_distance: np.ndarray,
     thresholds: np.ndarray | None = None,
+    interval90: np.ndarray | None = None,
 ) -> list[dict[str, float | int]]:
     if thresholds is None:
         thresholds = np.concatenate(
@@ -154,7 +211,12 @@ def coverage_curve(
     rows: list[dict[str, float | int]] = []
     for threshold in thresholds:
         abstained, _, _ = abstain_mask(
-            ensemble_matrix, current_risk, miss_distance, disagreement_threshold=float(threshold)
+            ensemble_matrix,
+            current_risk,
+            miss_distance,
+            disagreement_threshold=float(threshold),
+            interval90=interval90,
+            point=y_pred,
         )
         metrics = selective_metrics(y_true, y_pred, persist, abstained)
         rows.append(

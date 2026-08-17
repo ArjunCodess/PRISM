@@ -39,6 +39,9 @@ _BASE_PHRASES = {
     "derived_miss_distance": "the miss distance implied by the geometry",
     "derived_relative_speed": "the closing speed implied by the velocities",
     "miss_distance_residual": "the gap between the stated miss distance and the geometry",
+    "mahalanobis_r2": "how many uncertainty-sigmas the miss is",
+    "hbr_proxy": "the combined object size",
+    "miss_over_hbr": "the miss compared with object size",
 }
 
 
@@ -129,8 +132,10 @@ def feature_group(name: str) -> str:
         for token in ("obs_", "od_span", "weighted_rms", "hours_since", "hours_before")
     ):
         return "how complete the tracking is"
-    if any(token in lowered for token in ("sigma", "cov_det", "log_t_cov", "log_c_cov")):
+    if any(token in lowered for token in ("sigma", "cov_det", "log_t_cov", "log_c_cov", "mahalanobis")):
         return "how uncertain the positions still are"
+    if any(token in lowered for token in ("hbr", "c_object_type_")):
+        return "orbit shape and size"
     if any(token in lowered for token in ("relative_speed", "relative_velocity")):
         return "closing speed"
     if any(
