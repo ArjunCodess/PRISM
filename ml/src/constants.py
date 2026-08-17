@@ -7,9 +7,8 @@ HIGH_RISK_THRESHOLD = -6.0
 LOW_RISK_CLIP = -6.001
 NEGLIGIBLE_RISK = -30.0
 RANDOM_STATE = 42
-MODEL_VERSION = "prism-0.3.0"
+MODEL_VERSION = "prism-0.2.1"
 ABSTENTION_DISAGREEMENT = 1.25
-FLOOR_MARGIN = 0.5
 OBJECT_TYPE_LEVELS = (
     ("DEBRIS", "c_object_type_DEBRIS"),
     ("PAYLOAD", "c_object_type_PAYLOAD"),
@@ -21,13 +20,11 @@ DISCLAIMER = (
     "Not flight software. Not an operational decision system."
 )
 ABSTENTION_RULE = (
-    "PRISM abstains when the 90% conformal band crosses the ESA challenge class "
-    "log10(Pc) ≥ −6, when current risk or miss distance is missing, when "
-    "bootstrap disagreement exceeds 1.25 log-risk units, or when the model "
-    "forecasts the dataset floor while today's report is still far from "
-    "negligible. The −6 class follows the ESA challenge definition. The "
-    "persistence guard and 1.25 disagreement threshold were fixed design "
-    "choices before evaluating the test split."
+    "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class "
+    "log10(Pc) ≥ −6, when current risk or miss distance is missing, or when "
+    "bootstrap disagreement exceeds 1.25 log-risk units. The −6 class follows "
+    "the ESA challenge definition. The persistence guard and 1.25 disagreement "
+    "threshold were fixed design choices before evaluating the test split."
 )
 FALSE_REASSURANCE_DEFINITION = (
     "An accepted forecast (no abstention) with predicted log10(Pc) < −6 while "
