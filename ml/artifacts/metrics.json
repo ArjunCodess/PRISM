@@ -1,5 +1,5 @@
 {
-  "modelVersion": "prism-0.2.0",
+  "modelVersion": "prism-0.3.0",
   "researchQuestion": "Do pre-T\u221248 conjunction histories contain enough predictive signal to improve forecasts of later reported log10(Pc) over persistence?",
   "definitions": {
     "mae": "Mean absolute error in log10(Pc) units on the final reported risk.",
@@ -8,7 +8,7 @@
   },
   "dataSource": "ESA Collision Avoidance Challenge training archive",
   "dataSourceKind": "real",
-  "selectedPolicy": "bootstrap xgboost median with a persistence guard at the ESA \u22126 class; the \u22126 class follows the ESA challenge definition, while the guard and 1.25 disagreement threshold were fixed before test evaluation",
+  "selectedPolicy": "hurdle residual xgboost (MAE loss) mixed with a collapse-to-floor classifier, persistence guard at the ESA \u22126 class, and conformal intervals; object type and encounter-plane geometry are in the snapshot features. The \u22126 class follows the ESA challenge definition. The guard and 1.25 disagreement threshold were fixed before test evaluation.",
   "sourceRows": 162634,
   "eligibleRows": 138462,
   "nEvents": 8293,
@@ -42,115 +42,103 @@
     "f2": 0.0
   },
   "ridge": {
-    "mae": 3.932851041883499,
-    "rmse": 5.716412634112057,
-    "median_ae": 2.1492853598358614,
-    "within_0_5": 0.1398432790837854,
-    "within_1_0": 0.28390596745027125,
-    "mae_high_risk": 15.076636955869825,
+    "mae": 3.9109388905328264,
+    "rmse": 5.726879865439674,
+    "median_ae": 2.0604031438186325,
+    "within_0_5": 0.14948764315852922,
+    "within_1_0": 0.2875226039783002,
+    "mae_high_risk": 14.897181648007866,
     "esa_loss": 1132201.8878005068,
     "mse_hr": 1.1322018878005067,
     "f2": 0.0
   },
   "xgboost": {
-    "mae": 2.811757230637402,
-    "rmse": 5.006797466676233,
-    "median_ae": 0.5819435119628906,
-    "within_0_5": 0.47739602169981915,
-    "within_1_0": 0.5714285714285714,
-    "mae_high_risk": 13.675111209278192,
+    "mae": 2.5498191598573237,
+    "rmse": 5.774348595285514,
+    "median_ae": 0.01523590087890625,
+    "within_0_5": 0.64376130198915,
+    "within_1_0": 0.70042194092827,
+    "mae_high_risk": 18.37093212365265,
     "esa_loss": 1132201.8878005068,
     "mse_hr": 1.1322018878005067,
     "f2": 0.0
   },
   "ensemble": {
-    "mae": 3.054789985306168,
-    "rmse": 5.924766419110763,
-    "median_ae": 0.4653472900390625,
-    "within_0_5": 0.5081374321880651,
-    "within_1_0": 0.5768535262206148,
-    "mae_high_risk": 3.7302149982009984,
+    "mae": 2.799866209630615,
+    "rmse": 7.134654262301439,
+    "median_ae": 0.0,
+    "within_0_5": 0.7685352622061483,
+    "within_1_0": 0.8034960819770947,
+    "mae_high_risk": 1.5602758306229154,
     "esa_loss": 0.1669832237710995,
     "mse_hr": 0.06025167868029364,
     "f2": 0.36082474226804123
   },
   "improvement": {
-    "mae_model": 3.054789985306168,
+    "mae_model": 2.799866209630615,
     "mae_persist": 5.0795360010082655,
-    "mae_improvement": 2.0247460157020973,
+    "mae_improvement": 2.2796697913776507,
     "esa_loss_model": 0.1669832237710995,
     "esa_loss_persist": 0.1669832237710995,
     "esa_loss_improvement": 0.0,
     "beats_persistence": 0.0
   },
   "warning": {
-    "pr_auc": 0.09251382715152855,
-    "roc_auc": 0.8621212121212121,
-    "brier": 0.008307031861046098,
-    "precision": 0.0,
-    "recall": 0.0,
+    "pr_auc": 0.04610945051783778,
+    "roc_auc": 0.9414814814814815,
+    "brier": 0.005764232048678104,
+    "precision": 0.07547169811320754,
+    "recall": 0.4444444444444444,
     "nHighRiskEligible": 66,
     "nHighRiskTest": 9,
+    "operatingThreshold": 0.15000000000000002,
+    "mixKind": "hard",
+    "floorThreshold": 0.35,
+    "promoteHighRisk": false,
     "thresholdNote": "ESA challenge class log10(Pc) \u2265 \u22126, not an operational threshold"
   },
   "calibration": [
     {
       "mid": 0.0625,
-      "predicted": 0.0024974077130958078,
-      "observed": 0.00186219739292365,
-      "n": 1611.0
+      "predicted": 0.004015995173985685,
+      "observed": 0.00311332503113325,
+      "n": 1606.0
     },
     {
       "mid": 0.1875,
-      "predicted": 0.1822660098522168,
-      "observed": 0.10344827586206896,
-      "n": 29.0
-    },
-    {
-      "mid": 0.3125,
-      "predicted": 0.2838592568338055,
-      "observed": 0.18181818181818182,
-      "n": 11.0
-    },
-    {
-      "mid": 0.4375,
-      "predicted": 0.4228292798662279,
-      "observed": 0.5,
-      "n": 2.0
+      "predicted": 0.16216216216216214,
+      "observed": 0.07692307692307693,
+      "n": 52.0
     },
     {
       "mid": 0.6875,
-      "predicted": 0.6554244203419561,
+      "predicted": 0.6962628195438398,
       "observed": 0.0,
       "n": 1.0
-    },
-    {
-      "mid": 0.9375,
-      "predicted": 1.0,
-      "observed": 0.0,
-      "n": 5.0
     }
   ],
   "uncertainty": {
-    "method": "spread across 10 bootstrap xgboost models",
-    "interpretation": "Bootstrap disagreement is ensemble spread, not calibrated predictive uncertainty.",
-    "interval50Coverage": 0.25678119349005424,
-    "interval90Coverage": 0.4798071127185051,
-    "meanInterval50Width": 0.9115551582943466,
-    "meanInterval90Width": 2.0451528709146034,
-    "nModels": 10
+    "method": "split conformal bands localized by predicted floor vs moving events",
+    "interpretation": "Intervals are split-conformal residuals on the calibration set, localized by whether the hurdle predicts a floor collapse. Bootstrap disagreement remains an abstention trigger.",
+    "interval50Coverage": 0.8203737191078964,
+    "interval90Coverage": 0.9138034960819771,
+    "meanInterval50Width": 4.241122617806887,
+    "meanInterval90Width": 5.5941323641989635,
+    "nModels": 10,
+    "mixKind": "hard",
+    "floorThreshold": 0.35
   },
   "robustness": {
     "byObjectType": {
       "DEBRIS": {
         "n": 921,
         "highRiskEvents": 7,
-        "mae": 3.111013992107986,
-        "rmse": 6.1189382328060695,
-        "median_ae": 0.4075155258178711,
-        "within_0_5": 0.5266015200868621,
-        "within_1_0": 0.5874049945711184,
-        "mae_high_risk": 4.73745373931735,
+        "mae": 2.9881537322028993,
+        "rmse": 7.415675855856416,
+        "median_ae": 0.0,
+        "within_0_5": 0.7687296416938111,
+        "within_1_0": 0.7904451682953312,
+        "mae_high_risk": 1.947531952431241,
         "esa_loss": 0.1538234746892511,
         "mse_hr": 0.05493695524616111,
         "f2": 0.35714285714285715
@@ -158,11 +146,11 @@
       "PAYLOAD": {
         "n": 217,
         "highRiskEvents": 0,
-        "mae": 1.7247996975865851,
-        "rmse": 4.190570891896582,
-        "median_ae": 0.3779212282784741,
-        "within_0_5": 0.5576036866359447,
-        "within_1_0": 0.663594470046083,
+        "mae": 1.1960035146780483,
+        "rmse": 4.658029487337173,
+        "median_ae": 0.0,
+        "within_0_5": 0.8202764976958525,
+        "within_1_0": 0.9354838709677419,
         "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
@@ -171,11 +159,11 @@
       "ROCKET BODY": {
         "n": 21,
         "highRiskEvents": 0,
-        "mae": 2.091172166541569,
-        "rmse": 5.034271986223563,
-        "median_ae": 0.3228950500488281,
-        "within_0_5": 0.7142857142857143,
-        "within_1_0": 0.7142857142857143,
+        "mae": 1.6505447959796964,
+        "rmse": 5.630367638294288,
+        "median_ae": 0.0,
+        "within_0_5": 0.9047619047619048,
+        "within_1_0": 0.9047619047619048,
         "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
@@ -184,11 +172,11 @@
       "UNKNOWN": {
         "n": 500,
         "highRiskEvents": 2,
-        "mae": 3.568913098035635,
-        "rmse": 6.2304369303727345,
-        "median_ae": 0.8461318016052246,
-        "within_0_5": 0.444,
-        "within_1_0": 0.514,
+        "mae": 3.1973885020352184,
+        "rmse": 7.540116324577504,
+        "median_ae": 0.0,
+        "within_0_5": 0.74,
+        "within_1_0": 0.766,
         "mae_high_risk": 0.2048794042937736,
         "esa_loss": 0.1892477056794179,
         "mse_hr": 0.07885321069975747,
@@ -199,11 +187,11 @@
       "one": {
         "n": 85,
         "highRiskEvents": 2,
-        "mae": 3.8347864254265227,
-        "rmse": 6.605500522549064,
-        "median_ae": 1.4051942825317383,
-        "within_0_5": 0.23529411764705882,
-        "within_1_0": 0.4117647058823529,
+        "mae": 3.9779559257016763,
+        "rmse": 8.482855636845205,
+        "median_ae": 0.2121782898902893,
+        "within_0_5": 0.5294117647058824,
+        "within_1_0": 0.7529411764705882,
         "mae_high_risk": 0.20688760414728158,
         "esa_loss": 0.07196374475900398,
         "mse_hr": 0.051402674827859984,
@@ -212,11 +200,11 @@
       "twoToFive": {
         "n": 271,
         "highRiskEvents": 1,
-        "mae": 4.298742933998163,
-        "rmse": 7.446600001747558,
-        "median_ae": 1.3633537292480469,
-        "within_0_5": 0.3874538745387454,
-        "within_1_0": 0.4612546125461255,
+        "mae": 3.93503395330727,
+        "rmse": 8.689269965852455,
+        "median_ae": 0.0,
+        "within_0_5": 0.7306273062730627,
+        "within_1_0": 0.7416974169741697,
         "mae_high_risk": 0.056470773857156153,
         "esa_loss": 0.01211800354009907,
         "mse_hr": 0.003188948300026071,
@@ -225,12 +213,12 @@
       "sixOrMore": {
         "n": 1303,
         "highRiskEvents": 6,
-        "mae": 2.745188337949484,
-        "rmse": 5.50583406660033,
-        "median_ae": 0.3228950500488281,
-        "within_0_5": 0.5510360706062931,
-        "within_1_0": 0.6116653875671527,
-        "mae_high_risk": 5.516948166942878,
+        "mae": 2.486920634494457,
+        "rmse": 6.664336436780971,
+        "median_ae": 0.0,
+        "within_0_5": 0.7920184190330007,
+        "within_1_0": 0.819646968534152,
+        "mae_high_risk": 2.262039415575753,
         "esa_loss": 0.23267776542234492,
         "mse_hr": 0.07271180169448278,
         "f2": 0.3125
@@ -240,12 +228,12 @@
       "under500m": {
         "n": 51,
         "highRiskEvents": 3,
-        "mae": 7.402646586158344,
-        "rmse": 10.7167878220779,
-        "median_ae": 4.010599908245656,
-        "within_0_5": 0.11764705882352941,
-        "within_1_0": 0.17647058823529413,
-        "mae_high_risk": 5.055072748371832,
+        "mae": 6.7142104245542615,
+        "rmse": 10.919237437833178,
+        "median_ae": 2.3892890763710204,
+        "within_0_5": 0.37254901960784315,
+        "within_1_0": 0.39215686274509803,
+        "mae_high_risk": 1.508407130714037,
         "esa_loss": 0.2526906260945303,
         "mse_hr": 0.08713469865328632,
         "f2": 0.3448275862068966
@@ -253,12 +241,12 @@
       "500mTo2km": {
         "n": 156,
         "highRiskEvents": 5,
-        "mae": 5.548245048831187,
-        "rmse": 8.20128983173181,
-        "median_ae": 3.550685831251707,
-        "within_0_5": 0.22435897435897437,
-        "within_1_0": 0.3076923076923077,
-        "mae_high_risk": 3.6186570004553382,
+        "mae": 5.055719243770617,
+        "rmse": 9.461137637140434,
+        "median_ae": 0.3723085476615804,
+        "within_0_5": 0.532051282051282,
+        "within_1_0": 0.6025641025641025,
+        "mae_high_risk": 1.840765869409465,
         "esa_loss": 0.06391754556933667,
         "mse_hr": 0.03652431175390666,
         "f2": 0.5714285714285714
@@ -266,11 +254,11 @@
       "2kmOrMore": {
         "n": 1452,
         "highRiskEvents": 1,
-        "mae": 2.6341841474594996,
-        "rmse": 5.370922965013229,
-        "median_ae": 0.330660343170166,
-        "within_0_5": 0.5523415977961432,
-        "within_1_0": 0.6198347107438017,
+        "mae": 2.4200145372566846,
+        "rmse": 6.659972321703827,
+        "median_ae": 0.0,
+        "within_0_5": 0.8078512396694215,
+        "within_1_0": 0.8395316804407713,
         "mae_high_risk": 0.3134317364168,
         "esa_loss": 0.6483803923954526,
         "mse_hr": 0.0982394533932504,
@@ -281,12 +269,12 @@
       "under500m": {
         "n": 1483,
         "highRiskEvents": 8,
-        "mae": 2.8170303013808264,
-        "rmse": 5.802533191425528,
-        "median_ae": 0.33418846130371094,
-        "within_0_5": 0.5529332434254889,
-        "within_1_0": 0.624409979770735,
-        "mae_high_risk": 4.189433026243979,
+        "mae": 2.6265291110210356,
+        "rmse": 6.938420962267867,
+        "median_ae": 0.0,
+        "within_0_5": 0.784895482130816,
+        "within_1_0": 0.8138907619689818,
+        "mae_high_risk": 1.7482514627186352,
         "esa_loss": 0.20439971059940878,
         "mse_hr": 0.06738451997782707,
         "f2": 0.32967032967032966
@@ -294,11 +282,11 @@
       "500mTo5km": {
         "n": 93,
         "highRiskEvents": 1,
-        "mae": 6.3600686402963635,
-        "rmse": 8.188118319246785,
-        "median_ae": 5.4208083754734835,
-        "within_0_5": 0.12903225806451613,
-        "within_1_0": 0.13978494623655913,
+        "mae": 6.119226764723113,
+        "rmse": 10.47641828413952,
+        "median_ae": 0.6258854823149598,
+        "within_0_5": 0.45161290322580644,
+        "within_1_0": 0.5806451612903226,
         "mae_high_risk": 0.056470773857156153,
         "esa_loss": 0.0038267379600312847,
         "mse_hr": 0.003188948300026071,
@@ -307,11 +295,11 @@
       "5kmOrMore": {
         "n": 83,
         "highRiskEvents": 0,
-        "mae": 3.599448977441045,
-        "rmse": 4.992429536391927,
-        "median_ae": 2.865605462195944,
-        "within_0_5": 0.13253012048192772,
-        "within_1_0": 0.21686746987951808,
+        "mae": 2.177678084502943,
+        "rmse": 5.856922950760263,
+        "median_ae": 0.0,
+        "within_0_5": 0.8313253012048193,
+        "within_1_0": 0.8674698795180723,
         "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
@@ -322,12 +310,12 @@
       "under6h": {
         "n": 1108,
         "highRiskEvents": 3,
-        "mae": 2.8185245635221894,
-        "rmse": 5.538801699460375,
-        "median_ae": 0.4173774719238281,
-        "within_0_5": 0.51985559566787,
-        "within_1_0": 0.5893501805054152,
-        "mae_high_risk": 5.979640027697972,
+        "mae": 2.4783359773435896,
+        "rmse": 6.672043974328087,
+        "median_ae": 0.0,
+        "within_0_5": 0.7942238267148014,
+        "within_1_0": 0.8176895306859205,
+        "mae_high_risk": 3.0164881426215167,
         "esa_loss": 0.24364258568305974,
         "mse_hr": 0.05414279681845772,
         "f2": 0.2222222222222222
@@ -335,12 +323,12 @@
       "6hTo24h": {
         "n": 480,
         "highRiskEvents": 6,
-        "mae": 3.257277118775151,
-        "rmse": 6.258693862829643,
-        "median_ae": 0.485538270483751,
-        "within_0_5": 0.50625,
-        "within_1_0": 0.5666666666666667,
-        "mae_high_risk": 2.605502483452512,
+        "mae": 2.9266165183211643,
+        "rmse": 7.293051960677672,
+        "median_ae": 0.0,
+        "within_0_5": 0.76875,
+        "within_1_0": 0.7958333333333333,
+        "mae_high_risk": 0.8321696746236148,
         "esa_loss": 0.11901550486907779,
         "mse_hr": 0.06330611961121159,
         "f2": 0.5319148936170213
@@ -348,11 +336,11 @@
       "24hOrMore": {
         "n": 71,
         "highRiskEvents": 0,
-        "mae": 5.372934538426425,
-        "rmse": 8.754763065922221,
-        "median_ae": 1.5549031997165343,
-        "within_0_5": 0.3380281690140845,
-        "within_1_0": 0.4507042253521127,
+        "mae": 6.960645775863843,
+        "rmse": 11.624471485436722,
+        "median_ae": 0.5454045580514233,
+        "within_0_5": 0.36619718309859156,
+        "within_1_0": 0.6338028169014085,
         "mae_high_risk": null,
         "esa_loss": 0.0,
         "mse_hr": 0.0,
@@ -363,23 +351,23 @@
   "missionIdComparison": {
     "why": "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from the deployed exhibit.",
     "withoutMissionId": {
-      "mae": 2.811757230637402,
-      "rmse": 5.006797466676233,
-      "median_ae": 0.5819435119628906,
-      "within_0_5": 0.47739602169981915,
-      "within_1_0": 0.5714285714285714,
-      "mae_high_risk": 13.675111209278192,
+      "mae": 2.5498191598573237,
+      "rmse": 5.774348595285514,
+      "median_ae": 0.01523590087890625,
+      "within_0_5": 0.64376130198915,
+      "within_1_0": 0.70042194092827,
+      "mae_high_risk": 18.37093212365265,
       "esa_loss": 1132201.8878005068,
       "mse_hr": 1.1322018878005067,
       "f2": 0.0
     },
     "withMissionId": {
-      "mae": 2.8209712980181862,
-      "rmse": 5.018684941955663,
-      "median_ae": 0.5313949584960938,
-      "within_0_5": 0.488245931283906,
-      "within_1_0": 0.5720313441832429,
-      "mae_high_risk": 13.58039651472524,
+      "mae": 2.569724726980917,
+      "rmse": 5.7463780242911335,
+      "median_ae": 0.05000877380371094,
+      "within_0_5": 0.6329113924050633,
+      "within_1_0": 0.6980108499095841,
+      "mae_high_risk": 18.432193830534704,
       "esa_loss": 1132201.8878005068,
       "mse_hr": 1.1322018878005067,
       "f2": 0.0
@@ -397,15 +385,15 @@
     "testEvents": 756,
     "nHighRiskTest": 1,
     "model": {
-      "mae": 2.7126404925958822,
-      "rmse": 4.95747516489924,
-      "median_ae": 0.4677858352661133,
-      "within_0_5": 0.5092592592592593,
-      "within_1_0": 0.582010582010582,
-      "mae_high_risk": 17.87541586627804,
-      "esa_loss": 1658700.1982148984,
-      "mse_hr": 1.6587001982148983,
-      "f2": 0.0
+      "mae": 3.587696092081072,
+      "rmse": 6.8137847692048,
+      "median_ae": 0.4698524549501144,
+      "within_0_5": 0.5079365079365079,
+      "within_1_0": 0.58994708994709,
+      "mae_high_risk": 0.11415037279946905,
+      "esa_loss": 0.09381821479385588,
+      "mse_hr": 0.013030307610257762,
+      "f2": 0.1388888888888889
     },
     "persistence": {
       "mae": 4.8433526654661625,
@@ -424,41 +412,41 @@
     "historyBlock": "The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency.",
     "families": {
       "snapshot": {
-        "nFeatures": 66,
-        "mae": 2.930024845906416,
+        "nFeatures": 77,
+        "mae": 2.509224491329691,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 14.240555095929125,
+        "mae_high_risk": 15.435419263036604,
         "deltaFromPreviousMae": null,
         "beatsPersistenceMae": true
       },
       "snapshot_history": {
-        "nFeatures": 134,
-        "mae": 2.8629728462153885,
+        "nFeatures": 145,
+        "mae": 2.5349411625552647,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.546832476978388,
-        "deltaFromPreviousMae": 0.06705199969102749,
+        "mae_high_risk": 12.31062133602787,
+        "deltaFromPreviousMae": -0.02571667122557386,
         "beatsPersistenceMae": true
       },
       "snapshot_history_covariance": {
-        "nFeatures": 222,
-        "mae": 2.811757230637402,
+        "nFeatures": 233,
+        "mae": 2.526204390652478,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.675111209278192,
-        "deltaFromPreviousMae": 0.05121561557798637,
+        "mae_high_risk": 13.126182577601627,
+        "deltaFromPreviousMae": 0.008736771902786877,
         "beatsPersistenceMae": true
       },
       "full": {
-        "nFeatures": 222,
-        "mae": 2.811757230637402,
+        "nFeatures": 233,
+        "mae": 2.526204390652478,
         "esa_loss": 1132201.8878005068,
-        "mae_high_risk": 13.675111209278192,
+        "mae_high_risk": 13.126182577601627,
         "deltaFromPreviousMae": 0.0,
         "beatsPersistenceMae": true
       }
     },
     "persistenceMae": 5.0795360010082655,
-    "historyDeltaMae": 0.06705199969102749,
-    "historyHelps": true
+    "historyDeltaMae": -0.02571667122557386,
+    "historyHelps": false
   },
   "horizons": [
     {
@@ -469,15 +457,15 @@
       "overlapTrain": 3484,
       "overlapTest": 1545,
       "model": {
-        "mae": 3.2457659925863664,
-        "rmse": 5.544974052029666,
-        "median_ae": 1.0883350372314453,
-        "within_0_5": 0.35145631067961164,
-        "within_1_0": 0.487378640776699,
-        "mae_high_risk": 16.09716529624934,
-        "esa_loss": 1092792.5837486216,
-        "mse_hr": 1.0927925837486216,
-        "f2": 0.0
+        "mae": 4.578494944002799,
+        "rmse": 7.474754277723566,
+        "median_ae": 1.8451113394697494,
+        "within_0_5": 0.36957928802588996,
+        "within_1_0": 0.4401294498381877,
+        "mae_high_risk": 5.85908759454779,
+        "esa_loss": 0.3133237377317581,
+        "mse_hr": 0.046533228376003676,
+        "f2": 0.1485148514851485
       },
       "persistence": {
         "mae": 7.747678630288101,
@@ -490,7 +478,7 @@
         "mse_hr": 0.046533228376003676,
         "f2": 0.1485148514851485
       },
-      "maeImprovement": 4.501912637701735
+      "maeImprovement": 3.1691836862853027
     },
     {
       "cutoffHours": 48,
@@ -500,15 +488,15 @@
       "overlapTrain": 3731,
       "overlapTest": 1659,
       "model": {
-        "mae": 2.811757230637402,
-        "rmse": 5.006797466676233,
-        "median_ae": 0.5819435119628906,
-        "within_0_5": 0.47739602169981915,
-        "within_1_0": 0.5714285714285714,
-        "mae_high_risk": 13.675111209278192,
-        "esa_loss": 1132201.8878005068,
-        "mse_hr": 1.1322018878005067,
-        "f2": 0.0
+        "mae": 2.799866209630615,
+        "rmse": 7.134654262301439,
+        "median_ae": 0.0,
+        "within_0_5": 0.7685352622061483,
+        "within_1_0": 0.8034960819770947,
+        "mae_high_risk": 1.5602758306229154,
+        "esa_loss": 0.1669832237710995,
+        "mse_hr": 0.06025167868029364,
+        "f2": 0.36082474226804123
       },
       "persistence": {
         "mae": 5.0795360010082655,
@@ -521,7 +509,7 @@
         "mse_hr": 0.06025167868029364,
         "f2": 0.36082474226804123
       },
-      "maeImprovement": 2.2677787703708634
+      "maeImprovement": 2.2796697913776507
     },
     {
       "cutoffHours": 24,
@@ -531,15 +519,15 @@
       "overlapTrain": 3731,
       "overlapTest": 1659,
       "model": {
-        "mae": 2.107526413915374,
-        "rmse": 4.4026802637389295,
-        "median_ae": 0.1909027099609375,
-        "within_0_5": 0.6208559373116335,
-        "within_1_0": 0.6895720313441832,
-        "mae_high_risk": 8.895279111059061,
-        "esa_loss": 1132201.8878005068,
-        "mse_hr": 1.1322018878005067,
-        "f2": 0.0
+        "mae": 2.199114781705838,
+        "rmse": 5.212092845981246,
+        "median_ae": 0.17171559567509576,
+        "within_0_5": 0.6618444846292948,
+        "within_1_0": 0.731163351416516,
+        "mae_high_risk": 0.7139537277717896,
+        "esa_loss": 0.3132597203221337,
+        "mse_hr": 0.1815998378679036,
+        "f2": 0.5797101449275363
       },
       "persistence": {
         "mae": 2.6336219961744756,
@@ -552,7 +540,7 @@
         "mse_hr": 0.1815998378679036,
         "f2": 0.5797101449275363
       },
-      "maeImprovement": 0.5260955822591016
+      "maeImprovement": 0.4345072144686375
     },
     {
       "cutoffHours": 12,
@@ -562,15 +550,15 @@
       "overlapTrain": 3519,
       "overlapTest": 1564,
       "model": {
-        "mae": 1.391538376348452,
-        "rmse": 3.5504149034339534,
-        "median_ae": 0.1123361587524414,
-        "within_0_5": 0.719309462915601,
-        "within_1_0": 0.7921994884910486,
-        "mae_high_risk": 6.856139020326429,
-        "esa_loss": 6.312248325112265,
-        "mse_hr": 0.9282718125165096,
-        "f2": 0.14705882352941177
+        "mae": 1.3849750817135285,
+        "rmse": 4.108494022230325,
+        "median_ae": 0.16450808908115278,
+        "within_0_5": 0.7416879795396419,
+        "within_1_0": 0.8337595907928389,
+        "mae_high_risk": 0.4077769318094253,
+        "esa_loss": 0.03926462380817489,
+        "mse_hr": 0.026428112178579252,
+        "f2": 0.6730769230769231
       },
       "persistence": {
         "mae": 1.4441061602767171,
@@ -583,193 +571,193 @@
         "mse_hr": 0.026428112178579252,
         "f2": 0.6730769230769231
       },
-      "maeImprovement": 0.05256778392826522
+      "maeImprovement": 0.059131078563188666
     }
   ],
   "abstention": {
-    "rule": "Abstain if the 90% bootstrap band crosses log10(Pc) \u2265 \u22126, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
+    "rule": "Abstain if the 90% conformal band crosses log10(Pc) \u2265 \u22126, if current risk or miss distance is missing, or if bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.",
     "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
     "operatingPoint": {
       "n": 1659,
-      "nAccepted": 1306,
-      "nAbstained": 353,
-      "coverage": 0.7872212176009644,
-      "maeAll": 3.054789985306168,
-      "maeAccepted": 1.930438103966252,
-      "maeAbstained": 7.214573432983029,
-      "persistenceMaeAccepted": 3.5778730884364127,
+      "nAccepted": 1476,
+      "nAbstained": 183,
+      "coverage": 0.8896925858951176,
+      "maeAll": 2.799866209630615,
+      "maeAccepted": 2.0845506951331547,
+      "maeAbstained": 8.569296260987176,
+      "persistenceMaeAccepted": 3.9477611792747678,
       "nHighRisk": 9,
-      "nHighRiskAbstained": 1,
-      "nHighRiskAccepted": 8,
-      "highRiskRecallAccepted": 0.875,
-      "highRiskCapture": 0.8888888888888888,
-      "falseReassurance": 1,
+      "nHighRiskAbstained": 7,
+      "nHighRiskAccepted": 2,
+      "highRiskRecallAccepted": 0.0,
+      "highRiskCapture": 0.7777777777777778,
+      "falseReassurance": 2,
       "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
-      "falseReassuranceRate": 0.1111111111111111,
+      "falseReassuranceRate": 0.2222222222222222,
       "accepted": {
-        "mae": 1.930438103966252,
-        "rmse": 5.1062998193185045,
-        "median_ae": 0.23785114288330078,
-        "within_0_5": 0.6431852986217458,
-        "within_1_0": 0.7281776416539051,
-        "mae_high_risk": 2.3525614933735066,
-        "esa_loss": 0.12743204160400298,
-        "mse_hr": 0.04795829522731295,
-        "f2": 0.3763440860215054
-      },
-      "abstained": {
-        "mae": 7.214573432983029,
-        "rmse": 8.276833257812534,
-        "median_ae": 6.561319351196289,
-        "within_0_5": 0.0084985835694051,
-        "within_1_0": 0.0169971671388102,
-        "mae_high_risk": 14.751443036820934,
-        "esa_loss": 158598.746304139,
-        "mse_hr": 0.158598746304139,
+        "mae": 2.0845506951331547,
+        "rmse": 5.955839965141901,
+        "median_ae": 0.0,
+        "within_0_5": 0.8109756097560976,
+        "within_1_0": 0.8448509485094851,
+        "mae_high_risk": 6.353762457490978,
+        "esa_loss": 80148.36623010997,
+        "mse_hr": 0.08014836623010997,
         "f2": 0.0
       },
-      "meanHighRiskProbabilityAccepted": 0.01350217832225952
+      "abstained": {
+        "mae": 8.569296260987176,
+        "rmse": 13.242555322771741,
+        "median_ae": 1.799413647952516,
+        "within_0_5": 0.4262295081967213,
+        "within_1_0": 0.46994535519125685,
+        "mae_high_risk": 0.19070822294632578,
+        "esa_loss": 0.11225193080691606,
+        "mse_hr": 0.054566910808917526,
+        "f2": 0.4861111111111111
+      },
+      "meanHighRiskProbabilityAccepted": 0.0030558361339270367
     },
     "coverageCurve": [
       {
         "disagreementThreshold": 0.05,
-        "coverage": 0.0379746835443038,
-        "maeAccepted": 16.0440968365195,
-        "maeAbstained": 2.542054188547748,
-        "nAccepted": 63,
-        "nAbstained": 1596,
+        "coverage": 0.7408077154912598,
+        "maeAccepted": 0.8922513609175721,
+        "maeAbstained": 8.25209562606859,
+        "nAccepted": 1229,
+        "nAbstained": 430,
         "highRiskCapture": 1.0,
         "falseReassurance": 0,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 0.25,
-        "coverage": 0.3291139240506329,
-        "maeAccepted": 1.9776890472293973,
-        "maeAbstained": 3.5831791247400573,
-        "nAccepted": 546,
-        "nAbstained": 1113,
+        "coverage": 0.7643158529234478,
+        "maeAccepted": 0.9545302713426406,
+        "maeAbstained": 8.784229303618215,
+        "nAccepted": 1268,
+        "nAbstained": 391,
         "highRiskCapture": 1.0,
         "falseReassurance": 0,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 0.5,
-        "coverage": 0.5479204339963833,
-        "maeAccepted": 1.3935108252614217,
-        "maeAbstained": 5.068260327280402,
-        "nAccepted": 909,
-        "nAbstained": 750,
+        "coverage": 0.8089210367691381,
+        "maeAccepted": 1.3132043720840945,
+        "maeAbstained": 9.093557648076766,
+        "nAccepted": 1342,
+        "nAbstained": 317,
         "highRiskCapture": 1.0,
         "falseReassurance": 0,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 0.75,
-        "coverage": 0.648583484026522,
-        "maeAccepted": 1.4672588942038465,
-        "maeAbstained": 5.9847787572205755,
-        "nAccepted": 1076,
-        "nAbstained": 583,
+        "coverage": 0.8468957203134418,
+        "maeAccepted": 1.6683670165806055,
+        "maeAbstained": 9.05874954126551,
+        "nAccepted": 1405,
+        "nAbstained": 254,
         "highRiskCapture": 1.0,
         "falseReassurance": 0,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 1.0,
-        "coverage": 0.7197106690777577,
-        "maeAccepted": 1.6720142223818004,
-        "maeAbstained": 6.605401299137773,
-        "nAccepted": 1194,
-        "nAbstained": 465,
-        "highRiskCapture": 1.0,
-        "falseReassurance": 0,
+        "coverage": 0.8746232670283303,
+        "maeAccepted": 1.926237617268099,
+        "maeAbstained": 8.894265668851817,
+        "nAccepted": 1451,
+        "nAbstained": 208,
+        "highRiskCapture": 0.8888888888888888,
+        "falseReassurance": 1,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 1.25,
-        "coverage": 0.7872212176009644,
-        "maeAccepted": 1.930438103966252,
-        "maeAbstained": 7.214573432983029,
-        "nAccepted": 1306,
-        "nAbstained": 353,
-        "highRiskCapture": 0.8888888888888888,
-        "falseReassurance": 1,
+        "coverage": 0.890295358649789,
+        "maeAccepted": 2.0854577226467623,
+        "maeAbstained": 8.597565853999571,
+        "nAccepted": 1477,
+        "nAbstained": 182,
+        "highRiskCapture": 0.7777777777777778,
+        "falseReassurance": 2,
         "operatingPoint": 1.0
       },
       {
         "disagreementThreshold": 1.5,
-        "coverage": 0.838456901748041,
-        "maeAccepted": 2.202363487590214,
-        "maeAbstained": 7.479137964122934,
-        "nAccepted": 1391,
-        "nAbstained": 268,
-        "highRiskCapture": 0.8888888888888888,
-        "falseReassurance": 1,
+        "coverage": 0.8963230861965039,
+        "maeAccepted": 2.1477833508507396,
+        "maeAbstained": 8.437349994547324,
+        "nAccepted": 1487,
+        "nAbstained": 172,
+        "highRiskCapture": 0.7777777777777778,
+        "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 1.75,
-        "coverage": 0.890295358649789,
-        "maeAccepted": 2.491924350587342,
-        "maeAbstained": 7.622661097832035,
-        "nAccepted": 1477,
-        "nAbstained": 182,
+        "coverage": 0.8987341772151899,
+        "maeAccepted": 2.163264243745188,
+        "maeAbstained": 8.449708656863773,
+        "nAccepted": 1491,
+        "nAbstained": 168,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 2.0,
-        "coverage": 0.9252561784207354,
-        "maeAccepted": 2.6493498034936045,
-        "maeAbstained": 8.073747074679446,
-        "nAccepted": 1535,
-        "nAbstained": 124,
+        "coverage": 0.8999397227245328,
+        "maeAccepted": 2.173700882379907,
+        "maeAbstained": 8.43158207460234,
+        "nAccepted": 1493,
+        "nAbstained": 166,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 2.25,
-        "coverage": 0.9535864978902954,
-        "maeAccepted": 2.7976225226578197,
-        "maeAbstained": 8.3384123997177,
-        "nAccepted": 1582,
-        "nAbstained": 77,
+        "coverage": 0.9011452682338759,
+        "maeAccepted": 2.196516975628437,
+        "maeAbstained": 8.299909531784612,
+        "nAccepted": 1495,
+        "nAbstained": 164,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 2.5,
-        "coverage": 0.9722724532851115,
-        "maeAccepted": 2.898941157917234,
-        "maeAbstained": 8.519662997879044,
-        "nAccepted": 1613,
-        "nAbstained": 46,
+        "coverage": 0.9011452682338759,
+        "maeAccepted": 2.196516975628437,
+        "maeAbstained": 8.299909531784612,
+        "nAccepted": 1495,
+        "nAbstained": 164,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 2.75,
-        "coverage": 0.9849306811332128,
-        "maeAccepted": 2.9669279883749495,
-        "maeAbstained": 8.797450104730679,
-        "nAccepted": 1634,
-        "nAbstained": 25,
+        "coverage": 0.9023508137432188,
+        "maeAccepted": 2.2045028203170363,
+        "maeAbstained": 8.301464936806088,
+        "nAccepted": 1497,
+        "nAbstained": 162,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
       },
       {
         "disagreementThreshold": 3.0,
-        "coverage": 0.9903556359252562,
-        "maeAccepted": 2.9946093789661057,
-        "maeAbstained": 9.234585998851461,
-        "nAccepted": 1643,
-        "nAbstained": 16,
+        "coverage": 0.9023508137432188,
+        "maeAccepted": 2.2045028203170363,
+        "maeAbstained": 8.301464936806088,
+        "nAccepted": 1497,
+        "nAbstained": 162,
         "highRiskCapture": 0.7777777777777778,
         "falseReassurance": 2,
         "operatingPoint": 0.0
@@ -778,88 +766,88 @@
   },
   "shapContrast": {
     "correct": {
-      "n": 792,
+      "n": 1275,
       "nExplained": 400,
-      "meanAbsError": 0.17971576317717183,
+      "meanAbsError": 0.013431265929842087,
       "groups": [
         {
+          "group": "today's reported risk",
+          "meanAbsShap": 4.156447518845416
+        },
+        {
           "group": "whether risk is climbing or falling",
-          "meanAbsShap": 1.859115442646053
+          "meanAbsShap": 1.9495017662292324
         },
         {
           "group": "how uncertain the positions still are",
-          "meanAbsShap": 1.3874742751426765
-        },
-        {
-          "group": "how close they pass",
-          "meanAbsShap": 0.779849723300431
-        },
-        {
-          "group": "today's reported risk",
-          "meanAbsShap": 0.7199900526205602
-        },
-        {
-          "group": "how complete the tracking is",
-          "meanAbsShap": 0.658775310472338
-        },
-        {
-          "group": "other",
-          "meanAbsShap": 0.4546172481312259
+          "meanAbsShap": 0.9258307278410667
         },
         {
           "group": "orbit shape and size",
-          "meanAbsShap": 0.3718712316063102
+          "meanAbsShap": 0.6079699951707335
         },
         {
-          "group": "space weather",
-          "meanAbsShap": 0.08830551163664495
+          "group": "how complete the tracking is",
+          "meanAbsShap": 0.545303666538996
+        },
+        {
+          "group": "other",
+          "meanAbsShap": 0.27273838742929
+        },
+        {
+          "group": "how close they pass",
+          "meanAbsShap": 0.2425794180337334
         },
         {
           "group": "closing speed",
-          "meanAbsShap": 0.07093023815068591
+          "meanAbsShap": 0.06870123186813998
+        },
+        {
+          "group": "space weather",
+          "meanAbsShap": 0.04618818143707358
         }
       ]
     },
     "incorrect": {
-      "n": 582,
-      "nExplained": 400,
-      "meanAbsError": 7.260962285805585,
+      "n": 298,
+      "nExplained": 298,
+      "meanAbsError": 15.270199402983652,
       "groups": [
         {
           "group": "whether risk is climbing or falling",
-          "meanAbsShap": 3.7328027927324
-        },
-        {
-          "group": "how uncertain the positions still are",
-          "meanAbsShap": 3.688325322574219
-        },
-        {
-          "group": "how close they pass",
-          "meanAbsShap": 2.006324961357641
-        },
-        {
-          "group": "how complete the tracking is",
-          "meanAbsShap": 1.5808237304751491
+          "meanAbsShap": 1.9469841882187517
         },
         {
           "group": "today's reported risk",
-          "meanAbsShap": 1.4245194323962642
+          "meanAbsShap": 1.1415479491126168
         },
         {
-          "group": "other",
-          "meanAbsShap": 1.1678689388379644
+          "group": "how uncertain the positions still are",
+          "meanAbsShap": 0.9661395114621911
+        },
+        {
+          "group": "how complete the tracking is",
+          "meanAbsShap": 0.6009019804526714
         },
         {
           "group": "orbit shape and size",
-          "meanAbsShap": 0.9318923889534199
+          "meanAbsShap": 0.48260220626976336
+        },
+        {
+          "group": "how close they pass",
+          "meanAbsShap": 0.320003479236495
+        },
+        {
+          "group": "other",
+          "meanAbsShap": 0.3061381878150857
         },
         {
           "group": "closing speed",
-          "meanAbsShap": 0.15420805077075783
+          "meanAbsShap": 0.09138638899277195
         },
         {
           "group": "space weather",
-          "meanAbsShap": 0.12985132561611862
+          "meanAbsShap": 0.061814640805181585
         }
       ]
     },
@@ -868,29 +856,29 @@
   "failureClusters": {
     "modes": {
       "accurate": {
-        "n": 843,
-        "share": 0.5081374321880651,
-        "mae": 0.15335936657260366,
-        "highRiskShare": 0.00830367734282325,
-        "meanMessages": 12.12099644128114,
-        "meanMissDistanceM": 19560.387900355872,
-        "meanHoursBeforeCutoff": 6.880646557928039,
-        "meanRadialSigmaM": 832332.7906871644
+        "n": 1275,
+        "share": 0.7685352622061483,
+        "mae": 0.013431265929842087,
+        "highRiskShare": 0.005490196078431373,
+        "meanMessages": 11.411764705882353,
+        "meanMissDistanceM": 18275.134901960784,
+        "meanHoursBeforeCutoff": 6.266999420043577,
+        "meanRadialSigmaM": 3301800.744507502
       },
       "final_collapses_to_negligible": {
-        "n": 40,
-        "share": 0.024110910186859555,
-        "mae": 23.645262309854086,
+        "n": 135,
+        "share": 0.081374321880651,
+        "mae": 20.87164126074659,
         "highRiskShare": 0.0,
-        "meanMessages": 7.875,
-        "meanMissDistanceM": 10301.025,
-        "meanHoursBeforeCutoff": 14.281216187500007,
-        "meanRadialSigmaM": 609.4174093175154
+        "meanMessages": 9.42962962962963,
+        "meanMissDistanceM": 12467.748148148148,
+        "meanHoursBeforeCutoff": 12.146500347736634,
+        "meanRadialSigmaM": 945537.3317660308
       },
       "late_high_risk_jump": {
         "n": 2,
         "share": 0.0012055455093429777,
-        "mae": 16.118488711592356,
+        "mae": 6.353762457490978,
         "highRiskShare": 1.0,
         "meanMessages": 15.0,
         "meanMissDistanceM": 432.0,
@@ -908,138 +896,138 @@
         "meanRadialSigmaM": 75.09881285339854
       },
       "sparse_history_error": {
-        "n": 60,
-        "share": 0.03616636528028933,
-        "mae": 3.593184837207962,
+        "n": 28,
+        "share": 0.016877637130801686,
+        "mae": 3.285567555406009,
         "highRiskShare": 0.0,
         "meanMessages": 1.0,
-        "meanMissDistanceM": 26826.55,
-        "meanHoursBeforeCutoff": 24.6289207175926,
-        "meanRadialSigmaM": 11693649.829019826
+        "meanMissDistanceM": 44878.53571428572,
+        "meanHoursBeforeCutoff": 54.0305078670635,
+        "meanRadialSigmaM": 575.8318545959464
       },
       "close_approach_error": {
-        "n": 27,
-        "share": 0.0162748643761302,
-        "mae": 4.413891617460246,
+        "n": 13,
+        "share": 0.007836045810729355,
+        "mae": 4.995633264932876,
         "highRiskShare": 0.0,
-        "meanMessages": 12.25925925925926,
-        "meanMissDistanceM": 321.77777777777777,
-        "meanHoursBeforeCutoff": 3.698633281893007,
-        "meanRadialSigmaM": 39.28587780417016
+        "meanMessages": 11.23076923076923,
+        "meanMissDistanceM": 320.38461538461536,
+        "meanHoursBeforeCutoff": 4.166919551282055,
+        "meanRadialSigmaM": 48.55244404512452
       },
       "underprediction": {
-        "n": 210,
-        "share": 0.12658227848101267,
-        "mae": 8.777815246136031,
+        "n": 107,
+        "share": 0.0644966847498493,
+        "mae": 9.881451883580825,
         "highRiskShare": 0.0,
-        "meanMessages": 11.257142857142858,
-        "meanMissDistanceM": 13823.914285714285,
-        "meanHoursBeforeCutoff": 6.280524292328047,
-        "meanRadialSigmaM": 3949157.5922259875
+        "meanMessages": 10.88785046728972,
+        "meanMissDistanceM": 11242.130841121496,
+        "meanHoursBeforeCutoff": 6.981474166666672,
+        "meanRadialSigmaM": 596715.5589638328
       },
       "overprediction": {
-        "n": 361,
-        "share": 0.21760096443640747,
-        "mae": 4.2984218000097805,
+        "n": 41,
+        "share": 0.02471368294153104,
+        "mae": 9.643374538530146,
         "highRiskShare": 0.0,
-        "meanMessages": 10.385041551246537,
-        "meanMissDistanceM": 15099.493074792244,
-        "meanHoursBeforeCutoff": 7.751446849799943,
-        "meanRadialSigmaM": 5477534.2484534625
+        "meanMessages": 10.78048780487805,
+        "meanMissDistanceM": 12104.0,
+        "meanHoursBeforeCutoff": 9.150753136856373,
+        "meanRadialSigmaM": 4667286.122835528
       },
       "moderate_error": {
-        "n": 96,
-        "share": 0.05786618444846293,
-        "mae": 0.7249461498139098,
+        "n": 38,
+        "share": 0.022905364677516575,
+        "mae": 0.7028038677827757,
         "highRiskShare": 0.0,
-        "meanMessages": 10.927083333333334,
-        "meanMissDistanceM": 17776.791666666668,
-        "meanHoursBeforeCutoff": 4.948644372106485,
-        "meanRadialSigmaM": 4650816.245428055
+        "meanMessages": 12.68421052631579,
+        "meanMissDistanceM": 16746.342105263157,
+        "meanHoursBeforeCutoff": 5.843676710526321,
+        "meanRadialSigmaM": 1679598.6308217442
       }
     },
     "dominantFailures": [
-      "overprediction",
+      "final_collapses_to_negligible",
       "underprediction",
-      "moderate_error"
+      "overprediction"
     ],
     "nTest": 1659,
-    "nInaccurate": 816
+    "nInaccurate": 384
   },
   "featureGroups": [
     {
       "group": "how uncertain the positions still are",
-      "gain": 22924.966926574707
+      "gain": 671.8081102371216
     },
     {
       "group": "how complete the tracking is",
-      "gain": 11348.956909179688
+      "gain": 313.1136965751648
     },
     {
       "group": "whether risk is climbing or falling",
-      "gain": 10010.164962768555
+      "gain": 223.90564155578613
     },
     {
       "group": "other",
-      "gain": 8271.064849853516
-    },
-    {
-      "group": "how close they pass",
-      "gain": 5165.5609130859375
+      "gain": 209.88972425460815
     },
     {
       "group": "orbit shape and size",
-      "gain": 4795.407180786133
+      "gain": 156.5772294998169
+    },
+    {
+      "group": "how close they pass",
+      "gain": 129.8191318511963
     },
     {
       "group": "today's reported risk",
-      "gain": 2059.453170776367
+      "gain": 50.51008701324463
     },
     {
       "group": "closing speed",
-      "gain": 1716.443458557129
+      "gain": 45.61753749847412
     },
     {
       "group": "space weather",
-      "gain": 1258.1959991455078
+      "gain": 29.976643085479736
     }
   ],
   "failures": {
     "worstUnderpredictions": [
       {
-        "eventId": 9846,
-        "actual": -6.753994095923972,
-        "predicted": -28.477622032165527,
-        "persistence": -21.11872949607064,
-        "error": -21.723627936241556
+        "eventId": 6901,
+        "actual": -6.182632983712407,
+        "predicted": -30.0,
+        "persistence": -6.366127737341667,
+        "error": -23.81736701628759
       },
       {
         "eventId": 9950,
         "actual": -6.482408269288093,
-        "predicted": -27.228821754455566,
+        "predicted": -30.0,
         "persistence": -9.332920794535784,
-        "error": -20.746413485167473
+        "error": -23.517591730711906
       },
       {
         "eventId": 9747,
         "actual": -6.531504975492932,
-        "predicted": -27.26081657409668,
+        "predicted": -30.0,
         "persistence": -9.603800652904264,
-        "error": -20.729311598603747
+        "error": -23.468495024507067
       },
       {
-        "eventId": 8687,
-        "actual": -7.830913642512977,
-        "predicted": -27.28074836730957,
-        "persistence": -24.499351936628088,
-        "error": -19.449834724796595
+        "eventId": 1176,
+        "actual": -6.9677842967020185,
+        "predicted": -30.0,
+        "persistence": -6.360115258083696,
+        "error": -23.032215703297982
       },
       {
-        "eventId": 5949,
-        "actual": -6.495121540589785,
-        "predicted": -25.593226432800293,
-        "persistence": -17.0604308313441,
-        "error": -19.098104892210507
+        "eventId": 5693,
+        "actual": -7.428757149439776,
+        "predicted": -30.0,
+        "persistence": -7.38679264789624,
+        "error": -22.571242850560225
       }
     ],
     "worstOverpredictions": [
@@ -1083,16 +1071,16 @@
       {
         "eventId": 3615,
         "actual": -5.602755418989613,
-        "predicted": -20.354198455810547,
+        "predicted": -9.71420160283716,
         "persistence": -7.260190400978641,
-        "error": -14.751443036820934
+        "error": -4.111446183847548
       },
       {
         "eventId": 6705,
         "actual": -5.959793372425289,
-        "predicted": -23.445327758789062,
+        "predicted": -14.555872103559699,
         "persistence": -11.018589159834113,
-        "error": -17.485534386363774
+        "error": -8.596078731134408
       }
     ],
     "falseEscalations": [
@@ -1133,5 +1121,5 @@
       }
     ]
   },
-  "abstentionRule": "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split."
+  "abstentionRule": "PRISM abstains when the 90% conformal band crosses the ESA challenge class log10(Pc) \u2265 \u22126, when current risk or miss distance is missing, when bootstrap disagreement exceeds 1.25 log-risk units, or when the model forecasts the dataset floor while today's report is still far from negligible. The \u22126 class follows the ESA challenge definition. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split."
 }
