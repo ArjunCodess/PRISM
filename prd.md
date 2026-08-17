@@ -21,11 +21,11 @@ An explainable AI copilot for T-48-hour space-debris conjunction risk forecastin
 
 Version 1.0 below remains the original contract. The frozen exhibit diverges in these documented ways:
 
-1. **Selected model** is a hurdle residual (`prism-0.3.0`): MAE XGBoost on `Δ = y − current risk`, mixed with a collapse-to-floor classifier (hard mix, threshold 0.35), persistence guard at `log10(Pc) ≥ −6`, high-risk clamp, split-conformal intervals, and bootstrap disagreement for abstention. It is not a 10-model median as the sole point forecast.
-2. **Held-out numbers:** persistence MAE 5.080 → hurdle MAE 2.800; ESA-style loss and F2 still tie at 0.167 / 0.361. Unguarded MAE XGBoost is 2.550 with F2 = 0. Nominal 90% conformal coverage is 91.4%.
+1. **Selected model** is a T−48 bootstrap XGBoost median (`prism-0.2.1`) of the later reported `log10(Pc)`, with a persistence guard at `log10(Pc) ≥ −6`. A hurdle residual mix was tried and removed because it stopped the exhibit from being a T−48 forecast.
+2. **Held-out numbers:** persistence MAE 5.080 → ensemble MAE 3.059; ESA-style loss and F2 still tie at 0.167 / 0.361. Unguarded XGBoost is 2.808 with F2 = 0. Nominal 90% bootstrap coverage is 47.7%.
 3. **G6 / A8 / N7 superseded.** The website requires FastAPI (`NEXT_PUBLIC_API_URL`). There is no JSON fallback when the API is stopped. The laptop exhibit still runs with Wi-Fi off if both processes are local.
-4. **False reassurance is 2** on the frozen test split (2 of 9 high-risk events). Do not claim zero accepted high-risk misses.
-5. **Snapshot features** include encounter-plane geometry and object-type dummies. Formal conformal intervals (listed as post-competition in §21) are in the exhibit.
+4. **False reassurance is 1** on the frozen test split (1 of 9 high-risk events).
+5. **Snapshot features** include encounter-plane geometry and object-type dummies.
 6. **M3 remains unmet:** MAE improves; ESA-style loss does not.
 
 Numbers and scripts: `README.md`, `docs/model-card.md`, `docs/presentation.md`, `ml/artifacts/metrics.json`.
@@ -695,7 +695,7 @@ ESA raw CDMs
     → Event builder at T-48 cutoff
     → Feature table
     → Grouped train / validation / calibration / test
-    → Hurdle residual XGBoost + collapse/warning heads + conformal + SHAP
+    → T−48 XGBoost ensemble + calibration + SHAP
     → Versioned artifacts (model, schema, metrics, demo cases)
     → FastAPI inference (required)
     → Next.js exhibit (API-only; no JSON fallback)
@@ -717,7 +717,6 @@ PRISM/
       split.py
       train_regressor.py
       train_classifier.py
-      hurdle.py
       calibrate.py
       abstention.py
       explain.py
@@ -888,7 +887,7 @@ Today is **15 August 2026**. The exhibit target is **18 August 2026**. Freeze th
 | 15 Aug | Data downloaded and checksummed. Event-level cutoff pipeline + leakage tests. Persistence, median, and Ridge baselines. First XGBoost snapshot model. |
 | 16 Aug | Trend + physics features, grouped evaluation, model selection, calibration, ensemble spread, SHAP, five demo cases exported. |
 | 17 Aug | FastAPI + Next.js queue/workspace/laboratory, first freeze of bootstrap exhibit. |
-| 18 Aug | Hurdle residual retrain, conformal abstention, API-only website, documentation. |
+| 18 Aug | Dropped hurdle residual; restored T−48 ensemble; API-only website; documentation. |
 
 If an organiser later names 20 August as a paperwork deadline, 18–19 August are for documentation polish only.
 
@@ -930,7 +929,7 @@ If an organiser later names 20 August as a paperwork deadline, 18–19 August ar
 
 1. **Problem.** Early risk estimates move as observations arrive; operators still need time to prepare.
 2. **Data.** ESA CDM histories, cut off 48 hours before closest approach.
-3. **Model.** Hurdle residual XGBoost, collapse classifier, conformal bands, SHAP.
+3. **Model.** Event-level XGBoost on T−48 summaries, calibrated warning probability, SHAP.
 4. **Demo.** Event, forecast, reason, uncertainty, revealed outcome.
 5. **Evidence.** Comparison with latest-risk baseline on held-out events.
 6. **Limit.** Advisory educational prototype, never an autonomous flight system.
