@@ -18,7 +18,6 @@ export type Prediction = {
   abstentionReasons?: string[];
   topFactors: Factor[];
   explanation?: string;
-  modelVersion: string;
   disclaimer: string;
 };
 
@@ -49,7 +48,6 @@ export type DemoCase = {
 };
 
 export type MetricsFile = {
-  modelVersion?: string;
   researchQuestion?: string;
   nEvents?: number;
   nHighRiskEligible?: number;

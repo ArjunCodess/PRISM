@@ -1,5 +1,4 @@
 {
-  "modelVersion": "PRISM",
   "researchQuestion": "Do pre-T\u221248 conjunction histories contain enough predictive signal to improve forecasts of later reported log10(Pc) over persistence?",
   "definitions": {
     "mae": "Mean absolute error in log10(Pc) units on the final reported risk.",

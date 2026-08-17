@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from build_events import build_event_histories
-from constants import HIGH_RISK_THRESHOLD, MODEL_NAME
+from constants import HIGH_RISK_THRESHOLD
 from explain import shap_explainer
 from export_demo_cases import predict_event
 from features import build_feature_table
@@ -35,7 +35,6 @@ class PrismModel:
             np.zeros((20, len(self.feature_names))), columns=self.feature_names
         )
         self.explainer = shap_explainer(self.trained, background)
-        self.model_name = MODEL_NAME
 
     def predict_messages(
         self, event_id: str, messages: list[dict[str, Any]], cutoff_hours: int = 48

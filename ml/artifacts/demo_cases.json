@@ -62,7 +62,6 @@
         }
       ],
       "explanation": "More worrying: how jumpy the reported collision chance is and how jumpy the other object's radial position uncertainty is. Less worrying: miss size versus uncertainty and how jumpy the other object's cross-track position uncertainty is.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 1
@@ -305,7 +304,6 @@
         }
       ],
       "explanation": "Less worrying: how jumpy the reported collision chance is and today's reported chance.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 14
@@ -886,7 +884,6 @@
         }
       ],
       "explanation": "More worrying: how jumpy the reported collision chance is and today's reported chance. Less worrying: miss size versus uncertainty and trend in the other object's radial position uncertainty.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 12
@@ -1393,7 +1390,6 @@
         }
       ],
       "explanation": "More worrying: how jumpy the reported collision chance is and smallest the reported collision chance. Less worrying: t ecc.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 15
@@ -1972,7 +1968,6 @@
         }
       ],
       "explanation": "More worrying: how jumpy the reported collision chance is and how many uncertainty-sigmas the miss is. Less worrying: miss size versus uncertainty and trend in the other object's radial position uncertainty.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 14
@@ -2527,7 +2522,6 @@
         }
       ],
       "explanation": "More worrying: how jumpy the reported collision chance is and how many uncertainty-sigmas the miss is.",
-      "modelVersion": "PRISM",
       "disclaimer": "Research prototype for offline, explainable conjunction-risk forecasting. Not flight software. Not an operational decision system.",
       "cutoffHours": 48,
       "nMessagesUsed": 15

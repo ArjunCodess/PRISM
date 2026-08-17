@@ -24,7 +24,6 @@ from constants import (  # noqa: E402
     ESA_LOSS_DEFINITION,
     FALSE_REASSURANCE_DEFINITION,
     HIGH_RISK_THRESHOLD,
-    MODEL_NAME,
     RANDOM_STATE,
     RESEARCH_QUESTION,
 )
@@ -259,7 +258,6 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     }
 
     metrics = {
-        "modelVersion": MODEL_NAME,
         "researchQuestion": RESEARCH_QUESTION,
         "definitions": {
             "mae": "Mean absolute error in log10(Pc) units on the final reported risk.",
@@ -432,7 +430,6 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
     write_json(
         artifacts / "model_card.json",
         {
-            "modelVersion": MODEL_NAME,
             "dataSource": data_source,
             "intendedUse": (
                 "Research prototype for offline, explainable conjunction-risk forecasting."

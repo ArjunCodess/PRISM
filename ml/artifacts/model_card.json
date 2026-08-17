@@ -1,5 +1,4 @@
 {
-  "modelVersion": "PRISM",
   "dataSource": "ESA Collision Avoidance Challenge training archive",
   "intendedUse": "Research prototype for offline, explainable conjunction-risk forecasting.",
   "outOfScope": [

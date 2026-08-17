@@ -66,7 +66,6 @@ class PredictResponse(BaseModel):
     abstentionReasons: list[str] | None = None
     topFactors: list[FactorModel]
     explanation: str | None = None
-    modelVersion: str
     disclaimer: str
     cutoffHours: int | None = None
     nMessagesUsed: int | None = None
