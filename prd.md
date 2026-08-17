@@ -17,6 +17,19 @@ An explainable AI copilot for T-48-hour space-debris conjunction risk forecastin
 | Owner | Arjun Vijay Prakash |
 | Safety | Educational research only. Never present as flight-certified collision-avoidance software. |
 
+### Addendum — 18 August 2026 (exhibit as built)
+
+Version 1.0 below remains the original contract. The frozen exhibit diverges in these documented ways:
+
+1. **Selected model** is a hurdle residual (`prism-0.3.0`): MAE XGBoost on `Δ = y − current risk`, mixed with a collapse-to-floor classifier (hard mix, threshold 0.35), persistence guard at `log10(Pc) ≥ −6`, high-risk clamp, split-conformal intervals, and bootstrap disagreement for abstention. It is not a 10-model median as the sole point forecast.
+2. **Held-out numbers:** persistence MAE 5.080 → hurdle MAE 2.800; ESA-style loss and F2 still tie at 0.167 / 0.361. Unguarded MAE XGBoost is 2.550 with F2 = 0. Nominal 90% conformal coverage is 91.4%.
+3. **G6 / A8 / N7 superseded.** The website requires FastAPI (`NEXT_PUBLIC_API_URL`). There is no JSON fallback when the API is stopped. The laptop exhibit still runs with Wi-Fi off if both processes are local.
+4. **False reassurance is 2** on the frozen test split (2 of 9 high-risk events). Do not claim zero accepted high-risk misses.
+5. **Snapshot features** include encounter-plane geometry and object-type dummies. Formal conformal intervals (listed as post-competition in §21) are in the exhibit.
+6. **M3 remains unmet:** MAE improves; ESA-style loss does not.
+
+Numbers and scripts: `README.md`, `docs/model-card.md`, `docs/presentation.md`, `ml/artifacts/metrics.json`.
+
 ---
 
 ## 1. Purpose of this document
@@ -88,7 +101,7 @@ The strongest simple baseline is persistence: copy the latest pre-T-48 `risk` fo
 | G3 | Show calibrated high-risk probability. | Reliability plot exists; 70% warnings are roughly 70% positives. |
 | G4 | Explain every forecast. | SHAP chart plus deterministic plain-language reasons. |
 | G5 | Quantify uncertainty or abstain. | Interval or ensemble spread; REVIEW REQUIRED when the interval crosses the threshold. |
-| G6 | Run fully offline on the presentation laptop. | Demo works with Wi-Fi disabled and with the Python API stopped. |
+| G6 | Run on the presentation laptop without venue internet. | Demo works with Wi-Fi disabled while FastAPI and Next run locally. |
 | G7 | Keep the human in control. | Disclaimer visible; wording is forecast / review, never command. |
 | G8 | Be understandable in 90 seconds. | Judge can complete the curated event flow without coaching. |
 
@@ -618,7 +631,7 @@ Each requirement is mandatory unless marked Stretch.
 | A5 | Reveal-outcome is the only way to see post-T-48 truth. |
 | A6 | Baseline-versus-model comparison is one click. |
 | A7 | Five curated cases load from versioned JSON. |
-| A8 | Offline fallback works with the Python process stopped. |
+| A8 | If FastAPI is stopped, the website shows an error instead of a silent JSON cache. |
 | A9 | Disclaimer is visible on every prediction screen. |
 | A10 | Colour is never the only risk encoding; text and icons are required. |
 
@@ -682,11 +695,10 @@ ESA raw CDMs
     → Event builder at T-48 cutoff
     → Feature table
     → Grouped train / validation / calibration / test
-    → XGBoost + calibration + SHAP
+    → Hurdle residual XGBoost + collapse/warning heads + conformal + SHAP
     → Versioned artifacts (model, schema, metrics, demo cases)
-    → FastAPI inference
-    → Next.js mission-control UI
-         ↳ offline fallback reads demo_cases.json
+    → FastAPI inference (required)
+    → Next.js exhibit (API-only; no JSON fallback)
 ```
 
 ### Repository layout
@@ -705,7 +717,9 @@ PRISM/
       split.py
       train_regressor.py
       train_classifier.py
+      hurdle.py
       calibrate.py
+      abstention.py
       explain.py
       evaluate.py
       export_demo_cases.py
@@ -815,7 +829,7 @@ Venue internet is not promised. Offline is mandatory.
 | N4 | Works at 1920×1080 and on a projector. |
 | N5 | Keyboard path exists for queue → open → reveal. |
 | N6 | Colour-blind-safe risk encoding. |
-| N7 | No network calls in offline mode. |
+| N7 | Laptop exhibit may run with Wi-Fi off; FastAPI must still be local. No silent JSON fallback. |
 | N8 | All random seeds fixed and recorded in `metrics.json`. |
 
 ---
@@ -873,8 +887,8 @@ Today is **15 August 2026**. The exhibit target is **18 August 2026**. Freeze th
 |---|---|
 | 15 Aug | Data downloaded and checksummed. Event-level cutoff pipeline + leakage tests. Persistence, median, and Ridge baselines. First XGBoost snapshot model. |
 | 16 Aug | Trend + physics features, grouped evaluation, model selection, calibration, ensemble spread, SHAP, five demo cases exported. |
-| 17 Aug | FastAPI + Next.js queue/workspace/laboratory, offline fallback, Wi-Fi-off test, backup video, scripts, freeze. |
-| 18 Aug | Exhibit only. No training. |
+| 17 Aug | FastAPI + Next.js queue/workspace/laboratory, first freeze of bootstrap exhibit. |
+| 18 Aug | Hurdle residual retrain, conformal abstention, API-only website, documentation. |
 
 If an organiser later names 20 August as a paperwork deadline, 18–19 August are for documentation polish only.
 
@@ -905,7 +919,7 @@ If an organiser later names 20 August as a paperwork deadline, 18–19 August ar
 - [ ] \(P_c = 10^{r}\) conversion is correct
 - [ ] Risk is never colour-only
 - [ ] Charts show units
-- [ ] Offline fallback works
+- [ ] API-down path shows an error (no JSON fallback)
 - [ ] Disclaimer on every prediction screen
 
 ---
@@ -916,7 +930,7 @@ If an organiser later names 20 August as a paperwork deadline, 18–19 August ar
 
 1. **Problem.** Early risk estimates move as observations arrive; operators still need time to prepare.
 2. **Data.** ESA CDM histories, cut off 48 hours before closest approach.
-3. **Model.** Event-level XGBoost with trends, calibrated warning probability, SHAP.
+3. **Model.** Hurdle residual XGBoost, collapse classifier, conformal bands, SHAP.
 4. **Demo.** Event, forecast, reason, uncertainty, revealed outcome.
 5. **Evidence.** Comparison with latest-risk baseline on held-out events.
 6. **Limit.** Advisory educational prototype, never an autonomous flight system.
