@@ -99,7 +99,7 @@ export default async function QueuePage() {
       </section>
 
       <p className="mt-5 max-w-3xl text-xs leading-5 text-stone-500">
-        Source: {metrics?.dataSource ?? "frozen training artifacts"}. These historical anonymized cases explain an early forecasting experiment; they are not operational predictions. High-risk class: ESA challenge log₁₀(Pc) ≥ −6, not an operational threshold.
+        Source: {metrics.dataSource}. These historical anonymized cases explain an early forecasting experiment; they are not operational predictions. High-risk class: ESA challenge log₁₀(Pc) ≥ −6, not an operational threshold.
       </p>
     </Shell>
   );
