@@ -51,7 +51,7 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
       </section>
       {item.prediction.abstained ? (
         <p className="max-w-[70ch] text-sm leading-6 text-amber">
-          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% conformal band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
+          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% bootstrap band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
         </p>
       ) : null}
 

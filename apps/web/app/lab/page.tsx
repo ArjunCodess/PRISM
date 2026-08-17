@@ -142,7 +142,7 @@ export default async function LabPage() {
         </Section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers about 48% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
+          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers 47.7% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
             <div className="panel grid grid-cols-2 gap-6 p-6">
               <Coverage label="50% band" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
               <Coverage label="90% band" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
