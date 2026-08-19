@@ -38,6 +38,7 @@ data/interim/*
 !ml/artifacts/floor_classifier.json
 !ml/artifacts/floor_residual_regressor.json
 !ml/artifacts/floor_hurdle.json
+!ml/artifacts/conformal.json
 
 # env / os
 .env

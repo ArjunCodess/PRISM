@@ -234,6 +234,41 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "shap-contrast.png"))
 
+    conformal = metrics.get("conformal", {}).get("test")
+    if conformal:
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.plot([0, 1], [0, 1], linestyle="--", color="#526574", label="nominal coverage")
+        boot = conformal.get("bootstrap", {})
+        conf = conformal.get("conformal", {})
+        if "50" in boot and "90" in boot:
+            ax.scatter(
+                [0.5, 0.9],
+                [boot["50"]["coverage"], boot["90"]["coverage"]],
+                color="#476171",
+                s=70,
+                zorder=3,
+                label="bootstrap spread",
+            )
+        if "50" in conf and "90" in conf:
+            ax.scatter(
+                [0.5, 0.9],
+                [conf["50"]["coverage"], conf["90"]["coverage"]],
+                color=CYAN,
+                s=70,
+                zorder=3,
+                label="split conformal",
+            )
+        ax.set(
+            xlim=(0, 1),
+            ylim=(0, 1),
+            xlabel="Nominal coverage",
+            ylabel="Empirical coverage on frozen test",
+        )
+        ax.set_title("Bootstrap spread vs split-conformal coverage", loc="left", pad=16)
+        ax.legend(frameon=False, labelcolor=TEXT)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "coverage-calibration.png"))
+
     return written
 
 

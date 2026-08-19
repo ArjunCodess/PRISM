@@ -270,3 +270,20 @@ def test_hurdle_threshold_is_chosen_on_provided_split() -> None:
     choice = choose_hurdle_policy(y, proba, recon, risk)
     assert 0.05 <= choice.threshold <= 0.95
     assert choice.validation["mae"] <= 2.0
+
+
+def test_split_conformal_covers_gaussian_near_nominal() -> None:
+    from calibrate import conformal_bounds, interval_report, split_conformal_quantile
+
+    rng = np.random.default_rng(0)
+    y_cal = rng.normal(0.0, 1.0, size=800)
+    y_test = rng.normal(0.0, 1.0, size=800)
+    pred = np.zeros(800)
+    q90 = split_conformal_quantile(np.abs(y_cal - pred), 0.1)
+    lo, hi = conformal_bounds(pred, q90)
+    report = interval_report(y_test, lo, hi)
+    assert 0.86 <= report["coverage"] <= 0.94
+    q50 = split_conformal_quantile(np.abs(y_cal - pred), 0.5)
+    lo50, hi50 = conformal_bounds(pred, q50)
+    mid = interval_report(y_test, lo50, hi50)
+    assert 0.42 <= mid["coverage"] <= 0.60

@@ -123,6 +123,22 @@ def test_floor_candidate_exists_on_frozen_split() -> None:
     assert (ART / "floor_hurdle.json").exists()
 
 
+def test_conformal_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    conformal = metrics["conformal"]
+    assert conformal["replacesExhibit"] is False
+    assert conformal["fitOn"].startswith("frozen calibration")
+    test_conf = conformal["test"]["conformal"]["90"]
+    assert 0.0 <= test_conf["coverage"] <= 1.0
+    assert test_conf["meanWidth"] > 0
+    boot90 = conformal["test"]["bootstrap"]["90"]["coverage"]
+    assert abs(boot90 - metrics["uncertainty"]["interval90Coverage"]) < 1e-9
+    assert "conformal90Coverage" in metrics["uncertainty"]
+    assert conformal["abstentionCandidate"]["chosenOn"] == "validation"
+    assert conformal["abstentionCandidate"]["replacesExhibit"] is False
+    assert (ART / "conformal.json").exists()
+
+
 def test_reloaded_booster_matches_saved_schema() -> None:
     schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
     model = XGBRegressor()

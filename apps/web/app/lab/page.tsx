@@ -68,7 +68,7 @@ export default async function LabPage() {
             <dl className="mt-8 grid gap-6 sm:grid-cols-3">
               <HeroMetric label="T−48 MAE" value={metrics.ensemble.mae} note={`persistence ${metrics.persistence.mae.toFixed(3)}`} />
               <HeroMetric label="ESA-style loss" value={metrics.ensemble.esa_loss} note={`persistence ${metrics.persistence.esa_loss.toFixed(3)}`} />
-              <HeroMetric label="90% band coverage" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="nominal 90%" />
+              <HeroMetric label="Bootstrap 90% spread" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="model spread, not a 90% probability" />
             </dl>
             <p className="mt-6 max-w-[62ch] text-sm leading-7 text-stone-600">
               Average error falls {improvement.toFixed(1)}%, but ESA-style loss and F2 tie persistence exactly because the persistence guard copies any current report already at or above −6. The MAE gain is continuous-risk accuracy, not a better high-risk decision score. On missions never seen in training, high-risk MAE is {(metrics.missionHoldout?.model.mae_high_risk ?? Number.NaN).toFixed(1)}.
@@ -142,10 +142,12 @@ export default async function LabPage() {
         </Section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers 47.7% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
+          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="Bootstrap 50% and 90% bands are model spread. Split-conformal bands around the same exhibit point are 50% and 90% predictive intervals, fit on the calibration split only.">
             <div className="panel grid grid-cols-2 gap-6 p-6">
-              <Coverage label="50% band" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
-              <Coverage label="90% band" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
+              <Coverage label="Bootstrap 50% spread" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
+              <Coverage label="Bootstrap 90% spread" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
+              <Coverage label="Conformal 50% interval" value={metrics.uncertainty?.conformal50Coverage} width={metrics.uncertainty?.conformal50Width} />
+              <Coverage label="Conformal 90% interval" value={metrics.uncertainty?.conformal90Coverage} width={metrics.uncertainty?.conformal90Width} />
             </div>
           </Section>
           <Section title="Mission identity adds little" copy={metrics.missionIdComparison?.why ?? "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from the deployed exhibit."}>

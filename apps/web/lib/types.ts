@@ -70,6 +70,19 @@ export type MetricsFile = {
     meanInterval50Width: number;
     meanInterval90Width: number;
     nModels: number;
+    conformal50Coverage?: number;
+    conformal90Coverage?: number;
+    conformal50Width?: number;
+    conformal90Width?: number;
+  };
+  conformal?: {
+    replacesExhibit?: boolean;
+    q50?: number;
+    q90?: number;
+    test?: {
+      bootstrap?: Record<string, { coverage: number; meanWidth: number; n: number }>;
+      conformal?: Record<string, { coverage: number; meanWidth: number; n: number }>;
+    };
   };
   missionIdComparison?: {
     why?: string;
