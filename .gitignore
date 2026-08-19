@@ -45,3 +45,16 @@ Thumbs.db
 # ide
 .idea/
 .vscode/
+
+# latex aux (keep paper/main.pdf)
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/*.synctex(busy)
+
