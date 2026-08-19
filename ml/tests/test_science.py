@@ -31,6 +31,12 @@ from feature_sets import (  # noqa: E402
 )
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
+from train_regressor import (  # noqa: E402
+    fit_residual_xgboost,
+    predict_reconstructed,
+    reconstruct_from_residual,
+    residual_target,
+)
 from validate import validate_cdm_frame  # noqa: E402
 
 
@@ -192,3 +198,36 @@ def test_story_fit_scores_exhibit_slots() -> None:
     assert story_fit("high_now", -5.0, -8.0, -5.0, False) < 0
     assert story_fit("high_stays", -5.0, -5.0, -5.2, False) > 0
     assert story_fit("high_drop", -5.0, -5.0, -12.0, False) > 0
+
+
+def test_residual_target_is_label_minus_snapshot_risk() -> None:
+    frame = pd.DataFrame({"y": [-30.0, -8.0, -6.0], "risk": [-10.0, -8.0, -12.0]})
+    np.testing.assert_allclose(residual_target(frame), np.array([-20.0, 0.0, 6.0]))
+
+
+def test_reconstruct_adds_residual_to_persistence() -> None:
+    frame = pd.DataFrame({"risk": [-10.0, -8.0]})
+    pred = reconstruct_from_residual(frame, np.array([-2.0, 1.5]))
+    np.testing.assert_allclose(pred, np.array([-12.0, -6.5]))
+
+
+def test_residual_xgboost_reconstructs_on_tiny_table() -> None:
+    rng = np.random.default_rng(0)
+    n = 40
+    risk = rng.uniform(-20.0, -8.0, size=n)
+    move = rng.normal(0.0, 1.0, size=n)
+    train = pd.DataFrame(
+        {
+            "event_id": np.arange(n),
+            "y": risk + move,
+            "risk": risk,
+            "miss_distance": rng.uniform(200.0, 2000.0, size=n),
+            "n_messages": rng.integers(2, 8, size=n).astype(float),
+        }
+    )
+    trained = fit_residual_xgboost(train)
+    pred = predict_reconstructed(trained, train)
+    assert pred.shape == (n,)
+    assert np.isfinite(pred).all()
+    residual_hat = pred - train["risk"].to_numpy()
+    np.testing.assert_allclose(pred, train["risk"].to_numpy() + residual_hat)

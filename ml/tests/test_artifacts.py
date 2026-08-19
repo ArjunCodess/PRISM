@@ -85,6 +85,23 @@ def test_honest_metrics_exist_on_frozen_split() -> None:
     assert np.isfinite(ens["deltaMae"])
 
 
+def test_residual_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    residual = metrics["residualModel"]
+    assert residual["replacesExhibit"] is False
+    assert residual["winnerSoFar"]["split"] == "validation"
+    for split_name in ("test", "validation"):
+        for system in ("persistence", "xgboost", "residual"):
+            row = residual[split_name][system]
+            assert "mae" in row
+            assert "medianAe" in row
+            assert "floorExcludedMae" in row
+            assert "esaLoss" in row
+            assert "f2" in row
+    assert "residual" in metrics["honestMetrics"]["systems"]
+    assert (ART / "residual_regressor.json").exists()
+
+
 def test_reloaded_booster_matches_saved_schema() -> None:
     schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
     model = XGBRegressor()
