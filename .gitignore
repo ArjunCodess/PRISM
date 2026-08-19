@@ -34,6 +34,7 @@ data/interim/*
 *.joblib
 !ml/artifacts/warning_calibrator.joblib
 !ml/artifacts/risk_regressor.json
+!ml/artifacts/residual_regressor.json
 
 # env / os
 .env

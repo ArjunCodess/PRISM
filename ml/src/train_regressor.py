@@ -74,11 +74,8 @@ def fit_ridge(train: pd.DataFrame) -> TrainedRegressor:
     return TrainedRegressor(model=model, feature_names=numeric + categorical, kind="ridge")
 
 
-def fit_xgboost(train: pd.DataFrame) -> TrainedRegressor:
-    numeric = numeric_columns(train)
-    x = train[numeric].apply(pd.to_numeric, errors="coerce")
-    y = train["y"].to_numpy(dtype=float)
-    model = XGBRegressor(
+def _xgboost_regressor() -> XGBRegressor:
+    return XGBRegressor(
         objective="reg:squarederror",
         n_estimators=250,
         learning_rate=0.05,
@@ -92,8 +89,31 @@ def fit_xgboost(train: pd.DataFrame) -> TrainedRegressor:
         n_jobs=-1,
         missing=np.nan,
     )
+
+
+def residual_target(frame: pd.DataFrame) -> np.ndarray:
+    return frame["y"].to_numpy(dtype=float) - frame["risk"].to_numpy(dtype=float)
+
+
+def reconstruct_from_residual(frame: pd.DataFrame, residual_hat: np.ndarray) -> np.ndarray:
+    return frame["risk"].to_numpy(dtype=float) + np.asarray(residual_hat, dtype=float)
+
+
+def fit_xgboost(train: pd.DataFrame) -> TrainedRegressor:
+    numeric = numeric_columns(train)
+    x = train[numeric].apply(pd.to_numeric, errors="coerce")
+    y = train["y"].to_numpy(dtype=float)
+    model = _xgboost_regressor()
     model.fit(x, y)
     return TrainedRegressor(model=model, feature_names=numeric, kind="xgboost")
+
+
+def fit_residual_xgboost(train: pd.DataFrame) -> TrainedRegressor:
+    numeric = numeric_columns(train)
+    x = train[numeric].apply(pd.to_numeric, errors="coerce")
+    model = _xgboost_regressor()
+    model.fit(x, residual_target(train))
+    return TrainedRegressor(model=model, feature_names=numeric, kind="residual_xgboost")
 
 
 def predict_model(trained: TrainedRegressor, frame: pd.DataFrame) -> np.ndarray:
@@ -102,3 +122,7 @@ def predict_model(trained: TrainedRegressor, frame: pd.DataFrame) -> np.ndarray:
         return np.asarray(trained.model.predict(x), dtype=float)
     x = frame[trained.feature_names].apply(pd.to_numeric, errors="coerce")
     return np.asarray(trained.model.predict(x), dtype=float)
+
+
+def predict_reconstructed(trained: TrainedRegressor, frame: pd.DataFrame) -> np.ndarray:
+    return reconstruct_from_residual(frame, predict_model(trained, frame))
