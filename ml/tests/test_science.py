@@ -231,3 +231,42 @@ def test_residual_xgboost_reconstructs_on_tiny_table() -> None:
     assert np.isfinite(pred).all()
     residual_hat = pred - train["risk"].to_numpy()
     np.testing.assert_allclose(pred, train["risk"].to_numpy() + residual_hat)
+
+
+def test_floor_labels_come_from_final_reported_risk() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import floor_labels, non_floor_rows
+
+    frame = pd.DataFrame(
+        {
+            "y": [NEGLIGIBLE_RISK, -8.0, -29.0],
+            "risk": [-5.0, -8.0, -12.0],
+            "post_cutoff_leak": [1.0, 1.0, 1.0],
+        }
+    )
+    np.testing.assert_array_equal(floor_labels(frame["y"]), np.array([1, 0, 0]))
+    kept = non_floor_rows(frame)
+    assert list(kept["y"]) == [-8.0, -29.0]
+
+
+def test_floor_hurdle_predicts_floor_above_threshold() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import combine_floor_hurdle
+
+    proba = np.array([0.9, 0.1])
+    recon = np.array([-12.0, -8.0])
+    pred = combine_floor_hurdle(proba, recon, 0.5)
+    np.testing.assert_allclose(pred, np.array([NEGLIGIBLE_RISK, -8.0]))
+
+
+def test_hurdle_threshold_is_chosen_on_provided_split() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import choose_hurdle_policy
+
+    y = np.array([NEGLIGIBLE_RISK, NEGLIGIBLE_RISK, -8.0, -8.0])
+    proba = np.array([0.8, 0.8, 0.2, 0.2])
+    recon = np.array([-10.0, -10.0, -8.0, -8.0])
+    risk = np.array([-10.0, -10.0, -8.0, -8.0])
+    choice = choose_hurdle_policy(y, proba, recon, risk)
+    assert 0.05 <= choice.threshold <= 0.95
+    assert choice.validation["mae"] <= 2.0

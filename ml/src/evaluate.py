@@ -177,6 +177,7 @@ def honest_metrics_bundle(
     xgb_pred: np.ndarray,
     ens_pred: np.ndarray,
     residual_pred: np.ndarray | None = None,
+    floor_pred: np.ndarray | None = None,
 ) -> dict[str, object]:
     floor = floor_mask(y_true)
     systems: dict[str, object] = {
@@ -191,6 +192,10 @@ def honest_metrics_bundle(
     if residual_pred is not None:
         systems["residual"] = honest_system_report(
             y_true, residual_pred, risk, persist, compare_to_persistence=True
+        )
+    if floor_pred is not None:
+        systems["floorHurdle"] = honest_system_report(
+            y_true, floor_pred, risk, persist, compare_to_persistence=True
         )
     return {
         "floor": NEGLIGIBLE_RISK,
