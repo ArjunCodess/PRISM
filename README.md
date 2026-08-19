@@ -10,24 +10,24 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json` under `honestMetrics`. Floor-excluded MAE, residual MAE, bootstrap CIs, and Wilcoxon tests are measured. Conformal coverage and official-test scores are not yet measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, and a residual-to-persistence candidate are measured. Conformal coverage and official-test scores are not yet measured.
 
 ## Result
 
 Held-out performance on 1,659 untouched test events. 1,352 of them later report the dataset floor `−30`. Errors are in `log10(Pc)` units. ΔMAE is MAE(persistence) − MAE(model) with a 95% bootstrap interval from 1,000 event resamples. Wilcoxon *p* is two-sided on paired `|error|`.
 
-| | Persistence | Unguarded XGBoost | Selected ensemble |
-|---|---:|---:|---:|
-| MAE | 5.080 | 2.809 | 3.059 |
-| Median AE | **0.000** | 0.554 | 0.473 |
-| Floor-excluded MAE | **4.073** | 7.562 | 7.332 |
-| Floor-only MAE | 5.308 | **1.730** | 2.088 |
-| Residual MAE (`|y − risk|` vs `|pred − risk|`) | 5.080 / 0.000 | 5.080 / 5.222 | 5.080 / 4.582 |
-| ΔMAE vs persistence [95% CI] | — | 2.270 [1.930, 2.638] | 2.021 [1.716, 2.380] |
-| Wilcoxon *p* | — | 0.91 | 0.31 |
-| ESA-style loss | **0.167** | ∞ (F2 = 0) | **0.167** |
+| | Persistence | Unguarded XGBoost | Residual XGBoost | Selected ensemble |
+|---|---:|---:|---:|---:|
+| MAE | 5.080 | 2.809 | **2.760** | 3.059 |
+| Median AE | **0.000** | 0.554 | 0.453 | 0.473 |
+| Floor-excluded MAE | **4.073** | 7.562 | 7.375 | 7.332 |
+| Floor-only MAE | 5.308 | 1.730 | **1.712** | 2.088 |
+| Residual MAE (`|y − risk|` vs `|pred − risk|`) | 5.080 / 0.000 | 5.080 / 5.222 | 5.080 / 5.134 | 5.080 / 4.582 |
+| ΔMAE vs persistence [95% CI] | — | 2.270 [1.930, 2.638] | 2.319 [1.977, 2.685] | 2.021 [1.716, 2.380] |
+| Wilcoxon *p* | — | 0.91 | 0.92 | 0.31 |
+| ESA-style loss | **0.167** | ∞ (F2 = 0) | ∞ (F2 = 0) | **0.167** |
 
-The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-event win: floor-excluded MAE is worse than persistence, median AE for persistence is already 0, and Wilcoxon does not reject equal `|error|`. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2). F2 is 0.361 for persistence and the selected ensemble. The exact tie is the persistence guard copying the current report whenever it is already at or above `−6`.
+The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-event win: floor-excluded MAE is worse than persistence, median AE for persistence is already 0, and Wilcoxon does not reject equal `|error|`. Predicting `y − risk` and adding the hat back to persistence is almost the same as unguarded level-valued XGBoost (test MAE 2.760 vs 2.809). On **validation**, unguarded XGBoost is slightly ahead (2.669 vs 2.671), so the residual model is a stored candidate (`residual_regressor.json`), not the live exhibit. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2). F2 is 0.361 for persistence and the selected ensemble. The exact tie is the persistence guard copying the current report whenever it is already at or above `−6`.
 
 A constant training-set median scores 3.002 MAE.
 
