@@ -28,12 +28,16 @@
   },
   "uncertainty": {
     "method": "spread across 10 bootstrap xgboost models",
-    "interpretation": "Bootstrap disagreement is ensemble spread, not calibrated predictive uncertainty.",
-    "interval50Coverage": 0.2579867389993972,
+    "interpretation": "Bootstrap bands are model spread. Split-conformal bands around the same exhibit point are 50% and 90% predictive intervals.",
+    "interval50Coverage": 0.2597950572634117,
     "interval90Coverage": 0.47739602169981915,
-    "meanInterval50Width": 0.9025118697329125,
-    "meanInterval90Width": 2.052383951195181,
-    "nModels": 10
+    "meanInterval50Width": 0.9016448998753028,
+    "meanInterval90Width": 2.051663644059441,
+    "nModels": 10,
+    "conformal50Coverage": 0.4960819770946353,
+    "conformal90Coverage": 0.8969258589511754,
+    "conformal50Width": 0.9274730682373047,
+    "conformal90Width": 18.330106735229492
   },
   "missionHoldout": {
     "why": "Random event splits can hide distribution shift across mission families, especially on the rare high-risk tail.",
@@ -634,6 +638,237 @@
       "split": "validation",
       "criterion": "mae, then floor-excluded mae, then esa-style loss",
       "name": "floorHurdle"
+    }
+  },
+  "conformal": {
+    "method": "split conformal absolute residual around exhibit ensemble median",
+    "fitOn": "frozen calibration event ids only",
+    "pointPredictor": "T-48 bootstrap xgboost median with -6 persist guard",
+    "replacesExhibit": false,
+    "q50": 0.46373653411865234,
+    "q90": 9.165053367614746,
+    "nCalibration": 1244,
+    "test": {
+      "bootstrap": {
+        "50": {
+          "n": 1659,
+          "coverage": 0.2597950572634117,
+          "meanWidth": 0.9016448998753028
+        },
+        "90": {
+          "n": 1659,
+          "coverage": 0.47739602169981915,
+          "meanWidth": 2.051663644059441
+        }
+      },
+      "conformal": {
+        "50": {
+          "n": 1659,
+          "coverage": 0.4960819770946353,
+          "meanWidth": 0.9274730682373047
+        },
+        "90": {
+          "n": 1659,
+          "coverage": 0.8969258589511754,
+          "meanWidth": 18.330106735229492
+        }
+      }
+    },
+    "validation": {
+      "bootstrap": {
+        "50": {
+          "n": 1659,
+          "coverage": 0.2869198312236287,
+          "meanWidth": 1.079235693717161
+        },
+        "90": {
+          "n": 1659,
+          "coverage": 0.517781796262809,
+          "meanWidth": 2.301007993627988
+        }
+      },
+      "conformal": {
+        "50": {
+          "n": 1659,
+          "coverage": 0.5370705244122965,
+          "meanWidth": 0.9274730682373047
+        },
+        "90": {
+          "n": 1659,
+          "coverage": 0.946955997588909,
+          "meanWidth": 18.330106735229492
+        }
+      }
+    },
+    "abstentionCandidate": {
+      "chosenOn": "validation",
+      "criterion": "false reassurance, then higher coverage",
+      "name": "bootstrap",
+      "replacesExhibit": false,
+      "validation": {
+        "bootstrap": {
+          "n": 1659,
+          "nAccepted": 1285,
+          "nAbstained": 374,
+          "coverage": 0.7745629897528632,
+          "maeAll": 2.157187649076122,
+          "maeAccepted": 1.247112953198358,
+          "maeAbstained": 5.284048569404805,
+          "persistenceMaeAccepted": 3.4294559267625435,
+          "nHighRisk": 12,
+          "nHighRiskAbstained": 4,
+          "nHighRiskAccepted": 8,
+          "highRiskRecallAccepted": 1.0,
+          "highRiskCapture": 1.0,
+          "falseReassurance": 0,
+          "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
+          "falseReassuranceRate": 0.0,
+          "accepted": {
+            "mae": 1.247112953198358,
+            "rmse": 4.265191699908066,
+            "median_ae": 0.1958484649658203,
+            "within_0_5": 0.7058365758754864,
+            "within_1_0": 0.8124513618677043,
+            "mae_high_risk": 0.3792515027534161,
+            "esa_loss": 0.6466910961229871,
+            "mse_hr": 0.3007865563362731,
+            "f2": 0.46511627906976744
+          },
+          "abstained": {
+            "mae": 5.284048569404805,
+            "rmse": 6.189735425384187,
+            "median_ae": 4.807712136508565,
+            "within_0_5": 0.013368983957219251,
+            "within_1_0": 0.045454545454545456,
+            "mae_high_risk": 9.18482218837797,
+            "esa_loss": 430318.6399689106,
+            "mse_hr": 0.43031863996891057,
+            "f2": 0.0
+          }
+        },
+        "conformal": {
+          "n": 1659,
+          "nAccepted": 1534,
+          "nAbstained": 125,
+          "coverage": 0.9246534056660639,
+          "maeAll": 2.157187649076122,
+          "maeAccepted": 1.5794570376117507,
+          "maeAbstained": 9.247097712966898,
+          "persistenceMaeAccepted": 4.72347977604643,
+          "nHighRisk": 12,
+          "nHighRiskAbstained": 11,
+          "nHighRiskAccepted": 1,
+          "highRiskRecallAccepted": 0.0,
+          "highRiskCapture": 0.9166666666666666,
+          "falseReassurance": 1,
+          "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
+          "falseReassuranceRate": 0.08333333333333333,
+          "accepted": {
+            "mae": 1.5794570376117507,
+            "rmse": 3.08552734326977,
+            "median_ae": 0.308438777923584,
+            "within_0_5": 0.5814863102998696,
+            "within_1_0": 0.6720990873533247,
+            "mae_high_risk": 14.557709098156216,
+            "esa_loss": 972150.8938145554,
+            "mse_hr": 0.9721508938145553,
+            "f2": 0.0
+          },
+          "abstained": {
+            "mae": 9.247097712966898,
+            "rmse": 13.594446529030884,
+            "median_ae": 4.716388231611836,
+            "within_0_5": 0.16,
+            "within_1_0": 0.24,
+            "mae_high_risk": 2.2923265161257267,
+            "esa_loss": 0.7027972260036922,
+            "mse_hr": 0.28685601061375193,
+            "f2": 0.40816326530612246
+          }
+        }
+      },
+      "test": {
+        "bootstrap": {
+          "n": 1659,
+          "nAccepted": 1291,
+          "nAbstained": 368,
+          "coverage": 0.7781796262808921,
+          "maeAll": 3.0588380923171425,
+          "maeAccepted": 1.9127913453167538,
+          "maeAbstained": 7.079344479212528,
+          "persistenceMaeAccepted": 3.4918430269468277,
+          "nHighRisk": 9,
+          "nHighRiskAbstained": 1,
+          "nHighRiskAccepted": 8,
+          "highRiskRecallAccepted": 0.875,
+          "highRiskCapture": 0.8888888888888888,
+          "falseReassurance": 1,
+          "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
+          "falseReassuranceRate": 0.1111111111111111,
+          "accepted": {
+            "mae": 1.9127913453167538,
+            "rmse": 5.103877242002364,
+            "median_ae": 0.220184326171875,
+            "within_0_5": 0.6475600309837335,
+            "within_1_0": 0.7288923315259489,
+            "mae_high_risk": 2.0664574614604367,
+            "esa_loss": 0.17954550836746516,
+            "mse_hr": 0.06757089024582022,
+            "f2": 0.3763440860215054
+          },
+          "abstained": {
+            "mae": 7.079344479212528,
+            "rmse": 8.193407970603113,
+            "median_ae": 6.347796440124512,
+            "within_0_5": 0.010869565217391304,
+            "within_1_0": 0.024456521739130436,
+            "mae_high_risk": 16.63821382972315,
+            "esa_loss": 1697.9861560809466,
+            "mse_hr": 0.0016979861560809464,
+            "f2": 0.0
+          }
+        },
+        "conformal": {
+          "n": 1659,
+          "nAccepted": 1538,
+          "nAbstained": 121,
+          "coverage": 0.9270644966847499,
+          "maeAll": 3.0588380923171425,
+          "maeAccepted": 2.4785719066501763,
+          "maeAbstained": 10.4344529150923,
+          "persistenceMaeAccepted": 4.55144224670438,
+          "nHighRisk": 9,
+          "nHighRiskAbstained": 7,
+          "nHighRiskAccepted": 2,
+          "highRiskRecallAccepted": 0.0,
+          "highRiskCapture": 0.7777777777777778,
+          "falseReassurance": 2,
+          "falseReassuranceDefinition": "An accepted forecast (no abstention) with predicted log10(Pc) < \u22126 while the final reported value is \u2265 \u22126.",
+          "falseReassuranceRate": 0.2222222222222222,
+          "accepted": {
+            "mae": 2.4785719066501763,
+            "rmse": 4.6321305822569725,
+            "median_ae": 0.36908626556396484,
+            "within_0_5": 0.5351105331599479,
+            "within_1_0": 0.6014304291287387,
+            "mae_high_risk": 15.917457980391182,
+            "esa_loss": 80148.36623010997,
+            "mse_hr": 0.08014836623010997,
+            "f2": 0.0
+          },
+          "abstained": {
+            "mae": 10.4344529150923,
+            "rmse": 14.469756091461667,
+            "median_ae": 6.044298756048181,
+            "within_0_5": 0.14049586776859505,
+            "within_1_0": 0.2066115702479339,
+            "mae_high_risk": 0.19070822294632578,
+            "esa_loss": 0.13875585891410455,
+            "mse_hr": 0.054566910808917526,
+            "f2": 0.39325842696629215
+          }
+        }
+      }
     }
   }
 }
