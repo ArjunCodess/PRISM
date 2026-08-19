@@ -333,7 +333,7 @@ Required designs:
 - Development: grouped splits on `event_id`.
 - Final local test: hold out 20% of events before feature or model selection.
 - Mission caution: `mission_id` clusters in PCA; attributes are not i.i.d. across missions. Train one model with it and one without. Keep it only if grouped mission tests show real generalization.
-- Do not score local quality on the official Kelvins `test_data.csv`. Labels are absent. Use training events for honest partitions. The official test file may be run only as a pipeline-compatibility check.
+- Do not use official-test labels for training, validation, or hyperparameter choice. Local quality uses event-disjoint splits of the training archive. Official-test `true_risk` (Zenodo 4463683) is scored once after freeze (`metrics.json → officialTest`, `frozenBeforeLook: true`). Features come only from `test_data.csv` (`time_to_tca >= 2`). Do not retune after seeing that score.
 
 ### 10.3 Official test-set filters, reused locally
 

@@ -106,3 +106,55 @@ def test_validator_rejects_implausibly_late_messages() -> None:
     frame.loc[frame.index[0], "time_to_tca"] = -1.1
     with pytest.raises(ValueError, match="more than one day"):
         validate_cdm_frame(frame)
+
+
+def test_official_test_labels_overwrite_snapshot_y() -> None:
+    from ingest import attach_official_test_labels
+
+    features = pd.DataFrame(
+        {
+            "event_id": [1, 2],
+            "risk": [-8.0, -7.0],
+            "y": [-8.0, -7.0],
+        }
+    )
+    labels = pd.DataFrame({"event_id": [1, 2], "y": [-30.0, -4.0]})
+    merged = attach_official_test_labels(features, labels)
+    assert list(merged["y"]) == [-30.0, -4.0]
+    assert "true_risk" not in merged.columns
+
+
+def test_official_test_features_reject_true_risk() -> None:
+    from ingest import attach_official_test_labels
+
+    features = pd.DataFrame({"event_id": [1], "true_risk": [-4.0], "y": [-8.0]})
+    labels = pd.DataFrame({"event_id": [1], "y": [-4.0]})
+    with pytest.raises(ValueError, match="true_risk"):
+        attach_official_test_labels(features, labels)
+
+
+def test_official_test_identity_treats_numeric_overlap_as_numbering() -> None:
+    from ingest import official_test_identity_report
+
+    train = pd.DataFrame(
+        {
+            "event_id": [0, 0],
+            "time_to_tca": [3.0, 0.5],
+            "risk": [-8.0, -30.0],
+            "mission_id": [1, 1],
+            "miss_distance": [100.0, 80.0],
+        }
+    )
+    official = pd.DataFrame(
+        {
+            "event_id": [0],
+            "time_to_tca": [2.5],
+            "risk": [-12.0],
+            "mission_id": [9],
+            "miss_distance": [400.0],
+        }
+    )
+    report = official_test_identity_report(train, official)
+    assert report["numericIdOverlap"] == 1
+    assert report["identicalPreCutoffSnapshots"] == 0
+    assert "independently numbered" in str(report["interpretation"])

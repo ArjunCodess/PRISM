@@ -66,6 +66,7 @@ from ingest import (  # noqa: E402
     realistic_training_events,
     validate_official_test_compatibility,
 )
+from official_test import score_official_test  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
 from train_classifier import fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
@@ -446,6 +447,8 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         }
     )
     metrics["uncertainty"] = uncertainty
+    official = score_official_test(ROOT, artifacts)
+    metrics["officialTest"] = official
     write_json(metrics_path, metrics)
     card_path = artifacts / "model_card.json"
     if card_path.exists():
@@ -455,6 +458,15 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         card["floorModel"] = metrics["floorModel"]
         card["conformal"] = metrics["conformal"]
         card["uncertainty"] = metrics["uncertainty"]
+        card["officialTest"] = {
+            "frozenBeforeLook": official["frozenBeforeLook"],
+            "nEvents": official["nEvents"],
+            "nHighRisk": official["nHighRisk"],
+            "nFloor": official["nFloor"],
+            "board": official["board"],
+            "esa": official["esa"],
+            "replacesExhibit": False,
+        }
         write_json(card_path, card)
     return honest
 

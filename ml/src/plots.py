@@ -269,6 +269,30 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "coverage-calibration.png"))
 
+    official = metrics.get("officialTest") or {}
+    esa = official.get("esa") or {}
+    if esa:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        names = ["persistence", "xgboost", "residual", "floorHurdle", "ensemble"]
+        labels = {
+            "persistence": "Persistence (LRP)",
+            "xgboost": "Unguarded XGB",
+            "residual": "Residual XGB",
+            "floorHurdle": "Floor hurdle",
+            "ensemble": "Selected ens.",
+        }
+        present = [name for name in names if name in esa]
+        values = [float(esa[name]["esaLoss"]) for name in present]
+        ax.bar([labels[name] for name in present], values, color=CYAN)
+        ax.axhline(0.694, color=AMBER, linestyle="--", label="Uriot LRP 0.694")
+        ax.axhline(0.556, color=MUTED, linestyle=":", label="Uriot sesc 0.556")
+        ax.set_yscale("log")
+        ax.set_ylabel("ESA-style loss (log)")
+        ax.set_title("Official-test ESA-style loss (frozen models)", loc="left", pad=16)
+        ax.legend(frameon=False, labelcolor=TEXT)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save(fig, output_dir / "official-test-esa.png"))
+
     return written
 
 

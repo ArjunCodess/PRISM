@@ -71,7 +71,6 @@ def downloads_are_verified() -> bool:
 def download(force: bool) -> None:
     if not force and downloads_are_verified():
         print("[PRISM] ESA archives already exist; keeping the checksummed local copies.")
-        return
     run([sys.executable, "ml/src/download.py"])
 
 
