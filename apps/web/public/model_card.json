@@ -277,5 +277,113 @@
     },
     "meanHighRiskProbabilityAccepted": 0.013062322046098739
   },
-  "beatsPersistence": false
+  "beatsPersistence": false,
+  "honestMetrics": {
+    "floor": -30.0,
+    "floorEps": 1e-06,
+    "nTest": 1659,
+    "nFloor": 1352,
+    "nNonFloor": 307,
+    "systems": {
+      "persistence": {
+        "all": {
+          "n": 1659,
+          "mae": 5.0795360010082655,
+          "rmse": 9.526816295387691,
+          "median_ae": 0.0
+        },
+        "nonFloor": {
+          "n": 307,
+          "mae": 4.072532209539077,
+          "rmse": 7.284452880568997,
+          "median_ae": 0.5657134721018231
+        },
+        "floor": {
+          "n": 1352,
+          "mae": 5.308197364899567,
+          "rmse": 9.965947960407322,
+          "median_ae": 0.0
+        },
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "residualMaeActual": 5.0795360010082655,
+        "residualMaePredicted": 0.0,
+        "residualMae": 5.0795360010082655
+      },
+      "xgboost": {
+        "all": {
+          "n": 1659,
+          "mae": 2.8090744248985886,
+          "rmse": 5.020574559865016,
+          "median_ae": 0.5543060302734375
+        },
+        "nonFloor": {
+          "n": 307,
+          "mae": 7.561854480797847,
+          "rmse": 9.168887282316618,
+          "median_ae": 7.24906309892235
+        },
+        "floor": {
+          "n": 1352,
+          "mae": 1.7298558767025287,
+          "rmse": 3.440965205224601,
+          "median_ae": 0.3301420211791992
+        },
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "residualMaeActual": 5.0795360010082655,
+        "residualMaePredicted": 5.221633331771418,
+        "residualMae": 2.8090744248985886,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.270461576109677,
+          "ci95Low": 1.9303872077534976,
+          "ci95High": 2.637772731847522,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 686375.0,
+          "pvalue": 0.9139002710907481,
+          "n": 1659
+        }
+      },
+      "ensemble": {
+        "all": {
+          "n": 1659,
+          "mae": 3.0588380923171425,
+          "rmse": 5.9297950934327766,
+          "median_ae": 0.4733400344848633
+        },
+        "nonFloor": {
+          "n": 307,
+          "mae": 7.332465948385818,
+          "rmse": 9.005550265134897,
+          "median_ae": 6.848499504645577
+        },
+        "floor": {
+          "n": 1352,
+          "mae": 2.088421116124034,
+          "rmse": 4.973067795436661,
+          "median_ae": 0.2556304931640625
+        },
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "residualMaeActual": 5.0795360010082655,
+        "residualMaePredicted": 4.582464167023171,
+        "residualMae": 3.0588380923171425,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.020697908691123,
+          "ci95Low": 1.7163964496594266,
+          "ci95High": 2.3801378540847264,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 620173.0,
+          "pvalue": 0.3126569820434135,
+          "n": 1659
+        }
+      }
+    }
+  }
 }
