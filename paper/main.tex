@@ -21,7 +21,7 @@ Lucknow, India}
 \maketitle
 
 \begin{abstract}
-Conjunction Data Messages (CDMs) report a collision probability that moves as later tracking shrinks orbital uncertainty. Operators often start planning about two days before closest approach, so an earlier forecast is useful only if the history available then contains information beyond copying the latest report. Using the public ESA Collision Avoidance Challenge archive, this study freezes the clock at 72, 48, 24, and 12 hours before closest approach and asks whether cutoff-safe summaries improve a forecast of the later reported log10 collision probability over persistence. On a leakage-safe hold-out of 1659 events, 1352 later reports sit at the dataset floor of $-30$. Unguarded XGBoost lowers overall mean absolute error from 5.080 to 2.809 (95\% bootstrap interval on the difference $[1.930, 2.638]$), but floor-excluded MAE rises from 4.073 to 7.562, persistence median AE is already 0, and a paired Wilcoxon test on per-event absolute error does not reject equality ($p=0.91$). The selected ensemble with a $-6$ persistence guard has overall MAE 3.059 ($[1.716, 2.380]$) and Wilcoxon $p=0.31$. Predicting $y-\mathrm{risk}$ and reconstructing $\mathrm{risk}+\widehat{\Delta}$ reaches test MAE 2.760. A two-part floor model (classifier for $P(y=-30)$, residual regressor on non-floor training events, threshold $0.15$ chosen on validation) reaches test MAE 2.109 ($[2.524, 3.415]$) and median AE 0, with Wilcoxon $p<10^{-33}$ versus persistence, but floor-excluded MAE rises to 9.311 and $F_2$ remains 0. It is a stored candidate, not the live exhibit. ESA-style loss (high-risk mean squared error divided by F2) ties at 0.167 for persistence and the selected ensemble. The learned MAE advantage is largest at 72 hours and nearly gone at 12 hours. Bootstrap 90 percent bands cover 47.7 percent of outcomes and are therefore model spread, not calibrated intervals. Later phases will add conformal coverage and a one-shot score on official-test labels released in 2021. This is a research prototype, not flight software.
+Conjunction Data Messages (CDMs) report a collision probability that moves as later tracking shrinks orbital uncertainty. Operators often start planning about two days before closest approach, so an earlier forecast is useful only if the history available then contains information beyond copying the latest report. Using the public ESA Collision Avoidance Challenge archive, this study freezes the clock at 72, 48, 24, and 12 hours before closest approach and asks whether cutoff-safe summaries improve a forecast of the later reported log10 collision probability over persistence. On a leakage-safe hold-out of 1659 events, 1352 later reports sit at the dataset floor of $-30$. Unguarded XGBoost lowers overall mean absolute error from 5.080 to 2.809 (95\% bootstrap interval on the difference $[1.930, 2.638]$), but floor-excluded MAE rises from 4.073 to 7.562, persistence median AE is already 0, and a paired Wilcoxon test on per-event absolute error does not reject equality ($p=0.91$). The selected ensemble with a $-6$ persistence guard has overall MAE 3.059 ($[1.716, 2.380]$) and Wilcoxon $p=0.31$. Predicting $y-\mathrm{risk}$ and reconstructing $\mathrm{risk}+\widehat{\Delta}$ reaches test MAE 2.760. A two-part floor model (classifier for $P(y=-30)$, residual regressor on non-floor training events, threshold $0.15$ chosen on validation) reaches test MAE 2.109 ($[2.524, 3.415]$) and median AE 0, with Wilcoxon $p<10^{-33}$ versus persistence, but floor-excluded MAE rises to 9.311 and $F_2$ remains 0. It is a stored candidate, not the live exhibit. ESA-style loss (high-risk mean squared error divided by F2) ties at 0.167 for persistence and the selected ensemble. The learned MAE advantage is largest at 72 hours and nearly gone at 12 hours. Bootstrap 90 percent bands cover 47.7 percent of outcomes and are therefore model spread. Split-conformal 90 percent intervals, fit on 1244 calibration events, cover 89.7 percent of the untouched test outcomes (mean width 18.33 log units). Official-test labels released in 2021 remain \textit{not yet measured}. This is a research prototype, not flight software.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -51,9 +51,9 @@ Labeled CDMs from the ESA training archive comprise 162{,}634 rows and 13{,}154 
 The current selected policy on the project surface is event-level XGBoost on inspectable snapshot and history summaries, with a ten-model bootstrap median and a persistence guard when the current report is already at or above $-6$. Baselines are persistence, the training-set median, and Ridge. A residual candidate predicts $y-\mathrm{risk}$ on cutoff-safe training rows and reconstructs $\widehat{y}=\mathrm{risk}+\widehat{\Delta}$. A two-part floor candidate trains a classifier for $P(y=-30)$ from the final reported risk, fits the residual regressor on non-floor training events only, and at inference predicts $-30$ when $P(\mathrm{floor})$ exceeds a threshold chosen on validation (here $0.15$); a $-6$ persistence guard was offered as a component and rejected on validation MAE. Both candidates are stored artifacts and are not the live exhibit. Official Kelvins test inputs are schema-checked only in this freeze; labeled official-test scoring is \textit{not yet measured} (planned one-shot evaluation using labels released on Zenodo in 2021~\cite{esaKelvins}).
 
 \subsection{Metrics}
-Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. An event is a floor event if the later report satisfies $y\le -30+10^{-6}$. Floor-excluded MAE is MAE on the complement. Residual MAE is $\mathrm{mean}|y-\mathrm{risk}|$ versus $\mathrm{mean}|\widehat{y}-\mathrm{risk}|$: how far the later report moved, versus how far the model moved the snapshot. A 95\% interval on MAE(persistence)$-$MAE(model) uses 1000 event-resamples. A two-sided Wilcoxon signed-rank test compares per-event absolute errors. Conformal coverage and official-test $L$ remain \textit{not yet measured}.
+Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. An event is a floor event if the later report satisfies $y\le -30+10^{-6}$. Floor-excluded MAE is MAE on the complement. Residual MAE is $\mathrm{mean}|y-\mathrm{risk}|$ versus $\mathrm{mean}|\widehat{y}-\mathrm{risk}|$: how far the later report moved, versus how far the model moved the snapshot. A 95\% interval on MAE(persistence)$-$MAE(model) uses 1000 event-resamples. A two-sided Wilcoxon signed-rank test compares per-event absolute errors. Split conformal uses absolute residuals $|y-\widehat{y}|$ of the exhibit ensemble on the 1244 calibration events~\cite{lei2018}. Official-test $L$ remains \textit{not yet measured}.
 
-Honest metrics, the residual candidate, and the two-part floor candidate were scored on the frozen 18 August split; the product specification and exhibit UI were left alone.
+Honest metrics, residual and floor candidates, and split-conformal coverage were scored on the frozen 18 August split. The homepage still shows one bootstrap band, labeled as model spread. The laboratory page reports conformal coverage; it does not add a calibration chart to the exhibit queue.
 
 \section{Results}
 
@@ -114,7 +114,33 @@ Table~\ref{tab:horizon} and Fig.~\ref{fig:horizon} support H1 on this freeze: th
 
 Snapshot-only MAE is 2.904; adding historical summaries of the same fields lowers it to 2.851; covariance trends reach 2.808. History therefore adds a small increment that also still needs an interval.
 
-Nominal 50\% and 90\% bootstrap bands cover 25.8\% and 47.7\% of outcomes. They are reported as model spread. Conformal intervals are \textit{not yet measured}. One accepted high-risk miss remains (false reassurance $=1$ of 9 local high-risk test events). A four-mission hold-out has high-risk MAE 19.2 on a single held-out high-risk event.
+Nominal 50\% and 90\% bootstrap bands cover 26.0\% and 47.7\% of outcomes (mean widths 0.90 and 2.05). Split-conformal bands around the same exhibit point cover 49.6\% and 89.7\% (mean widths 0.93 and 18.33). Table~\ref{tab:cover} and Fig.~\ref{fig:cover} record that comparison. The 90\% conformal radius is 9.17 log units because floor jumps of twenty units sit in the calibration scores. Crossing $-6$ with the conformal 90\% band was offered as an abstention rule and rejected on validation false reassurance; the live exhibit keeps the bootstrap-spread rule (test false reassurance $=1$ of 9, versus 2 for the conformal alternative). One accepted high-risk miss remains. A four-mission hold-out has high-risk MAE 19.2 on a single held-out high-risk event.
+
+\begin{table}[t]
+\caption{Interval coverage on the frozen local test ($n=1659$). Bootstrap bands are model spread. Split conformal is fit on 1244 calibration events only.}
+\label{tab:cover}
+\begin{center}
+\begin{tabular}{|l|r|r|r|}
+\hline
+\textbf{Band} & \textbf{Nom.} & \textbf{Cover.} & \textbf{Width} \\
+\hline
+Bootstrap spread & 50\% & 26.0\% & 0.90 \\
+\hline
+Bootstrap spread & 90\% & 47.7\% & 2.05 \\
+\hline
+Split conformal & 50\% & 49.6\% & 0.93 \\
+\hline
+Split conformal & 90\% & 89.7\% & 18.33 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=0.85\columnwidth]{coverage-calibration.png}}
+\caption{Nominal versus empirical coverage for bootstrap spread and split conformal (frozen test).}
+\label{fig:cover}
+\end{figure}
 
 \section{Discussion}
 
@@ -122,7 +148,7 @@ The 2019 challenge already showed that beating persistence on ESA-style loss is 
 
 This freeze uses historical ESA-supported missions from 2015 to 2019, not live catalogues. The local test has nine events at $\log_{10} P_c \ge -6$. Manoeuvres are out of scope. SHAP explains the fitted model, not physical causation. Official-test labels exist~\cite{esaKelvins} and have not yet been scored in this freeze.
 
-Next measurements are split-conformal coverage; a frozen official-test evaluation; a dilution-gap probe for H4; and repeated grouped splits so horizon gaps also carry intervals.
+Next measurements are a frozen official-test evaluation; a dilution-gap probe for H4; and repeated grouped splits so horizon gaps also carry intervals.
 
 \section*{Acknowledgment}
 

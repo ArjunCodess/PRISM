@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, and a two-part floor candidate are measured. Conformal coverage and official-test scores are not yet measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, and split-conformal coverage are measured. Official-test scores are not yet measured.
 
 ## Result
 
@@ -31,7 +31,7 @@ The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-
 
 A constant training-set median scores 3.002 MAE.
 
-PRISM’s nominal 90% bootstrap band covers **47.7%** of outcomes (50% band **25.8%**). It is therefore shown as model spread, not predictive probability.
+PRISM’s nominal 90% bootstrap band covers **47.7%** of outcomes (50% band **26.0%**). It is therefore shown as **model spread**, not predictive probability. Split-conformal 90% intervals around the same exhibit point, fit on 1,244 calibration events, cover **89.7%** of the untouched test (50% conformal **49.6%**). The calibrated 90% band is wide (mean width 18.33 log units) because floor jumps live in the calibration scores.
 
 On four missions held out of training, overall MAE is 2.688 versus persistence 4.843. High-risk MAE is **19.2** on one held-out high-risk event. Random-event accuracy does not establish mission-level generalization.
 
@@ -76,7 +76,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 6. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out remains weak on the rare high-risk tail (one held-out high-risk event; high-risk MAE 19.2). Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the deployed exhibit.
 
-7. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 25.8% and 47.7% of outcomes. The interface labels them as model spread.
+7. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 26.0% and 47.7% of outcomes. Split conformal covers 49.6% and 89.7%. The case UI still shows bootstrap ranges as model spread. Conformal numbers live on the research surface (paper, laboratory, `metrics.json`).
 
 8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Treat that probability as a scarce-label fit, not an operational warning system.
 
@@ -99,7 +99,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 ## Limitations
 
 - Persistence remains competitive under the loss that motivated the original challenge.
-- Bootstrap intervals are miscalibrated; they are used for abstention, not as 90% probability statements.
+- Bootstrap bands are model spread (47.7% at a 90% label). Split-conformal 90% intervals cover 89.7% of test outcomes and are the calibrated uncertainty claim. The exhibit still uses bootstrap spread for the on-screen band.
 - One accepted high-risk miss remains on this split.
 - Mission-level generalization, especially on high-risk events, is not established.
 - The dataset is historical anonymized ESA-supported events from 2015–2019, not live catalogue data.
@@ -110,7 +110,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 Six frozen real-data cases (two low, one review, three high). Each shows the current report, the T−48 forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
 
-The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
+The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
 
 Run the exhibit on the presentation laptop with Next and FastAPI both up (`NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`). Wi-Fi can be off. If the API is down, the site shows an error.
 
