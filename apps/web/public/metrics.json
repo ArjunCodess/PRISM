@@ -1243,7 +1243,107 @@
           "pvalue": 0.3126569820434135,
           "n": 1659
         }
+      },
+      "residual": {
+        "all": {
+          "n": 1659,
+          "mae": 2.7603422337760444,
+          "rmse": 5.031933380779737,
+          "median_ae": 0.4532145857810974
+        },
+        "nonFloor": {
+          "n": 307,
+          "mae": 7.374991215529576,
+          "rmse": 9.092317234331082,
+          "median_ae": 7.094894931901765
+        },
+        "floor": {
+          "n": 1352,
+          "mae": 1.712489247534673,
+          "rmse": 3.506830307101602,
+          "median_ae": 0.2772643268108368
+        },
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "residualMaeActual": 5.0795360010082655,
+        "residualMaePredicted": 5.133756236914966,
+        "residualMae": 2.7603422337760444,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.319193767232221,
+          "ci95Low": 1.977230632712547,
+          "ci95High": 2.6848043904295333,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 686635.0,
+          "pvalue": 0.9244757416538943,
+          "n": 1659
+        }
       }
+    }
+  },
+  "residualModel": {
+    "target": "y - risk on cutoff-safe rows; reconstruct pred = risk + residual_hat",
+    "fitOn": "frozen train event ids only",
+    "artifact": "ml/artifacts/residual_regressor.json",
+    "replacesExhibit": false,
+    "test": {
+      "persistence": {
+        "mae": 5.0795360010082655,
+        "medianAe": 0.0,
+        "floorExcludedMae": 4.072532209539077,
+        "floorMae": 5.308197364899567,
+        "esaLoss": 0.1669832237710995,
+        "f2": 0.36082474226804123
+      },
+      "xgboost": {
+        "mae": 2.8090744248985886,
+        "medianAe": 0.5543060302734375,
+        "floorExcludedMae": 7.561854480797847,
+        "floorMae": 1.7298558767025287,
+        "esaLoss": 1132201.8878005068,
+        "f2": 0.0
+      },
+      "residual": {
+        "mae": 2.7603422337760444,
+        "medianAe": 0.4532145857810974,
+        "floorExcludedMae": 7.374991215529576,
+        "floorMae": 1.712489247534673,
+        "esaLoss": 1132201.8878005068,
+        "f2": 0.0
+      }
+    },
+    "validation": {
+      "persistence": {
+        "mae": 5.07978641741163,
+        "medianAe": 0.0,
+        "floorExcludedMae": 4.162128128689824,
+        "floorMae": 5.248001952505429,
+        "esaLoss": 0.8771079897452382,
+        "f2": 0.39215686274509803
+      },
+      "xgboost": {
+        "mae": 2.668985527111328,
+        "medianAe": 0.5164337158203125,
+        "floorExcludedMae": 7.745958917664409,
+        "floorMae": 1.7383277800555916,
+        "esaLoss": 1457509.9725431725,
+        "f2": 0.0
+      },
+      "residual": {
+        "mae": 2.6711754911332144,
+        "medianAe": 0.43804654479026794,
+        "floorExcludedMae": 7.922083297953475,
+        "floorMae": 1.7086339031497573,
+        "esaLoss": 1457509.9725431725,
+        "f2": 0.0
+      }
+    },
+    "winnerSoFar": {
+      "split": "validation",
+      "criterion": "mae, then floor-excluded mae, then esa-style loss",
+      "name": "xgboost"
     }
   }
 }
