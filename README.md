@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, and split-conformal coverage are measured. Official-test scores are not yet measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, and a one-shot official-test score (`officialTest.frozenBeforeLook`) are measured.
 
 ## Result
 
@@ -36,6 +36,16 @@ PRISM’s nominal 90% bootstrap band covers **47.7%** of outcomes (50% band **26
 On four missions held out of training, overall MAE is 2.688 versus persistence 4.843. High-risk MAE is **19.2** on one held-out high-risk event. Random-event accuracy does not establish mission-level generalization.
 
 The model contains useful signal beyond persistence on mean error, especially at longer forecast horizons, but that signal is concentrated in floor collapses and does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
+
+Official-test labels (Zenodo 4463683, 25 Jan 2021) were scored once after freeze on 2,167 events (150 high-risk, 1,673 floor). Features come only from `test_data.csv`. Shared `event_id` integers with training are independent numbering (0 identical pre-cutoff snapshots). Clipped persistence ESA-style loss is **0.694**, matching Uriot last-risk-prediction on this distribution. The selected ensemble **ties** that loss via the `−6` persist guard. Residual and floor candidates lower MAE (3.476 / 3.177 vs 5.209) but raise *L* to **104** and **70.5** because *F*<sub>2</sub> collapses. None of the frozen models beat published sesc *L* = 0.556. These numbers are research results, not a website leaderboard, and were not used to retune.
+
+| Official test | Persistence | Unguarded XGBoost | Residual XGBoost | Floor hurdle | Selected ensemble |
+|---|---:|---:|---:|---:|---:|
+| MAE | 5.209 | 3.504 | 3.476 | **3.177** | 3.107 |
+| Median AE | **0.000** | 0.690 | 0.594 | **0.000** | 0.439 |
+| Floor-excluded MAE | **4.287** | 9.333 | 9.289 | 11.832 | 6.750 |
+| ESA-style loss | **0.694** | ~1.75×10<sup>6</sup> (*F*<sub>2</sub>=0) | 104 | 70.5 | **0.694** |
+| *F*<sub>2</sub> | **0.739** | 0.000 | 0.017 | 0.025 | **0.739** |
 
 ## Research question
 
@@ -88,7 +98,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 **Information constraint.** Features use only messages with `time_to_tca ≥` the cutoff. The later update is the label, never an input.
 
-**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection.
+**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. Official-test `true_risk` is joined only after that freeze.
 
 **Model.** Event-level XGBoost on inspectable summaries. A sequence model is not used so temporal signals can be inspected directly. Inference is a CPU-only 10-model XGBoost ensemble on a few hundred tabular features; no GPU is required.
 
@@ -98,7 +108,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 ## Limitations
 
-- Persistence remains competitive under the loss that motivated the original challenge.
+- Persistence remains competitive under the loss that motivated the original challenge. On official test it matches Uriot LRP (*L* = 0.694); sesc (*L* = 0.556) is not beaten.
 - Bootstrap bands are model spread (47.7% at a 90% label). Split-conformal 90% intervals cover 89.7% of test outcomes and are the calibrated uncertainty claim. The exhibit still uses bootstrap spread for the on-screen band.
 - One accepted high-risk miss remains on this split.
 - Mission-level generalization, especially on high-risk events, is not established.
@@ -110,7 +120,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 Six frozen real-data cases (two low, one review, three high). Each shows the current report, the T−48 forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
 
-The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
+The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/official-test-esa.png`](docs/figures/official-test-esa.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
 
 Run the exhibit on the presentation laptop with Next and FastAPI both up (`NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`). Wi-Fi can be off. If the API is down, the site shows an error.
 
