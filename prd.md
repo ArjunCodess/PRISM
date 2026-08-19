@@ -873,7 +873,7 @@ Venue internet is not promised. Offline is mandatory.
 
 - Public portfolio deployment
 - Interactive what-if panel
-- Formal conformal intervals
+- Formal conformal intervals (research surface measured; exhibit still shows bootstrap spread)
 - Mission-holdout experiment
 - Physical LED risk indicator driven by the API
 
