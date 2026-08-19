@@ -53,6 +53,8 @@ The current selected policy is event-level XGBoost on inspectable snapshot and h
 \subsection{Metrics}
 Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. Floor-excluded MAE, residual MAE, bootstrap confidence intervals, conformal coverage, and official-test $L$ are \textit{not yet measured}.
 
+The 18 August freeze was re-run through plot generation, lint, unit tests, and a production website build without retraining, so Tables~\ref{tab:scoreboard} and~\ref{tab:horizon} are unchanged. The product specification and exhibit UI were left alone until a later phase selects a replacement policy on validation.
+
 \section{Results}
 
 Table~\ref{tab:scoreboard} reports the frozen local test. Column ``0.5'' is the share of events within 0.5 log units; ``HR'' is high-risk MAE. Persistence median absolute error is 0: more than half of later reports do not move by a measurable amount after 48 hours. The selected policy ties persistence on ESA-style loss because the guard copies any current report already in the scored tail. Unguarded XGBoost has better MAE and $F_2=0$. The constant median beats the selected policy on MAE. These facts are the content of H2 and H3 on this freeze; they are not a scoring bug.
