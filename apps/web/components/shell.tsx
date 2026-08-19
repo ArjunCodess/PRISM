@@ -1,7 +1,17 @@
 import Link from "next/link";
 import { PrimaryNav } from "@/components/primary-nav";
 
-export function Shell({ title, kicker, children }: { title: string; kicker?: string; children: React.ReactNode }) {
+export function Shell({
+  title,
+  kicker,
+  children,
+  compact = false,
+}: {
+  title: string;
+  kicker?: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-[1240px] flex-col px-5 sm:px-8">
       <header className="no-print flex min-h-20 items-center justify-between gap-5 border-b hairline">
@@ -12,10 +22,10 @@ export function Shell({ title, kicker, children }: { title: string; kicker?: str
         <PrimaryNav />
       </header>
 
-      <main id="main-content" className="flex-1 py-10 sm:py-14">
-        <header className="mb-10 max-w-4xl">
-          {kicker ? <p className="eyebrow mb-3">{kicker}</p> : null}
-          <h1 className="display text-4xl leading-[1.05] sm:text-6xl">{title}</h1>
+      <main id="main-content" className={`flex-1 ${compact ? "py-6" : "py-10 sm:py-14"}`}>
+        <header className={`max-w-4xl ${compact ? "mb-5" : "mb-10"}`}>
+          {kicker ? <p className={`eyebrow ${compact ? "mb-2" : "mb-3"}`}>{kicker}</p> : null}
+          <h1 className={`display leading-[1.05] ${compact ? "text-3xl sm:text-4xl" : "text-4xl sm:text-6xl"}`}>{title}</h1>
         </header>
         {children}
       </main>

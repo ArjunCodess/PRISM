@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const items = [{ href: "/", label: "Event queue" }, { href: "/lab", label: "Model lab" }];
+const items = [
+  { href: "/", label: "Event queue" },
+  { href: "/lab", label: "Model lab" },
+  { href: "/info", label: "About" },
+];
 
 export function PrimaryNav() {
   const pathname = usePathname();

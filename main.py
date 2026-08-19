@@ -113,15 +113,23 @@ def ensure_web_dependencies() -> None:
     run([npm, "ci"], cwd=WEB)
 
 
-def verify() -> None:
-    run([sys.executable, "-m", "ruff", "check", "ml", "apps/api", "main.py"])
-    run([sys.executable, "-m", "pytest", "ml/tests", "apps/api/tests", "-q"])
+def npm_bin() -> str:
     npm = shutil.which("npm")
     if not npm:
         raise RuntimeError("npm is required; install Node.js 20 or newer and try again")
-    run([npm, "test"], cwd=WEB)
-    run([npm, "run", "lint"], cwd=WEB)
-    run([npm, "run", "build"], cwd=WEB)
+    return npm
+
+
+def build_web() -> None:
+    print("[PRISM] Building the website so new routes are in the production bundle.")
+    run([npm_bin(), "run", "build"], cwd=WEB)
+
+
+def verify() -> None:
+    run([sys.executable, "-m", "ruff", "check", "ml", "apps/api", "main.py"])
+    run([sys.executable, "-m", "pytest", "ml/tests", "apps/api/tests", "-q"])
+    run([npm_bin(), "test"], cwd=WEB)
+    run([npm_bin(), "run", "lint"], cwd=WEB)
 
 
 def wait_for(url: str, process: subprocess.Popen[bytes], timeout: float = 45.0) -> None:
@@ -243,6 +251,7 @@ def main() -> None:
         generate_graphs()
     if not args.skip_checks:
         verify()
+    build_web()
     if not args.build_only:
         serve(args.api_port, args.web_port, not args.no_browser)
 
