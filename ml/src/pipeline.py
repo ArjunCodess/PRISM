@@ -30,6 +30,7 @@ from constants import (  # noqa: E402
 from evaluate import (  # noqa: E402
     classification_metrics,
     error_gallery,
+    honest_metrics_bundle,
     persistence_improvement,
     regression_metrics,
     reliability_bins,
@@ -60,6 +61,20 @@ from train_regressor import (  # noqa: E402
     predict_model,
 )
 from validate import validate_cdm_frame  # noqa: E402
+
+HONEST_DEFINITIONS = {
+    "floorExcludedMae": (
+        "MAE on events whose final reported log10(Pc) is above the dataset floor of -30."
+    ),
+    "residualMaeActual": (
+        "Mean |y - risk|: how far the later report moved from the T-48 snapshot."
+    ),
+    "residualMaePredicted": "Mean |pred - risk|: how far the model moves the snapshot.",
+    "residualMae": "Mean |(y - risk) - (pred - risk)|, equal to MAE(y, pred).",
+    "maeAdvantageCi": (
+        "95% bootstrap interval on MAE(persistence) - MAE(model) from 1000 event resamples."
+    ),
+}
 
 
 def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
@@ -127,6 +142,72 @@ def _robustness_slices(test: pd.DataFrame, predictions: np.ndarray) -> dict[str,
             "24hOrMore": _slice_metrics(test, predictions, test["hours_before_cutoff"] >= 24),
         },
     }
+
+
+def _write_honest_metrics(
+    metrics: dict[str, object],
+    y_true: np.ndarray,
+    risk: np.ndarray,
+    persist: np.ndarray,
+    xgb_pred: np.ndarray,
+    ens_pred: np.ndarray,
+) -> dict[str, object]:
+    definitions = dict(metrics.get("definitions") or {})  # type: ignore[arg-type]
+    definitions.update(HONEST_DEFINITIONS)
+    metrics["definitions"] = definitions
+    honest = honest_metrics_bundle(y_true, risk, persist, xgb_pred, ens_pred)
+    metrics["honestMetrics"] = honest
+    return honest
+
+
+def score_frozen_honest_metrics() -> dict[str, object]:
+    artifacts = ROOT / "ml" / "artifacts"
+    manifest_path = artifacts / "split_manifest.json"
+    metrics_path = artifacts / "metrics.json"
+    if not manifest_path.exists() or not metrics_path.exists():
+        raise FileNotFoundError("frozen split_manifest.json and metrics.json are required")
+
+    raw = realistic_training_events(load_esa_training(ROOT / "data" / "raw"))
+    features = build_feature_table(build_event_histories(validate_cdm_frame(raw)))
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    test = subset(features, manifest["test"])
+    if test.empty:
+        raise RuntimeError("frozen test ids did not match the rebuilt feature table")
+
+    persist_test = persistence_predict(test)
+    schema = json.loads((artifacts / "feature_schema.json").read_text(encoding="utf-8"))["features"]
+    booster_model = XGBRegressor()
+    booster_model.load_model(str(artifacts / "risk_regressor.json"))
+    x_test = test[schema].apply(pd.to_numeric, errors="coerce")
+    model_pred = np.asarray(booster_model.predict(x_test), dtype=float)
+
+    bundle = joblib.load(artifacts / "warning_calibrator.joblib")
+    ensemble = bundle["ensemble"]
+    feature_names = list(bundle.get("feature_names") or schema)
+    x_ens = test[feature_names].apply(pd.to_numeric, errors="coerce")
+    raw_ens_matrix = np.column_stack([model.predict(x_ens) for model in ensemble])
+    persist_guard = test["risk"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD
+    ens_matrix = np.where(
+        persist_guard[:, None], test["risk"].to_numpy(dtype=float)[:, None], raw_ens_matrix
+    )
+    ens_pred = np.median(ens_matrix, axis=1)
+
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    honest = _write_honest_metrics(
+        metrics,
+        test["y"].to_numpy(),
+        test["risk"].to_numpy(dtype=float),
+        persist_test,
+        model_pred,
+        ens_pred,
+    )
+    write_json(metrics_path, metrics)
+    card_path = artifacts / "model_card.json"
+    if card_path.exists():
+        card = json.loads(card_path.read_text(encoding="utf-8"))
+        card["honestMetrics"] = honest
+        write_json(card_path, card)
+    return honest
 
 
 def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]:
@@ -366,6 +447,14 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         ),
         "abstentionRule": ABSTENTION_RULE,
     }
+    _write_honest_metrics(
+        metrics,
+        test["y"].to_numpy(),
+        test["risk"].to_numpy(dtype=float),
+        persist_test,
+        model_pred,
+        ens_pred,
+    )
 
     event_by_id = {int(event["event_id"]): event for event in events}
     aligned_all = features[booster.feature_names].apply(pd.to_numeric, errors="coerce")
@@ -457,6 +546,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
             "horizons": metrics["horizons"],
             "abstention": metrics["abstention"]["operatingPoint"],
             "beatsPersistence": bool(metrics["improvement"]["beats_persistence"]),
+            "honestMetrics": metrics["honestMetrics"],
         },
     )
     return metrics
@@ -466,7 +556,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and export PRISM artifacts")
     parser.add_argument("--source", choices=("real", "synthetic"), default="real")
     parser.add_argument("--synthetic-events", type=int, default=420)
+    parser.add_argument(
+        "--frozen",
+        action="store_true",
+        help="score honest metrics on frozen models; do not retrain",
+    )
     args = parser.parse_args()
-    result = run_pipeline(source=args.source, n_events=args.synthetic_events)
-    print(json.dumps(result["improvement"], indent=2))
-    print(json.dumps(result["ensemble"], indent=2))
+    if args.frozen:
+        honest = score_frozen_honest_metrics()
+        print(json.dumps(honest, indent=2, default=str))
+    else:
+        result = run_pipeline(source=args.source, n_events=args.synthetic_events)
+        print(json.dumps(result["improvement"], indent=2))
+        print(json.dumps(result["ensemble"], indent=2))

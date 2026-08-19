@@ -83,9 +83,11 @@ def ensure_python_dependencies() -> None:
     run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
 
-def train(source: str, synthetic_events: int) -> None:
+def train(source: str, synthetic_events: int, frozen: bool = False) -> None:
     command = [sys.executable, "ml/src/pipeline.py", "--source", source]
-    if source == "synthetic":
+    if frozen:
+        command.append("--frozen")
+    elif source == "synthetic":
         command.extend(["--synthetic-events", str(synthetic_events)])
     run(command)
 
@@ -246,6 +248,8 @@ def main() -> None:
         download(args.force_download)
     if not args.skip_train:
         train(args.source, args.synthetic_events)
+    elif args.source == "real":
+        train(args.source, args.synthetic_events, frozen=True)
     sync_web_artifacts()
     if not args.skip_graphs:
         generate_graphs()

@@ -68,6 +68,23 @@ def test_persistence_claim_matches_frozen_metrics() -> None:
     assert bool(metrics["improvement"]["beats_persistence"]) is actually_beats
 
 
+def test_honest_metrics_exist_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    honest = metrics["honestMetrics"]
+    assert honest["nTest"] == metrics["splits"]["test"]
+    for name in ("persistence", "xgboost", "ensemble"):
+        system = honest["systems"][name]
+        assert "median_ae" in system["all"]
+        assert "mae" in system["nonFloor"]
+        assert "residualMae" in system
+    xgb = honest["systems"]["xgboost"]["maeAdvantageVsPersistence"]
+    ens = honest["systems"]["ensemble"]["maeAdvantageVsPersistence"]
+    assert xgb["ci95Low"] < xgb["ci95High"]
+    assert ens["ci95Low"] < ens["ci95High"]
+    assert np.isfinite(xgb["deltaMae"])
+    assert np.isfinite(ens["deltaMae"])
+
+
 def test_reloaded_booster_matches_saved_schema() -> None:
     schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
     model = XGBRegressor()
