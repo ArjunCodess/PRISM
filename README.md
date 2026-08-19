@@ -10,26 +10,32 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-The 18 August freeze was re-verified with `python main.py --skip-download --skip-train --build-only` (figures, ruff, pytest, web tests, Next.js build). Training is skipped so this policy stays the selected exhibit until a later phase replaces it. Scores below match `ml/artifacts/metrics.json`: persistence MAE 5.080 vs selected 3.059, ESA-style loss 0.167 / F2 0.361 for both, unguarded XGBoost MAE 2.808, persistence median AE 0.000, 90% bootstrap coverage 47.7%. Floor-excluded MAE, residual MAE, confidence intervals, conformal coverage, and official-test scores are not yet measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json` under `honestMetrics`. Floor-excluded MAE, residual MAE, bootstrap CIs, and Wilcoxon tests are measured. Conformal coverage and official-test scores are not yet measured.
 
 ## Result
 
-Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units.
+Held-out performance on 1,659 untouched test events. 1,352 of them later report the dataset floor `−30`. Errors are in `log10(Pc)` units. ΔMAE is MAE(persistence) − MAE(model) with a 95% bootstrap interval from 1,000 event resamples. Wilcoxon *p* is two-sided on paired `|error|`.
 
-| | Persistence | PRISM |
-|---|---:|---:|
-| MAE | 5.080 | **3.059** |
-| ESA-style loss | **0.167** | **0.167** |
+| | Persistence | Unguarded XGBoost | Selected ensemble |
+|---|---:|---:|---:|
+| MAE | 5.080 | 2.809 | 3.059 |
+| Median AE | **0.000** | 0.554 | 0.473 |
+| Floor-excluded MAE | **4.073** | 7.562 | 7.332 |
+| Floor-only MAE | 5.308 | **1.730** | 2.088 |
+| Residual MAE (`|y − risk|` vs `|pred − risk|`) | 5.080 / 0.000 | 5.080 / 5.222 | 5.080 / 4.582 |
+| ΔMAE vs persistence [95% CI] | — | 2.270 [1.930, 2.638] | 2.021 [1.716, 2.380] |
+| Wilcoxon *p* | — | 0.91 | 0.31 |
+| ESA-style loss | **0.167** | ∞ (F2 = 0) | **0.167** |
 
-That is a 39.8% MAE cut. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2, so recall of `log10(Pc) ≥ −6` is weighted more than precision). F2 is 0.361 for both. The exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`, which is the region ESA-style loss scores. The MAE reduction is continuous-risk accuracy, not a better risk-weighted decision score.
+The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-event win: floor-excluded MAE is worse than persistence, median AE for persistence is already 0, and Wilcoxon does not reject equal `|error|`. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2). F2 is 0.361 for persistence and the selected ensemble. The exact tie is the persistence guard copying the current report whenever it is already at or above `−6`.
 
-A single unguarded XGBoost scores 2.808 MAE but F2 = 0. The constant training-set median scores 3.002 MAE.
+A constant training-set median scores 3.002 MAE.
 
 PRISM’s nominal 90% bootstrap band covers **47.7%** of outcomes (50% band **25.8%**). It is therefore shown as model spread, not predictive probability.
 
 On four missions held out of training, overall MAE is 2.688 versus persistence 4.843. High-risk MAE is **19.2** on one held-out high-risk event. Random-event accuracy does not establish mission-level generalization.
 
-The model contains useful signal beyond persistence, especially at longer forecast horizons, but that signal does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
+The model contains useful signal beyond persistence on mean error, especially at longer forecast horizons, but that signal is concentrated in floor collapses and does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
 
 ## Research question
 
@@ -49,7 +55,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 ### What the model can do
 
-1. **Average accuracy and decision quality are not the same thing.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail, not average log-risk error. The exact F2 and ESA-style loss tie is the persistence guard working, not a scoring bug.
+1. **Average accuracy and decision quality are not the same thing, and mean error is not typical error.** A large MAE gain can coexist with an unchanged ESA-style score because that loss cares about the `log10(Pc) ≥ −6` tail. Floor-excluded MAE is worse than persistence, and Wilcoxon tests on paired `|error|` do not reject equality. The exact F2 and ESA-style loss tie is the persistence guard working, not a scoring bug.
 
 2. **History provides a measurable gain, while covariance trends add little after that.** The history block consists of temporal transforms of variables already available in the latest snapshot, allowing the ablation to isolate information from their evolution. Snapshot also includes encounter-plane geometry and object-type dummies. On the single XGBoost model, snapshot-only MAE is 2.904. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.851. Covariance trends after that reach 2.808.
 
