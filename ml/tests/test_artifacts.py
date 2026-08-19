@@ -102,6 +102,27 @@ def test_residual_candidate_exists_on_frozen_split() -> None:
     assert (ART / "residual_regressor.json").exists()
 
 
+def test_floor_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    floor = metrics["floorModel"]
+    assert floor["replacesExhibit"] is False
+    assert floor["winnerSoFar"]["split"] == "validation"
+    assert "threshold" in floor
+    confusion = floor["confusion"]["test"]
+    assert confusion["nFloor"] == metrics["honestMetrics"]["nFloor"]
+    assert confusion["tp"] + confusion["fn"] == confusion["nFloor"]
+    assert confusion["fp"] + confusion["tn"] == confusion["nNonFloor"]
+    for split_name in ("test", "validation"):
+        row = floor[split_name]["floorHurdle"]
+        assert "mae" in row
+        assert "floorExcludedMae" in row
+        assert "esaLoss" in row
+    assert "floorHurdle" in metrics["honestMetrics"]["systems"]
+    assert (ART / "floor_classifier.json").exists()
+    assert (ART / "floor_residual_regressor.json").exists()
+    assert (ART / "floor_hurdle.json").exists()
+
+
 def test_reloaded_booster_matches_saved_schema() -> None:
     schema = json.loads((ART / "feature_schema.json").read_text(encoding="utf-8"))["features"]
     model = XGBRegressor()

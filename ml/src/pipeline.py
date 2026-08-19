@@ -54,6 +54,14 @@ from ingest import (  # noqa: E402
     validate_official_test_compatibility,
 )
 from split import grouped_splits, subset  # noqa: E402
+from floor_model import (  # noqa: E402
+    choose_hurdle_policy,
+    combine_floor_hurdle,
+    fit_floor_classifier,
+    floor_confusion,
+    non_floor_rows,
+    predict_floor_proba,
+)
 from train_classifier import fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
     fit_residual_xgboost,
@@ -156,12 +164,19 @@ def _write_honest_metrics(
     xgb_pred: np.ndarray,
     ens_pred: np.ndarray,
     residual_pred: np.ndarray | None = None,
+    floor_pred: np.ndarray | None = None,
 ) -> dict[str, object]:
     definitions = dict(metrics.get("definitions") or {})  # type: ignore[arg-type]
     definitions.update(HONEST_DEFINITIONS)
     metrics["definitions"] = definitions
     honest = honest_metrics_bundle(
-        y_true, risk, persist, xgb_pred, ens_pred, residual_pred=residual_pred
+        y_true,
+        risk,
+        persist,
+        xgb_pred,
+        ens_pred,
+        residual_pred=residual_pred,
+        floor_pred=floor_pred,
     )
     metrics["honestMetrics"] = honest
     return honest
@@ -214,6 +229,47 @@ def score_frozen_honest_metrics() -> dict[str, object]:
     residual_test = predict_reconstructed(residual, test)
     residual_val = predict_reconstructed(residual, validation)
 
+    floor_clf = fit_floor_classifier(train)
+    floor_clf.model.save_model(str(artifacts / "floor_classifier.json"))
+    non_floor_train = non_floor_rows(train)
+    if non_floor_train.empty:
+        raise RuntimeError("frozen train has no non-floor events for the hurdle regressor")
+    floor_residual = fit_residual_xgboost(non_floor_train)
+    floor_residual.model.save_model(str(artifacts / "floor_residual_regressor.json"))
+    floor_recon_val = predict_reconstructed(floor_residual, validation)
+    floor_recon_test = predict_reconstructed(floor_residual, test)
+    floor_proba_val = predict_floor_proba(floor_clf, validation)
+    floor_proba_test = predict_floor_proba(floor_clf, test)
+    hurdle = choose_hurdle_policy(
+        validation["y"].to_numpy(),
+        floor_proba_val,
+        floor_recon_val,
+        validation["risk"].to_numpy(dtype=float),
+    )
+    floor_val = combine_floor_hurdle(
+        floor_proba_val,
+        floor_recon_val,
+        hurdle.threshold,
+        risk=validation["risk"].to_numpy(dtype=float),
+        use_persist_guard=hurdle.use_persist_guard,
+    )
+    floor_test = combine_floor_hurdle(
+        floor_proba_test,
+        floor_recon_test,
+        hurdle.threshold,
+        risk=test["risk"].to_numpy(dtype=float),
+        use_persist_guard=hurdle.use_persist_guard,
+    )
+    write_json(
+        artifacts / "floor_hurdle.json",
+        {
+            "threshold": hurdle.threshold,
+            "usePersistGuard": hurdle.use_persist_guard,
+            "chosenOn": "validation",
+            "replacesExhibit": False,
+        },
+    )
+
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     honest = _write_honest_metrics(
         metrics,
@@ -223,6 +279,7 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         model_pred,
         ens_pred,
         residual_pred=residual_test,
+        floor_pred=floor_test,
     )
     test_y = test["y"].to_numpy()
     val_y = validation["y"].to_numpy()
@@ -230,17 +287,44 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         "persistence": level_scoreboard_row(test_y, persist_test),
         "xgboost": level_scoreboard_row(test_y, model_pred),
         "residual": level_scoreboard_row(test_y, residual_test),
+        "floorHurdle": level_scoreboard_row(test_y, floor_test),
     }
     val_board = {
         "persistence": level_scoreboard_row(val_y, persist_val),
         "xgboost": level_scoreboard_row(val_y, xgb_val),
         "residual": level_scoreboard_row(val_y, residual_val),
+        "floorHurdle": level_scoreboard_row(val_y, floor_val),
     }
+    residual_boards_test = {k: v for k, v in test_board.items() if k != "floorHurdle"}
+    residual_boards_val = {k: v for k, v in val_board.items() if k != "floorHurdle"}
     metrics["residualModel"] = {
         "target": "y - risk on cutoff-safe rows; reconstruct pred = risk + residual_hat",
         "fitOn": "frozen train event ids only",
         "artifact": "ml/artifacts/residual_regressor.json",
         "replacesExhibit": False,
+        "test": residual_boards_test,
+        "validation": residual_boards_val,
+        "winnerSoFar": {
+            "split": "validation",
+            "criterion": "mae, then floor-excluded mae, then esa-style loss",
+            "name": pick_validation_winner(residual_boards_val),
+        },
+    }
+    metrics["floorModel"] = {
+        "target": "P(y == -30) from final reported risk; residual regressor on non-floor train",
+        "fitOn": "frozen train event ids only; threshold and persist guard on validation only",
+        "artifacts": {
+            "classifier": "ml/artifacts/floor_classifier.json",
+            "residualRegressor": "ml/artifacts/floor_residual_regressor.json",
+            "policy": "ml/artifacts/floor_hurdle.json",
+        },
+        "replacesExhibit": False,
+        "threshold": hurdle.threshold,
+        "usePersistGuard": hurdle.use_persist_guard,
+        "confusion": {
+            "test": floor_confusion(test_y, floor_proba_test, hurdle.threshold),
+            "validation": floor_confusion(val_y, floor_proba_val, hurdle.threshold),
+        },
         "test": test_board,
         "validation": val_board,
         "winnerSoFar": {
@@ -255,6 +339,7 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         card = json.loads(card_path.read_text(encoding="utf-8"))
         card["honestMetrics"] = honest
         card["residualModel"] = metrics["residualModel"]
+        card["floorModel"] = metrics["floorModel"]
         write_json(card_path, card)
     return honest
 
