@@ -67,7 +67,9 @@ def combine_floor_hurdle(
     return pred
 
 
-def floor_confusion(y_true: np.ndarray, proba: np.ndarray, threshold: float) -> dict[str, float | int]:
+def floor_confusion(
+    y_true: np.ndarray, proba: np.ndarray, threshold: float
+) -> dict[str, float | int]:
     actual = floor_mask(np.asarray(y_true, dtype=float))
     predicted = np.asarray(proba, dtype=float) >= threshold
     tp = int(np.sum(actual & predicted))
