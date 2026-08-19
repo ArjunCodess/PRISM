@@ -420,6 +420,43 @@
           "pvalue": 0.9244757416538943,
           "n": 1659
         }
+      },
+      "floorHurdle": {
+        "all": {
+          "n": 1659,
+          "mae": 2.1088681921122756,
+          "rmse": 5.947911248287853,
+          "median_ae": 0.0
+        },
+        "nonFloor": {
+          "n": 307,
+          "mae": 9.310713735143905,
+          "rmse": 12.240288894734318,
+          "median_ae": 7.666985718329659
+        },
+        "floor": {
+          "n": 1352,
+          "mae": 0.4735378801960697,
+          "rmse": 3.0643184154962597,
+          "median_ae": 0.0
+        },
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "residualMaeActual": 5.0795360010082655,
+        "residualMaePredicted": 5.9449243651308254,
+        "residualMae": 2.1088681921122756,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.97066780889599,
+          "ci95Low": 2.524327790276798,
+          "ci95High": 3.4152993950837005,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 68170.5,
+          "pvalue": 1.9189114039021431e-34,
+          "n": 1659
+        }
       }
     }
   },
@@ -484,6 +521,119 @@
       "split": "validation",
       "criterion": "mae, then floor-excluded mae, then esa-style loss",
       "name": "xgboost"
+    }
+  },
+  "floorModel": {
+    "target": "P(y == -30) from final reported risk; residual regressor on non-floor train",
+    "fitOn": "frozen train event ids only; threshold and persist guard on validation only",
+    "artifacts": {
+      "classifier": "ml/artifacts/floor_classifier.json",
+      "residualRegressor": "ml/artifacts/floor_residual_regressor.json",
+      "policy": "ml/artifacts/floor_hurdle.json"
+    },
+    "replacesExhibit": false,
+    "threshold": 0.15,
+    "usePersistGuard": false,
+    "confusion": {
+      "test": {
+        "threshold": 0.15,
+        "nFloor": 1352,
+        "nNonFloor": 307,
+        "predictedFloor": 1493,
+        "tp": 1319,
+        "fp": 174,
+        "fn": 33,
+        "tn": 133,
+        "precision": 0.883456128600134,
+        "recall": 0.9755917159763313,
+        "f1": 0.9272407732864675
+      },
+      "validation": {
+        "threshold": 0.15,
+        "nFloor": 1402,
+        "nNonFloor": 257,
+        "predictedFloor": 1523,
+        "tp": 1369,
+        "fp": 154,
+        "fn": 33,
+        "tn": 103,
+        "precision": 0.8988837820091924,
+        "recall": 0.9764621968616263,
+        "f1": 0.9360683760683761
+      }
+    },
+    "test": {
+      "persistence": {
+        "mae": 5.0795360010082655,
+        "medianAe": 0.0,
+        "floorExcludedMae": 4.072532209539077,
+        "floorMae": 5.308197364899567,
+        "esaLoss": 0.1669832237710995,
+        "f2": 0.36082474226804123
+      },
+      "xgboost": {
+        "mae": 2.8090744248985886,
+        "medianAe": 0.5543060302734375,
+        "floorExcludedMae": 7.561854480797847,
+        "floorMae": 1.7298558767025287,
+        "esaLoss": 1132201.8878005068,
+        "f2": 0.0
+      },
+      "residual": {
+        "mae": 2.7603422337760444,
+        "medianAe": 0.4532145857810974,
+        "floorExcludedMae": 7.374991215529576,
+        "floorMae": 1.712489247534673,
+        "esaLoss": 1132201.8878005068,
+        "f2": 0.0
+      },
+      "floorHurdle": {
+        "mae": 2.1088681921122756,
+        "medianAe": 0.0,
+        "floorExcludedMae": 9.310713735143905,
+        "floorMae": 0.4735378801960697,
+        "esaLoss": 1132201.8878005068,
+        "f2": 0.0
+      }
+    },
+    "validation": {
+      "persistence": {
+        "mae": 5.07978641741163,
+        "medianAe": 0.0,
+        "floorExcludedMae": 4.162128128689824,
+        "floorMae": 5.248001952505429,
+        "esaLoss": 0.8771079897452382,
+        "f2": 0.39215686274509803
+      },
+      "xgboost": {
+        "mae": 2.668985527111328,
+        "medianAe": 0.5164337158203125,
+        "floorExcludedMae": 7.745958917664409,
+        "floorMae": 1.7383277800555916,
+        "esaLoss": 1457509.9725431725,
+        "f2": 0.0
+      },
+      "residual": {
+        "mae": 2.6711754911332144,
+        "medianAe": 0.43804654479026794,
+        "floorExcludedMae": 7.922083297953475,
+        "floorMae": 1.7086339031497573,
+        "esaLoss": 1457509.9725431725,
+        "f2": 0.0
+      },
+      "floorHurdle": {
+        "mae": 1.9156339603340662,
+        "medianAe": 0.0,
+        "floorExcludedMae": 10.021206944386066,
+        "floorMae": 0.42980496111768685,
+        "esaLoss": 1457509.9725431725,
+        "f2": 0.0
+      }
+    },
+    "winnerSoFar": {
+      "split": "validation",
+      "criterion": "mae, then floor-excluded mae, then esa-style loss",
+      "name": "floorHurdle"
     }
   }
 }
