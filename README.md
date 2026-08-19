@@ -8,6 +8,8 @@ It is a research prototype for explainable conjunction-risk forecasting. **Not f
 
 The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the later reported `log10(Pc)` from cutoff-safe CDM summaries, then copies today's report when that report is already at or above the ESA `−6` class.
 
+The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
+
 ## Result
 
 Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units.
@@ -137,6 +139,7 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 - [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): six curated real-data cases. The API serves these; the website does not read them as a fallback.
 - [`ml/artifacts/model_card.json`](ml/artifacts/model_card.json) and [`docs/model-card.md`](docs/model-card.md).
 - [`docs/figures`](docs/figures): comparison, ablation, horizon, abstention, failure, and SHAP charts.
+- [`paper/main.pdf`](paper/main.pdf): living paper
 - [`data/processed/events.csv`](data/processed/events.csv): event-level feature table.
 
 ## Repository layout
@@ -146,7 +149,8 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 - [`ml/artifacts`](ml/artifacts): frozen models and evidence.
 - [`apps/api`](apps/api): FastAPI service (required for the exhibit).
 - [`apps/web`](apps/web): Next.js exhibit (API-only).
-- [`docs`](docs): model card, data guide, deploy guide, PRD audit, presentation scripts, figures.
+- [`docs`](docs): model card, data guide, deploy guide, PRD audit, presentation scripts, figures, v2 plan.
+- [`paper`](paper): living IEEE conference manuscript (`main.tex`, `references.bib`, `main.pdf`).
 - [`prd.md`](prd.md): locked product specification, with an 18 August 2026 addendum.
 
 ## Acknowledgments and sources
