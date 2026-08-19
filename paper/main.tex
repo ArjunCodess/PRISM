@@ -21,7 +21,7 @@ Lucknow, India}
 \maketitle
 
 \begin{abstract}
-Conjunction Data Messages (CDMs) report a collision probability that moves as later tracking shrinks orbital uncertainty. Operators often start planning about two days before closest approach, so an earlier forecast is useful only if the history available then contains information beyond copying the latest report. Using the public ESA Collision Avoidance Challenge archive, this study freezes the clock at 72, 48, 24, and 12 hours before closest approach and asks whether cutoff-safe summaries improve a forecast of the later reported log10 collision probability over persistence. On a leakage-safe hold-out of 1659 events, a gradient-boosted tree cuts mean absolute error from 5.080 to 2.808 at 48 hours, but persistence median absolute error is already 0: typical reports often do not move. The mean is dominated by rare jumps, including collapses to the dataset floor of -30. ESA-style loss (high-risk mean squared error divided by F2) ties at 0.167 once a persistence guard is applied on the log10 Pc at or above -6 class. The learned advantage is largest at 72 hours and nearly gone at 12 hours. Bootstrap 90 percent bands cover 47.7 percent of outcomes and are therefore model spread, not calibrated intervals. Later phases will add residual targets, a floor model, conformal coverage, and a one-shot score on official-test labels released in 2021. This is a research prototype, not flight software.
+Conjunction Data Messages (CDMs) report a collision probability that moves as later tracking shrinks orbital uncertainty. Operators often start planning about two days before closest approach, so an earlier forecast is useful only if the history available then contains information beyond copying the latest report. Using the public ESA Collision Avoidance Challenge archive, this study freezes the clock at 72, 48, 24, and 12 hours before closest approach and asks whether cutoff-safe summaries improve a forecast of the later reported log10 collision probability over persistence. On a leakage-safe hold-out of 1659 events, 1352 later reports sit at the dataset floor of $-30$. Unguarded XGBoost lowers overall mean absolute error from 5.080 to 2.809 (95\% bootstrap interval on the difference $[1.930, 2.638]$), but floor-excluded MAE rises from 4.073 to 7.562, persistence median AE is already 0, and a paired Wilcoxon test on per-event absolute error does not reject equality ($p=0.91$). The selected ensemble with a $-6$ persistence guard has overall MAE 3.059 ($[1.716, 2.380]$) and Wilcoxon $p=0.31$. ESA-style loss (high-risk mean squared error divided by F2) ties at 0.167. The learned MAE advantage is largest at 72 hours and nearly gone at 12 hours. Bootstrap 90 percent bands cover 47.7 percent of outcomes and are therefore model spread, not calibrated intervals. Later phases will add a residual target, a floor model, conformal coverage, and a one-shot score on official-test labels released in 2021. This is a research prototype, not flight software.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -51,36 +51,36 @@ Labeled CDMs from the ESA training archive comprise 162{,}634 rows and 13{,}154 
 The current selected policy is event-level XGBoost on inspectable snapshot and history summaries, with a ten-model bootstrap median and a persistence guard when the current report is already at or above $-6$. Baselines are persistence, the training-set median, and Ridge. Official Kelvins test inputs are schema-checked only in this freeze; labeled official-test scoring is \textit{not yet measured} (planned one-shot evaluation using labels released on Zenodo in 2021~\cite{esaKelvins}).
 
 \subsection{Metrics}
-Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. Floor-excluded MAE, residual MAE, bootstrap confidence intervals, conformal coverage, and official-test $L$ are \textit{not yet measured}.
+Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. An event is a floor event if the later report satisfies $y\le -30+10^{-6}$. Floor-excluded MAE is MAE on the complement. Residual MAE is $\mathrm{mean}|y-\mathrm{risk}|$ versus $\mathrm{mean}|\widehat{y}-\mathrm{risk}|$: how far the later report moved, versus how far the model moved the snapshot. A 95\% interval on MAE(persistence)$-$MAE(model) uses 1000 event-resamples. A two-sided Wilcoxon signed-rank test compares per-event absolute errors. Conformal coverage and official-test $L$ remain \textit{not yet measured}.
 
-The 18 August freeze was re-run through plot generation, lint, unit tests, and a production website build without retraining, so Tables~\ref{tab:scoreboard} and~\ref{tab:horizon} are unchanged. The product specification and exhibit UI were left alone until a later phase selects a replacement policy on validation.
+Honest metrics were scored on the frozen 18 August models and split; the product specification and exhibit UI were left alone.
 
 \section{Results}
 
-Table~\ref{tab:scoreboard} reports the frozen local test. Column ``0.5'' is the share of events within 0.5 log units; ``HR'' is high-risk MAE. Persistence median absolute error is 0: more than half of later reports do not move by a measurable amount after 48 hours. The selected policy ties persistence on ESA-style loss because the guard copies any current report already in the scored tail. Unguarded XGBoost has better MAE and $F_2=0$. The constant median beats the selected policy on MAE. These facts are the content of H2 and H3 on this freeze; they are not a scoring bug.
+Table~\ref{tab:honest} reports the frozen local test with floor slices and intervals. Of 1659 events, 1352 later reports sit at $-30$. Persistence median AE is 0: more than half of reports do not move after 48 hours. The later report moves from the snapshot by 5.080 MAE; unguarded XGBoost moves it by 5.222 and the selected ensemble by 4.582. Overall MAE falls, and the 95\% bootstrap interval on that drop excludes 0. Floor-excluded MAE rises (4.073 to 7.562 for unguarded XGBoost; 7.332 for the ensemble). A paired Wilcoxon test on absolute error does not reject equality with persistence. The mean-error win is therefore a floor-jump statistic, which is H2 on this freeze. ESA-style loss still ties at 0.167 because the guard copies any current report already in the scored tail (H3). Unguarded XGBoost has $F_2=0$. The constant training-set median still beats the selected policy on overall MAE (3.002).
 
 \begin{table}[t]
-\caption{Local test at 48 hours ($n=1659$). MAE in $\log_{10} P_c$. Selected policy: bootstrap ensemble with a $-6$ persistence guard.}
-\label{tab:scoreboard}
+\caption{Frozen local test at 48 hours ($n=1659$; 1352 floor events). MAE in $\log_{10} P_c$. $\Delta$ is MAE(persistence)$-$MAE(model) with a 95\% bootstrap interval (1000 event resamples). Wilcoxon $p$ is two-sided on paired absolute error. Selected policy: bootstrap ensemble with a $-6$ persistence guard.}
+\label{tab:honest}
 \begin{center}
 \scriptsize
-\begin{tabular}{|l|r|r|r|r|r|}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|r|r|r|r|r|r|}
 \hline
-\textbf{System} & \textbf{MAE} & \textbf{Med.} & \textbf{0.5} & \textbf{HR} & $\boldsymbol{L}$/$\boldsymbol{F_2}$ \\
+\textbf{System} & \textbf{MAE} & \textbf{Med.} & \textbf{Non-fl.} & \textbf{Floor} & $\boldsymbol{\Delta}$ \textbf{[95\%]} & $\boldsymbol{p}$ \\
 \hline
-Persistence & 5.080 & 0.000 & 63.1\% & 0.89 & 0.167/0.361 \\
+Persistence & 5.080 & 0.000 & 4.073 & 5.308 & --- & --- \\
 \hline
-Train.\ median & 3.002 & 0.000 & 81.6\% & 24.8 & ---/0 \\
+Unguarded XGB & 2.809 & 0.554 & 7.562 & 1.730 & 2.270 $[1.930,2.638]$ & 0.91 \\
 \hline
-Unguarded XGB & 2.808 & 0.557 & 48.8\% & 13.69 & ---/0 \\
+Selected ens. & 3.059 & 0.473 & 7.332 & 2.088 & 2.021 $[1.716,2.380]$ & 0.31 \\
 \hline
-Selected ens. & 3.059 & 0.474 & 50.5\% & 3.69 & 0.167/0.361 \\
-\hline
-\end{tabular}
+\end{tabular}%
+}
 \end{center}
 \end{table}
 
-Table~\ref{tab:horizon} and Fig.~\ref{fig:horizon} support H1 on this freeze: the learned advantage shrinks as closest approach approaches. The 12-hour gap is 0.06 log units and is \textit{not yet} equipped with a confidence interval.
+Table~\ref{tab:horizon} and Fig.~\ref{fig:horizon} support H1 on this freeze: the learned advantage shrinks as closest approach approaches. The 12-hour gap is 0.06 log units and is \textit{not yet} equipped with a confidence interval. The T$-48$ MAE gap now has an interval (Table~\ref{tab:honest}).
 
 \begin{table}[t]
 \caption{Single XGBoost versus persistence by horizon. MAE in $\log_{10} P_c$. The 72~h and 12~h eligible sets overlap the 48~h split but are not identical.}
@@ -114,11 +114,11 @@ Nominal 50\% and 90\% bootstrap bands cover 25.8\% and 47.7\% of outcomes. They 
 
 \section{Discussion}
 
-The 2019 challenge already showed that beating persistence on ESA-style loss is hard~\cite{uriot2021}. The contribution attempted here is not a second leaderboard entry. It is a measurement of \emph{when} CDM history still contains extra information, and of the fact that mean error and high-risk decisions are different jobs. Large early covariance can dilute $P_c$~\cite{alfano2003}; later contraction often drops reported risk~\cite{hejduk2016}. That physical picture matches a horizon-dependent learned advantage and a mean wrecked by floor collapses. It does not match a claim of operational warning skill on nine local positives.
+The 2019 challenge already showed that beating persistence on ESA-style loss is hard~\cite{uriot2021}. The contribution attempted here is not a second leaderboard entry. It is a measurement of \emph{when} CDM history still contains extra information, and of the fact that mean error and high-risk decisions are different jobs. Large early covariance can dilute $P_c$~\cite{alfano2003}; later contraction often drops reported risk~\cite{hejduk2016}. That physical picture matches a horizon-dependent learned advantage and a mean wrecked by floor collapses: 1352 of 1659 test labels are at $-30$, floor-excluded MAE is worse than persistence, and Wilcoxon tests on paired absolute error do not reject equality. It does not match a claim of operational warning skill on nine local positives.
 
 This freeze uses historical ESA-supported missions from 2015 to 2019, not live catalogues. The local test has nine events at $\log_{10} P_c \ge -6$. Manoeuvres are out of scope. SHAP explains the fitted model, not physical causation. Official-test labels exist~\cite{esaKelvins} and have not yet been scored in this freeze.
 
-Next measurements are floor-aware metrics and confidence intervals; a residual-to-persistence target; a two-part floor model; split-conformal coverage; a frozen official-test evaluation; a dilution-gap probe for H4; and repeated grouped splits.
+Next measurements are a residual-to-persistence target; a two-part floor model; split-conformal coverage; a frozen official-test evaluation; a dilution-gap probe for H4; and repeated grouped splits so horizon gaps also carry intervals.
 
 \section*{Acknowledgment}
 
