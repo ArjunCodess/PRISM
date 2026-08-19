@@ -147,29 +147,58 @@ def honest_system_report(
     return report
 
 
+def level_scoreboard_row(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+    sliced = floor_sliced_metrics(y_true, y_pred)
+    esa = esa_loss(y_true, clip_for_esa(y_pred))
+    all_row = sliced["all"]
+    non_floor = sliced["nonFloor"]
+    floor = sliced["floor"]
+    return {
+        "mae": float(all_row["mae"]),
+        "medianAe": float(all_row["median_ae"]),
+        "floorExcludedMae": float(non_floor["mae"]),
+        "floorMae": float(floor["mae"]),
+        "esaLoss": esa["esa_loss"],
+        "f2": esa["f2"],
+    }
+
+
+def pick_validation_winner(rows: dict[str, dict[str, float]]) -> str:
+    return min(
+        rows,
+        key=lambda name: (rows[name]["mae"], rows[name]["floorExcludedMae"], rows[name]["esaLoss"]),
+    )
+
+
 def honest_metrics_bundle(
     y_true: np.ndarray,
     risk: np.ndarray,
     persist: np.ndarray,
     xgb_pred: np.ndarray,
     ens_pred: np.ndarray,
+    residual_pred: np.ndarray | None = None,
 ) -> dict[str, object]:
     floor = floor_mask(y_true)
+    systems: dict[str, object] = {
+        "persistence": honest_system_report(y_true, persist, risk),
+        "xgboost": honest_system_report(
+            y_true, xgb_pred, risk, persist, compare_to_persistence=True
+        ),
+        "ensemble": honest_system_report(
+            y_true, ens_pred, risk, persist, compare_to_persistence=True
+        ),
+    }
+    if residual_pred is not None:
+        systems["residual"] = honest_system_report(
+            y_true, residual_pred, risk, persist, compare_to_persistence=True
+        )
     return {
         "floor": NEGLIGIBLE_RISK,
         "floorEps": FLOOR_EPS,
         "nTest": int(np.asarray(y_true).size),
         "nFloor": int(np.sum(floor)),
         "nNonFloor": int(np.sum(~floor)),
-        "systems": {
-            "persistence": honest_system_report(y_true, persist, risk),
-            "xgboost": honest_system_report(
-                y_true, xgb_pred, risk, persist, compare_to_persistence=True
-            ),
-            "ensemble": honest_system_report(
-                y_true, ens_pred, risk, persist, compare_to_persistence=True
-            ),
-        },
+        "systems": systems,
     }
 
 

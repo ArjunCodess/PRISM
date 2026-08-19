@@ -31,7 +31,9 @@ from evaluate import (  # noqa: E402
     classification_metrics,
     error_gallery,
     honest_metrics_bundle,
+    level_scoreboard_row,
     persistence_improvement,
+    pick_validation_winner,
     regression_metrics,
     reliability_bins,
 )
@@ -54,11 +56,13 @@ from ingest import (  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
 from train_classifier import fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
+    fit_residual_xgboost,
     fit_ridge,
     fit_xgboost,
     median_predict,
     persistence_predict,
     predict_model,
+    predict_reconstructed,
 )
 from validate import validate_cdm_frame  # noqa: E402
 
@@ -151,11 +155,14 @@ def _write_honest_metrics(
     persist: np.ndarray,
     xgb_pred: np.ndarray,
     ens_pred: np.ndarray,
+    residual_pred: np.ndarray | None = None,
 ) -> dict[str, object]:
     definitions = dict(metrics.get("definitions") or {})  # type: ignore[arg-type]
     definitions.update(HONEST_DEFINITIONS)
     metrics["definitions"] = definitions
-    honest = honest_metrics_bundle(y_true, risk, persist, xgb_pred, ens_pred)
+    honest = honest_metrics_bundle(
+        y_true, risk, persist, xgb_pred, ens_pred, residual_pred=residual_pred
+    )
     metrics["honestMetrics"] = honest
     return honest
 
@@ -174,12 +181,22 @@ def score_frozen_honest_metrics() -> dict[str, object]:
     if test.empty:
         raise RuntimeError("frozen test ids did not match the rebuilt feature table")
 
+    train = subset(features, manifest["train"])
+    validation = subset(features, manifest["validation"])
+    if train.empty or validation.empty:
+        raise RuntimeError("frozen train or validation ids did not match the rebuilt feature table")
+
     persist_test = persistence_predict(test)
+    persist_val = persistence_predict(validation)
     schema = json.loads((artifacts / "feature_schema.json").read_text(encoding="utf-8"))["features"]
     booster_model = XGBRegressor()
     booster_model.load_model(str(artifacts / "risk_regressor.json"))
     x_test = test[schema].apply(pd.to_numeric, errors="coerce")
     model_pred = np.asarray(booster_model.predict(x_test), dtype=float)
+    xgb_val = np.asarray(
+        booster_model.predict(validation[schema].apply(pd.to_numeric, errors="coerce")),
+        dtype=float,
+    )
 
     bundle = joblib.load(artifacts / "warning_calibrator.joblib")
     ensemble = bundle["ensemble"]
@@ -192,6 +209,11 @@ def score_frozen_honest_metrics() -> dict[str, object]:
     )
     ens_pred = np.median(ens_matrix, axis=1)
 
+    residual = fit_residual_xgboost(train)
+    residual.model.save_model(str(artifacts / "residual_regressor.json"))
+    residual_test = predict_reconstructed(residual, test)
+    residual_val = predict_reconstructed(residual, validation)
+
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     honest = _write_honest_metrics(
         metrics,
@@ -200,12 +222,39 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         persist_test,
         model_pred,
         ens_pred,
+        residual_pred=residual_test,
     )
+    test_y = test["y"].to_numpy()
+    val_y = validation["y"].to_numpy()
+    test_board = {
+        "persistence": level_scoreboard_row(test_y, persist_test),
+        "xgboost": level_scoreboard_row(test_y, model_pred),
+        "residual": level_scoreboard_row(test_y, residual_test),
+    }
+    val_board = {
+        "persistence": level_scoreboard_row(val_y, persist_val),
+        "xgboost": level_scoreboard_row(val_y, xgb_val),
+        "residual": level_scoreboard_row(val_y, residual_val),
+    }
+    metrics["residualModel"] = {
+        "target": "y - risk on cutoff-safe rows; reconstruct pred = risk + residual_hat",
+        "fitOn": "frozen train event ids only",
+        "artifact": "ml/artifacts/residual_regressor.json",
+        "replacesExhibit": False,
+        "test": test_board,
+        "validation": val_board,
+        "winnerSoFar": {
+            "split": "validation",
+            "criterion": "mae, then floor-excluded mae, then esa-style loss",
+            "name": pick_validation_winner(val_board),
+        },
+    }
     write_json(metrics_path, metrics)
     card_path = artifacts / "model_card.json"
     if card_path.exists():
         card = json.loads(card_path.read_text(encoding="utf-8"))
         card["honestMetrics"] = honest
+        card["residualModel"] = metrics["residualModel"]
         write_json(card_path, card)
     return honest
 
@@ -559,7 +608,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--frozen",
         action="store_true",
-        help="score honest metrics on frozen models; do not retrain",
+        help="score frozen exhibit models and the residual candidate; do not replace the exhibit",
     )
     args = parser.parse_args()
     if args.frozen:
