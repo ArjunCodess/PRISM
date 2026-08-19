@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from constants import HIGH_RISK_THRESHOLD, LOW_RISK_CLIP
+from constants import FLOOR_EPS, HIGH_RISK_THRESHOLD, LOW_RISK_CLIP, NEGLIGIBLE_RISK, RANDOM_STATE
+from scipy.stats import wilcoxon
 from sklearn.metrics import (
     brier_score_loss,
     fbeta_score,
@@ -10,6 +11,8 @@ from sklearn.metrics import (
     precision_recall_curve,
     roc_auc_score,
 )
+
+N_BOOTSTRAP = 1000
 
 
 def esa_loss(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
@@ -22,6 +25,152 @@ def esa_loss(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
         mse_hr = 0.0
     loss = mse_hr / max(f2, 1e-6)
     return {"esa_loss": loss, "mse_hr": mse_hr, "f2": f2}
+
+
+def floor_mask(y_true: np.ndarray, eps: float = FLOOR_EPS) -> np.ndarray:
+    return np.asarray(y_true, dtype=float) <= (NEGLIGIBLE_RISK + eps)
+
+
+def _error_slice(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
+    if y_true.size == 0:
+        return {"n": 0, "mae": float("nan"), "rmse": float("nan"), "median_ae": float("nan")}
+    abs_err = np.abs(y_true - y_pred)
+    return {
+        "n": int(y_true.size),
+        "mae": float(mean_absolute_error(y_true, y_pred)),
+        "rmse": float(np.sqrt(mean_squared_error(y_true, y_pred))),
+        "median_ae": float(np.median(abs_err)),
+    }
+
+
+def floor_sliced_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, eps: float = FLOOR_EPS
+) -> dict[str, object]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    floor = floor_mask(y_true, eps)
+    return {
+        "all": _error_slice(y_true, y_pred),
+        "nonFloor": _error_slice(y_true[~floor], y_pred[~floor]),
+        "floor": _error_slice(y_true[floor], y_pred[floor]),
+        "nFloor": int(np.sum(floor)),
+        "nNonFloor": int(np.sum(~floor)),
+    }
+
+
+def residual_movement_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, risk: np.ndarray
+) -> dict[str, float]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    risk = np.asarray(risk, dtype=float)
+    actual_move = y_true - risk
+    predicted_move = y_pred - risk
+    return {
+        "residualMaeActual": float(np.mean(np.abs(actual_move))),
+        "residualMaePredicted": float(np.mean(np.abs(predicted_move))),
+        "residualMae": float(np.mean(np.abs(actual_move - predicted_move))),
+    }
+
+
+def bootstrap_mae_advantage(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_persist: np.ndarray,
+    n_bootstrap: int = N_BOOTSTRAP,
+    seed: int = RANDOM_STATE,
+    alpha: float = 0.05,
+) -> dict[str, float | int | bool]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    y_persist = np.asarray(y_persist, dtype=float)
+    n = int(y_true.size)
+    rng = np.random.default_rng(seed)
+    deltas = np.empty(n_bootstrap)
+    for i in range(n_bootstrap):
+        idx = rng.integers(0, n, size=n)
+        deltas[i] = mean_absolute_error(y_true[idx], y_persist[idx]) - mean_absolute_error(
+            y_true[idx], y_pred[idx]
+        )
+    point = float(mean_absolute_error(y_true, y_persist) - mean_absolute_error(y_true, y_pred))
+    low, high = np.quantile(deltas, [alpha / 2.0, 1.0 - alpha / 2.0])
+    return {
+        "deltaMae": point,
+        "ci95Low": float(low),
+        "ci95High": float(high),
+        "nBootstrap": int(n_bootstrap),
+        "coversZero": bool(low <= 0.0 <= high),
+    }
+
+
+def paired_wilcoxon_abs_error(
+    y_true: np.ndarray, y_pred: np.ndarray, y_persist: np.ndarray
+) -> dict[str, float | int | str]:
+    err_model = np.abs(np.asarray(y_true, dtype=float) - np.asarray(y_pred, dtype=float))
+    err_persist = np.abs(np.asarray(y_true, dtype=float) - np.asarray(y_persist, dtype=float))
+    if not np.any(np.abs(err_model - err_persist) > 0):
+        return {
+            "statistic": 0.0,
+            "pvalue": 1.0,
+            "n": int(err_model.size),
+            "note": "all paired abs errors identical",
+        }
+    try:
+        result = wilcoxon(err_model, err_persist, alternative="two-sided", zero_method="wilcox")
+    except ValueError as exc:
+        return {
+            "statistic": float("nan"),
+            "pvalue": float("nan"),
+            "n": int(err_model.size),
+            "note": str(exc),
+        }
+    return {
+        "statistic": float(result.statistic),
+        "pvalue": float(result.pvalue),
+        "n": int(err_model.size),
+    }
+
+
+def honest_system_report(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    risk: np.ndarray,
+    y_persist: np.ndarray | None = None,
+    compare_to_persistence: bool = False,
+) -> dict[str, object]:
+    report: dict[str, object] = {}
+    report.update(floor_sliced_metrics(y_true, y_pred))
+    report.update(residual_movement_metrics(y_true, y_pred, risk))
+    if compare_to_persistence and y_persist is not None:
+        report["maeAdvantageVsPersistence"] = bootstrap_mae_advantage(y_true, y_pred, y_persist)
+        report["wilcoxonAbsError"] = paired_wilcoxon_abs_error(y_true, y_pred, y_persist)
+    return report
+
+
+def honest_metrics_bundle(
+    y_true: np.ndarray,
+    risk: np.ndarray,
+    persist: np.ndarray,
+    xgb_pred: np.ndarray,
+    ens_pred: np.ndarray,
+) -> dict[str, object]:
+    floor = floor_mask(y_true)
+    return {
+        "floor": NEGLIGIBLE_RISK,
+        "floorEps": FLOOR_EPS,
+        "nTest": int(np.asarray(y_true).size),
+        "nFloor": int(np.sum(floor)),
+        "nNonFloor": int(np.sum(~floor)),
+        "systems": {
+            "persistence": honest_system_report(y_true, persist, risk),
+            "xgboost": honest_system_report(
+                y_true, xgb_pred, risk, persist, compare_to_persistence=True
+            ),
+            "ensemble": honest_system_report(
+                y_true, ens_pred, risk, persist, compare_to_persistence=True
+            ),
+        },
+    }
 
 
 def clip_for_esa(y_pred: np.ndarray) -> np.ndarray:
