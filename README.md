@@ -10,6 +10,8 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
+The 18 August freeze was re-verified with `python main.py --skip-download --skip-train --build-only` (figures, ruff, pytest, web tests, Next.js build). Training is skipped so this policy stays the selected exhibit until a later phase replaces it. Scores below match `ml/artifacts/metrics.json`: persistence MAE 5.080 vs selected 3.059, ESA-style loss 0.167 / F2 0.361 for both, unguarded XGBoost MAE 2.808, persistence median AE 0.000, 90% bootstrap coverage 47.7%. Floor-excluded MAE, residual MAE, confidence intervals, conformal coverage, and official-test scores are not yet measured.
+
 ## Result
 
 Held-out performance on 1,659 untouched test events. MAE is in `log10(Pc)` units.
