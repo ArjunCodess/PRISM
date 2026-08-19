@@ -1730,5 +1730,274 @@
         }
       }
     }
+  },
+  "officialTest": {
+    "frozenBeforeLook": true,
+    "source": {
+      "inputs": "data/raw/test_data.csv",
+      "labels": "zenodo_4463683.zip test_data_private.csv true_risk",
+      "doi": "10.5281/zenodo.4463683",
+      "released": "2021-01-25"
+    },
+    "nEvents": 2167,
+    "nHighRisk": 150,
+    "nFloor": 1673,
+    "identity": {
+      "trainEvents": 13154,
+      "officialTestEvents": 2167,
+      "numericIdOverlap": 2167,
+      "identicalPreCutoffSnapshots": 0,
+      "interpretation": "event_id is independently numbered in the Kelvins train and test files. Official-test features come only from test_data.csv; labels come from Zenodo test_data_private.csv true_risk. Post-cutoff private fields are not features."
+    },
+    "replacesExhibit": false,
+    "board": {
+      "persistence": {
+        "mae": 5.208676227264632,
+        "medianAe": 0.0,
+        "floorExcludedMae": 4.287453632349664,
+        "floorMae": 5.480692940885668,
+        "esaLoss": 0.6939612611815035,
+        "f2": 0.7390745501285347
+      },
+      "xgboost": {
+        "mae": 3.5041158245961697,
+        "medianAe": 0.6903209686279297,
+        "floorExcludedMae": 9.33265864675427,
+        "floorMae": 1.7830756846403406,
+        "esaLoss": 1751525.148747134,
+        "f2": 0.0
+      },
+      "ensemble": {
+        "mae": 3.106653777837984,
+        "medianAe": 0.43875980377197266,
+        "floorExcludedMae": 6.750442528669504,
+        "floorMae": 2.030723327801659,
+        "esaLoss": 0.6939612611815035,
+        "f2": 0.7390745501285347
+      },
+      "residual": {
+        "mae": 3.476015006097078,
+        "medianAe": 0.5938278436660767,
+        "floorExcludedMae": 9.289363661483648,
+        "floorMae": 1.7594613684635056,
+        "esaLoss": 104.31416941493885,
+        "f2": 0.016611295681063124
+      },
+      "floorHurdle": {
+        "mae": 3.177243734043775,
+        "medianAe": 0.0,
+        "floorExcludedMae": 11.83229509244338,
+        "floorMae": 0.6215979653352244,
+        "esaLoss": 70.47344066837567,
+        "f2": 0.024752475247524754
+      }
+    },
+    "esa": {
+      "persistence": {
+        "esaLoss": 0.6939612611815035,
+        "mseHr": 0.5128891069143503,
+        "f2": 0.7390745501285347
+      },
+      "xgboost": {
+        "esaLoss": 1751525.148747134,
+        "mseHr": 1.751525148747134,
+        "f2": 0.0
+      },
+      "ensemble": {
+        "esaLoss": 0.6939612611815035,
+        "mseHr": 0.5128891069143503,
+        "f2": 0.7390745501285347
+      },
+      "residual": {
+        "esaLoss": 104.31416941493885,
+        "mseHr": 1.7327935118760607,
+        "f2": 0.016611295681063124
+      },
+      "floorHurdle": {
+        "esaLoss": 70.47344066837567,
+        "mseHr": 1.744392095751873,
+        "f2": 0.024752475247524754
+      }
+    },
+    "honest": {
+      "persistence": {
+        "all": {
+          "n": 2167,
+          "mae": 5.208676227264632,
+          "rmse": 9.637672334670974,
+          "median_ae": 0.0
+        },
+        "nonFloor": {
+          "n": 494,
+          "mae": 4.287453632349664,
+          "rmse": 7.770227855952347,
+          "median_ae": 0.7525986772574784
+        },
+        "floor": {
+          "n": 1673,
+          "mae": 5.480692940885668,
+          "rmse": 10.123423739101442,
+          "median_ae": 0.0
+        },
+        "nFloor": 1673,
+        "nNonFloor": 494,
+        "residualMaeActual": 5.208676227264632,
+        "residualMaePredicted": 0.0,
+        "residualMae": 5.208676227264632
+      },
+      "xgboost": {
+        "all": {
+          "n": 2167,
+          "mae": 3.5041158245961697,
+          "rmse": 6.110416699478174,
+          "median_ae": 0.6903209686279297
+        },
+        "nonFloor": {
+          "n": 494,
+          "mae": 9.33265864675427,
+          "rmse": 10.967085272838935,
+          "median_ae": 8.974539269033418
+        },
+        "floor": {
+          "n": 1673,
+          "mae": 1.7830756846403406,
+          "rmse": 3.584258408605025,
+          "median_ae": 0.3461952209472656
+        },
+        "nFloor": 1673,
+        "nNonFloor": 494,
+        "residualMaeActual": 5.208676227264632,
+        "residualMaePredicted": 5.725240856542085,
+        "residualMae": 3.5041158245961697,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 1.704560402668462,
+          "ci95Low": 1.3674159914521034,
+          "ci95High": 2.082660734007598,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 1143098.0,
+          "pvalue": 0.28082982718331717,
+          "n": 2167
+        }
+      },
+      "ensemble": {
+        "all": {
+          "n": 2167,
+          "mae": 3.106653777837984,
+          "rmse": 6.112439922121213,
+          "median_ae": 0.43875980377197266
+        },
+        "nonFloor": {
+          "n": 494,
+          "mae": 6.750442528669504,
+          "rmse": 9.187647550654736,
+          "median_ae": 6.065687630758623
+        },
+        "floor": {
+          "n": 1673,
+          "mae": 2.030723327801659,
+          "rmse": 4.844462333094841,
+          "median_ae": 0.2613401412963867
+        },
+        "nFloor": 1673,
+        "nNonFloor": 494,
+        "residualMaeActual": 5.208676227264632,
+        "residualMaePredicted": 4.691976042862863,
+        "residualMae": 3.106653777837984,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.1020224494266477,
+          "ci95Low": 1.8046093624561932,
+          "ci95High": 2.4169723959664453,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 977603.0,
+          "pvalue": 0.6415771095535746,
+          "n": 2167
+        }
+      },
+      "residual": {
+        "all": {
+          "n": 2167,
+          "mae": 3.476015006097078,
+          "rmse": 6.133664691700392,
+          "median_ae": 0.5938278436660767
+        },
+        "nonFloor": {
+          "n": 494,
+          "mae": 9.289363661483648,
+          "rmse": 11.00267647132466,
+          "median_ae": 9.159032935673011
+        },
+        "floor": {
+          "n": 1673,
+          "mae": 1.7594613684635056,
+          "rmse": 3.6034320972330316,
+          "median_ae": 0.28526970744132996
+        },
+        "nFloor": 1673,
+        "nNonFloor": 494,
+        "residualMaeActual": 5.208676227264632,
+        "residualMaePredicted": 5.674335913753801,
+        "residualMae": 3.476015006097078,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 1.7326612211675538,
+          "ci95Low": 1.3911063534221657,
+          "ci95High": 2.111504847921179,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 1146978.0,
+          "pvalue": 0.34452443449400516,
+          "n": 2167
+        }
+      },
+      "floorHurdle": {
+        "all": {
+          "n": 2167,
+          "mae": 3.177243734043775,
+          "rmse": 7.772919270130923,
+          "median_ae": 0.0
+        },
+        "nonFloor": {
+          "n": 494,
+          "mae": 11.83229509244338,
+          "rmse": 14.955087461294381,
+          "median_ae": 11.336333841840656
+        },
+        "floor": {
+          "n": 1673,
+          "mae": 0.6215979653352244,
+          "rmse": 3.495450640204229,
+          "median_ae": 0.0
+        },
+        "nFloor": 1673,
+        "nNonFloor": 494,
+        "residualMaeActual": 5.208676227264632,
+        "residualMaePredicted": 6.659759089268749,
+        "residualMae": 3.177243734043775,
+        "maeAdvantageVsPersistence": {
+          "deltaMae": 2.0314324932208567,
+          "ci95Low": 1.5722415538623309,
+          "ci95High": 2.450822832284584,
+          "nBootstrap": 1000,
+          "coversZero": false
+        },
+        "wilcoxonAbsError": {
+          "statistic": 187291.0,
+          "pvalue": 2.5881237857871596e-18,
+          "n": 2167
+        }
+      }
+    },
+    "uriotReference": {
+      "lrp": 0.694,
+      "sesc": 0.556,
+      "note": "Uriot et al. 2021 ESA-style loss on this official-test distribution, after clipping predictions below -6 to -6.001."
+    }
   }
 }
