@@ -10,7 +10,7 @@
 
 **Split.** Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. A separate four-mission hold-out tests generalization beyond random event splits.
 
-**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events → 3,731 / 1,659 / 1,244 / 1,659 train / validation / calibration / test events. The official challenge test file verifies input compatibility because final labels are unavailable.
+**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events → 3,731 / 1,659 / 1,244 / 1,659 train / validation / calibration / test events. The public file has no calendar dates and no object-pair IDs. Official-test labels (Zenodo 4463683) are scored once after freeze.
 
 **Why T−48.** The ESA challenge test set contains only messages with `time_to_tca ≥ 2` days. PRISM inherits that information cutoff as the primary experiment and also reports T−72 / T−24 / T−12.
 
@@ -20,7 +20,7 @@
 
 **History.** The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency. Snapshot-only MAE is 2.904. Adding those summaries lowers it to 2.851. Covariance trends add a little more (2.808).
 
-**Horizons.** The value of learned forecasting is highest when information is sparse. T−72 / T−48 / T−24 / T−12 single-XGBoost MAE: 3.214 / 2.808 / 2.110 / 1.384, versus persistence 7.748 / 5.080 / 2.634 / 1.444.
+**Horizons.** On a matched cohort of 1,459 test events, extra MAE beyond persistence is 4.49 / 2.20 / 0.43 / 0.03 at T−72 / T−48 / T−24 / T−12. Non-floor ΔMAE is negative at every horizon. The overlapping-set table is not the identification result.
 
 **Abstention.** Live conformal coverage is 90.4% (159 of 1,659 abstained) and accepted MAE is 1.706. False reassurance is 2 of 9 high-risk test events.
 
@@ -30,12 +30,12 @@
 
 **Policy.** The live floor hurdle abstains when the 90% conformal band crosses `log10(Pc) ≥ −6` or a critical field is missing. Threshold 0.15 and no persist guard were frozen on validation. The August snapshot used bootstrap spread and a 1.25 disagreement cap.
 
-**Mission identity.** Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the deployed exhibit. Mission-held-out overall MAE is 2.688 versus persistence 4.843. High-risk MAE is 19.2 on one held-out high-risk event.
+**Mission identity.** Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the exhibit. A mission-grouped split with 37 held-out high-risk events prefers persistence on the tail (high-risk MAE 1.50 vs 11.9).
 
 **Failures.** Tracking-completeness features often have higher mean |SHAP| among large errors than among accurate cases. This is an association in model attribution, not a physical cause.
 
 **Human control.** Forecasts are advisory. Review required means a person must look. The model never commands a manoeuvre.
 
-**License.** MIT for the PRISM code in this repository. The ESA dataset remains under ESA’s terms.
+**License.** MIT for the PRISM code in this repository (https://github.com/ArjunCodess/PRISM). The ESA dataset remains under ESA’s terms. The target is later reported `log10(Pc)`, not physical collision probability. $-30$ is a reporting floor.
 
 See `ml/artifacts/metrics.json` for the frozen numbers, including historical ablation, forecast horizons, abstention coverage, failure clusters, and SHAP contrast.

@@ -8,9 +8,9 @@ It is a research prototype for explainable conjunction-risk forecasting. **Not f
 
 The selected policy is a **T−48 floor hurdle**: it forecasts later reported `log10(Pc)` from cutoff-safe CDM summaries. A classifier may call a later collapse to the dataset floor `−30`; otherwise a residual XGBoost adjusts today's report. It does **not** copy today's report when that report is already at the ESA `−6` class. The exhibit shows that forecast, a conformal interval or REVIEW REQUIRED, and a SHAP explanation.
 
-The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
+The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)), with overflow in [`paper/supplement.pdf`](paper/supplement.pdf). Rebuild with `scripts/compile-paper.ps1`. Code: https://github.com/ArjunCodess/PRISM.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, leave-one-high-risk-out, a class-threshold sweep, and SI-style paper figures (`python ml/src/plots.py`) are measured.
+Honest metrics live in `ml/artifacts/metrics.json`, including a `reviewArmor` block (matched-cohort horizons, censoring sensitivity, mission-grouped split, floor-classifier calibration, simple floor baselines, conformal width, selective prediction, H4 partial effects). SI-style paper figures regenerate with `python ml/src/plots.py`.
 
 ## Result
 
@@ -33,7 +33,7 @@ A constant training-set median scores 3.002 MAE.
 
 PRISM’s live 90% interval is split conformal around the floor-hurdle point: test coverage **90.1%**, mean width **21.03**. The 50% conformal radius is 0 (most calibration scores are exact floor hits). Research tables also report the August snapshot: nominal 90% bootstrap coverage **47.7%** (50% band **26.0%**). Split-conformal 90% intervals around that snapshot cover **89.7%** (mean width 18.33).
 
-On four missions held out of training, overall MAE is 2.688 versus persistence 4.843. High-risk MAE is **19.2** on one held-out high-risk event. Random-event accuracy does not establish mission-level generalization.
+On a **mission-grouped** 80/20 split (15 vs 4 missions; 37 held-out high-risk events), unguarded XGBoost MAE is 3.07 versus persistence 4.74, but high-risk MAE is **11.9 versus 1.50**. An earlier four-mission draw had high-risk MAE 19.2 on **one** event and is not interpretable for the tail. The public archive has no calendar dates and no object-pair IDs.
 
 The model contains useful signal beyond persistence on mean error, especially at longer forecast horizons, but that signal is concentrated in floor collapses and does not automatically translate into better risk-sensitive decisions or calibrated uncertainty.
 
@@ -83,14 +83,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 2. **History provides a measurable gain, while covariance trends add little after that.** The history block consists of temporal transforms of variables already available in the latest snapshot, allowing the ablation to isolate information from their evolution. Snapshot also includes encounter-plane geometry and object-type dummies. On the single XGBoost model, snapshot-only MAE is 2.904. Adding historical summaries of risk, miss distance, speed, and observation counts lowers it to 2.851. Covariance trends after that reach 2.808.
 
-3. **The value of learned forecasting is highest when information is sparse.** Waiting helps persistence more than it helps a learned model: the advantage is largest at T−72 and nearly gone at T−12. Horizon numbers below are single XGBoost (the T−48 August snapshot is 3.059; the live floor hurdle is 2.109).
-
-   | Horizon | XGBoost | Persistence |
-   |---|---:|---:|
-   | T−72 | 3.214 | 7.748 |
-   | T−48 | 2.808 | 5.080 |
-   | T−24 | 2.110 | 2.634 |
-   | T−12 | 1.384 | 1.444 |
+3. **The value of learned forecasting is highest when information is sparse.** On a **matched cohort** of 1,459 test events observed at all four horizons, extra MAE beyond persistence is **4.49 / 2.20 / 0.43 / 0.03** at T−72 / T−48 / T−24 / T−12 (the 12-hour interval covers zero). Non-floor ΔMAE is negative at every horizon. The older overlapping-set table (4.53 / 2.27 / 0.52 / 0.06) mixed a changing eligible set with time-to-approach.
 
 4. **Abstention is selective prediction.** The `−6` class follows the ESA challenge definition. The live floor hurdle abstains when the 90% conformal band crosses `−6` or a field is missing (validation choice). Test coverage is **90.4%** (159 of 1,659 sent to review); accepted MAE is **1.706**. False reassurance is **2 of 9**. The August snapshot used bootstrap spread (77.7% coverage, accepted MAE 1.902, one false reassurance).
 
@@ -98,7 +91,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 5. **False reassurance is not zero.** Two accepted live forecasts stay below `−6` while the final report is `≥ −6` (2/9 high-risk test events). Seven of nine high-risk events are sent to review.
 
-6. **Random-event performance is stronger than mission-held-out performance.** A four-mission hold-out remains weak on the rare high-risk tail (one held-out high-risk event; high-risk MAE 19.2). Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the deployed exhibit.
+6. **Random-event performance is stronger than mission-held-out performance on the tail.** A mission-grouped split with 37 held-out high-risk events still prefers persistence on high-risk MAE (1.50 vs 11.9). Adding `mission_id` as a feature slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the exhibit.
 
 7. **A conformal interval is not a tight 90% band.** Live intervals are split conformal around the floor-hurdle forecast. August snapshot bootstrap 50% and 90% bands cover 26.0% and 47.7% of outcomes. Snapshot conformal covers 49.6% and 89.7%. The case UI labels the live band as a conformal interval.
 
@@ -126,7 +119,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 - Bootstrap bands are model spread (47.7% at a 90% label). Split-conformal 90% intervals cover 89.7% of test outcomes and are the calibrated uncertainty claim. The exhibit still uses bootstrap spread for the on-screen band.
 - One accepted high-risk miss remains on this split.
 - Mission-level generalization, especially on high-risk events, is not established.
-- The dataset is historical anonymized ESA-supported events from 2015–2019, not live catalogue data.
+- The dataset is historical anonymized ESA-supported events from 2015–2019, not live catalogue data. There are no calendar dates or object-pair IDs in the public file. $-30$ is a reporting floor, not a precise physical $P_c$. The target is later reported $\log_{10} P_c$, not a collision occurrence.
 - Manoeuvre decisions are out of scope.
 - The website requires a running FastAPI process. There is no silent JSON fallback.
 
