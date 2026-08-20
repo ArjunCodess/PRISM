@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, and a one-shot official-test score (`officialTest.frozenBeforeLook`) are measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, and a dilution / max-risk probe are measured.
 
 ## Result
 
@@ -46,6 +46,8 @@ Official-test labels (Zenodo 4463683, 25 Jan 2021) were scored once after freeze
 | Floor-excluded MAE | **4.287** | 9.333 | 9.289 | 11.832 | 6.750 |
 | ESA-style loss | **0.694** | ~1.75×10<sup>6</sup> (*F*<sub>2</sub>=0) | 104 | 70.5 | **0.694** |
 | *F*<sub>2</sub> | **0.739** | 0.000 | 0.017 | 0.025 | **0.739** |
+
+H4 (dilution / max-risk probe, logistic and Spearman only; not an extra exhibit model). On the frozen local test, `dilution_gap = max_risk_estimate − risk` has Spearman **ρ = −0.768** with `|y − risk|` and **ρ = +0.407** with the floor label. Combined covariance volume (`log_combined_sigma_det`) has **ρ = +0.399** with `|y − risk|`. A train-fit logistic of floor ~ gap + miss distance + `n_messages` has test AUC **0.819**. Large gaps are already-floor snapshots (Q1 floor rate 0.56 and mean `|Δrisk|` 13.03; Q3–Q4 floor rate > 0.95 and mean movement < 0.75). F10 is a weak control (ρ = 0.108 with `|Δrisk|`). The naive “large max-risk gap means the report will still move” story is rejected. Large covariance predicting more movement is supported. This is a paper figure (`docs/figures/dilution-probe.png`), not a homepage widget.
 
 ## Research question
 
@@ -120,7 +122,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 Six frozen real-data cases (two low, one review, three high). Each shows the current report, the T−48 forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
 
-The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/official-test-esa.png`](docs/figures/official-test-esa.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
+The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/official-test-esa.png`](docs/figures/official-test-esa.png), [`docs/figures/dilution-probe.png`](docs/figures/dilution-probe.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
 
 Run the exhibit on the presentation laptop with Next and FastAPI both up (`NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`). Wi-Fi can be off. If the API is down, the site shows an error.
 
