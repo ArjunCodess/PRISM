@@ -1053,5 +1053,65 @@
         "xgboostMae": 0.36826928350582305
       }
     ]
+  },
+  "repeatedSplits": {
+    "replacesExhibit": false,
+    "summary": {
+      "xgboost": {
+        "maeAdvantage": {
+          "mean": 2.3392817273006057,
+          "sd": 0.041457323687441455
+        },
+        "floorExcludedMae": {
+          "mean": 7.77980268847695,
+          "sd": 0.21002076684860424
+        },
+        "residualMae": {
+          "mean": 2.728052704174453,
+          "sd": 0.06134666198923477
+        },
+        "mae": {
+          "mean": 2.728052704174453,
+          "sd": 0.06134666198923477
+        }
+      },
+      "residual": {
+        "maeAdvantage": {
+          "mean": 2.348940931677194,
+          "sd": 0.03800626742603245
+        },
+        "floorExcludedMae": {
+          "mean": 7.684666066350218,
+          "sd": 0.24329483802737534
+        },
+        "residualMae": {
+          "mean": 2.7183934997978647,
+          "sd": 0.03441571401490161
+        },
+        "mae": {
+          "mean": 2.7183934997978647,
+          "sd": 0.03441571401490161
+        }
+      },
+      "persistence": {
+        "mae": {
+          "mean": 5.067334431475059,
+          "sd": 0.04860112801661721
+        },
+        "floorExcludedMae": {
+          "mean": 4.320903060166996,
+          "sd": 0.2264318412168576
+        }
+      }
+    },
+    "reportedSeed": 42
+  },
+  "leaveOneHighRiskOut": {
+    "replacesExhibit": false,
+    "nHighRisk": 66,
+    "persistCloser": 66,
+    "residualCloser": 0,
+    "ties": 0,
+    "residualCloserShare": 0.0
   }
 }

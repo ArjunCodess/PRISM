@@ -2166,5 +2166,849 @@
       "rho": 0.39869336419612256,
       "pvalue": 2.5254365042098716e-64
     }
+  },
+  "repeatedSplits": {
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "reportedSeed": 42,
+    "replacesExhibit": false,
+    "note": "Each redraw retrains unguarded XGBoost and residual XGBoost on that seed's train ids only. Seed 42 remains the reported local split.",
+    "splits": [
+      {
+        "nTest": 1659,
+        "nFloor": 1352,
+        "nHighRisk": 9,
+        "persistence": {
+          "mae": 5.0795360010082655,
+          "medianAe": 0.0,
+          "floorExcludedMae": 4.072532209539077,
+          "floorMae": 5.308197364899567,
+          "esaLoss": 0.1669832237710995,
+          "f2": 0.36082474226804123
+        },
+        "xgboost": {
+          "mae": 2.80464085392251,
+          "medianAe": 0.5562953948974609,
+          "floorExcludedMae": 7.580003940516284,
+          "floorMae": 1.720294354229989,
+          "esaLoss": 1132201.8878005068,
+          "f2": 0.0,
+          "maeAdvantage": 2.2748951470857555,
+          "residualMae": 2.80464085392251
+        },
+        "residual": {
+          "mae": 2.7603422337760444,
+          "medianAe": 0.4532145857810974,
+          "floorExcludedMae": 7.374991215529576,
+          "floorMae": 1.712489247534673,
+          "esaLoss": 1132201.8878005068,
+          "f2": 0.0,
+          "maeAdvantage": 2.319193767232221,
+          "residualMae": 2.7603422337760444
+        },
+        "seed": 42,
+        "reportedSplit": true
+      },
+      {
+        "nTest": 1659,
+        "nFloor": 1373,
+        "nHighRisk": 14,
+        "persistence": {
+          "mae": 5.130217631221054,
+          "medianAe": 0.0,
+          "floorExcludedMae": 4.280289419386962,
+          "floorMae": 5.307260215769159,
+          "esaLoss": 0.9572116230296366,
+          "f2": 0.48672566371681414
+        },
+        "xgboost": {
+          "mae": 2.7742280470718645,
+          "medianAe": 0.5680141448974609,
+          "floorExcludedMae": 7.803160742015378,
+          "floorMae": 1.726686349508976,
+          "esaLoss": 1629672.250593225,
+          "f2": 0.0,
+          "maeAdvantage": 2.3559895841491896,
+          "residualMae": 2.7742280470718645
+        },
+        "residual": {
+          "mae": 2.7508944640423576,
+          "medianAe": 0.4811210632324219,
+          "floorExcludedMae": 7.67837021599128,
+          "floorMae": 1.7244865506720795,
+          "esaLoss": 1629672.250593225,
+          "f2": 0.0,
+          "maeAdvantage": 2.3793231671786965,
+          "residualMae": 2.7508944640423576
+        },
+        "seed": 43,
+        "reportedSplit": false
+      },
+      {
+        "nTest": 1659,
+        "nFloor": 1384,
+        "nHighRisk": 11,
+        "persistence": {
+          "mae": 4.995529988816136,
+          "medianAe": 0.0,
+          "floorExcludedMae": 4.220317923232635,
+          "floorMae": 5.1495641781481165,
+          "esaLoss": 0.5685046972649014,
+          "f2": 0.3465346534653465
+        },
+        "xgboost": {
+          "mae": 2.6673594521124078,
+          "medianAe": 0.5327568054199219,
+          "floorExcludedMae": 7.6410289520256285,
+          "floorMae": 1.6790941974331188,
+          "esaLoss": 701653.7728444536,
+          "f2": 0.0,
+          "maeAdvantage": 2.328170536703728,
+          "residualMae": 2.6673594521124078
+        },
+        "residual": {
+          "mae": 2.6979439280495083,
+          "medianAe": 0.46376348637162224,
+          "floorExcludedMae": 7.660079807611867,
+          "floorMae": 1.7119703970671036,
+          "esaLoss": 701653.7728444536,
+          "f2": 0.0,
+          "maeAdvantage": 2.2975860607666276,
+          "residualMae": 2.6979439280495083
+        },
+        "seed": 44,
+        "reportedSplit": false
+      },
+      {
+        "nTest": 1659,
+        "nFloor": 1377,
+        "nHighRisk": 10,
+        "persistence": {
+          "mae": 5.056106640417252,
+          "medianAe": 0.0,
+          "floorExcludedMae": 4.348732266206996,
+          "floorMae": 5.200971980669463,
+          "esaLoss": 1.8692103627052725,
+          "f2": 0.3211009174311927
+        },
+        "xgboost": {
+          "mae": 2.6701315601301263,
+          "medianAe": 0.5667629241943359,
+          "floorExcludedMae": 8.120483021867756,
+          "floorMae": 1.553937578859239,
+          "esaLoss": 1394722.8819101835,
+          "f2": 0.0,
+          "maeAdvantage": 2.385975080287126,
+          "residualMae": 2.6701315601301263
+        },
+        "residual": {
+          "mae": 2.6866203499746555,
+          "medianAe": 0.5004152209029691,
+          "floorExcludedMae": 8.057721956648104,
+          "floorMae": 1.5866561865164763,
+          "esaLoss": 1394722.8819101835,
+          "f2": 0.0,
+          "maeAdvantage": 2.369486290442597,
+          "residualMae": 2.6866203499746555
+        },
+        "seed": 45,
+        "reportedSplit": false
+      },
+      {
+        "nTest": 1659,
+        "nFloor": 1368,
+        "nHighRisk": 10,
+        "persistence": {
+          "mae": 5.0752818959125845,
+          "medianAe": 0.0,
+          "floorExcludedMae": 4.682643482469312,
+          "floorMae": 5.158803663684508,
+          "esaLoss": 1.3139518221330433,
+          "f2": 0.42168674698795183
+        },
+        "xgboost": {
+          "mae": 2.7239036076353567,
+          "medianAe": 0.5447864532470703,
+          "floorExcludedMae": 7.754336785959703,
+          "floorMae": 1.653833392070748,
+          "esaLoss": 1376258.7606850134,
+          "f2": 0.0,
+          "maeAdvantage": 2.351378288277228,
+          "residualMae": 2.7239036076353567
+        },
+        "residual": {
+          "mae": 2.6961665231467586,
+          "medianAe": 0.45264966828862185,
+          "floorExcludedMae": 7.652167135970267,
+          "floorMae": 1.6419295506821086,
+          "esaLoss": 1376258.7606850134,
+          "f2": 0.0,
+          "maeAdvantage": 2.379115372765826,
+          "residualMae": 2.6961665231467586
+        },
+        "seed": 46,
+        "reportedSplit": false
+      }
+    ],
+    "summary": {
+      "xgboost": {
+        "maeAdvantage": {
+          "mean": 2.3392817273006057,
+          "sd": 0.041457323687441455
+        },
+        "floorExcludedMae": {
+          "mean": 7.77980268847695,
+          "sd": 0.21002076684860424
+        },
+        "residualMae": {
+          "mean": 2.728052704174453,
+          "sd": 0.06134666198923477
+        },
+        "mae": {
+          "mean": 2.728052704174453,
+          "sd": 0.06134666198923477
+        }
+      },
+      "residual": {
+        "maeAdvantage": {
+          "mean": 2.348940931677194,
+          "sd": 0.03800626742603245
+        },
+        "floorExcludedMae": {
+          "mean": 7.684666066350218,
+          "sd": 0.24329483802737534
+        },
+        "residualMae": {
+          "mean": 2.7183934997978647,
+          "sd": 0.03441571401490161
+        },
+        "mae": {
+          "mean": 2.7183934997978647,
+          "sd": 0.03441571401490161
+        }
+      },
+      "persistence": {
+        "mae": {
+          "mean": 5.067334431475059,
+          "sd": 0.04860112801661721
+        },
+        "floorExcludedMae": {
+          "mean": 4.320903060166996,
+          "sd": 0.2264318412168576
+        }
+      }
+    }
+  },
+  "leaveOneHighRiskOut": {
+    "nHighRisk": 66,
+    "replacesExhibit": false,
+    "fitOn": "all eligible events except the held-out high-risk event",
+    "persistCloser": 66,
+    "residualCloser": 0,
+    "ties": 0,
+    "residualCloserShare": 0.0,
+    "meanPersistAbsError": 1.2085341322823318,
+    "meanResidualAbsError": 12.593962997729335,
+    "events": [
+      {
+        "eventId": 168,
+        "y": -5.019996628416254,
+        "risk": -4.93704216591549,
+        "residualPred": -13.824401785056114,
+        "persistAbsError": 0.08295446250076388,
+        "residualAbsError": 8.80440515663986,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 197,
+        "y": -5.423773862550394,
+        "risk": -5.419075024324381,
+        "residualPred": -13.918898594575847,
+        "persistAbsError": 0.004698838226013358,
+        "residualAbsError": 8.495124732025452,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 225,
+        "y": -5.432268037451931,
+        "risk": -5.0136762229492335,
+        "residualPred": -24.473227080493178,
+        "persistAbsError": 0.41859181450269745,
+        "residualAbsError": 19.040959043041248,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 294,
+        "y": -5.8016178699917065,
+        "risk": -5.797239312606799,
+        "residualPred": -15.831854829269396,
+        "persistAbsError": 0.004378557384907111,
+        "residualAbsError": 10.03023695927769,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 424,
+        "y": -5.49390104007156,
+        "risk": -5.506123889147177,
+        "residualPred": -19.18970333403243,
+        "persistAbsError": 0.012222849075616438,
+        "residualAbsError": 13.69580229396087,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 559,
+        "y": -5.232028278618381,
+        "risk": -5.545460015035181,
+        "residualPred": -23.907991677022487,
+        "persistAbsError": 0.3134317364168,
+        "residualAbsError": 18.675963398404107,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 1408,
+        "y": -5.3447654929657045,
+        "risk": -5.341797746612985,
+        "residualPred": -22.95140544314619,
+        "persistAbsError": 0.002967746352719125,
+        "residualAbsError": 17.606639950180487,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 1414,
+        "y": -4.726073219899474,
+        "risk": -4.3029451077274254,
+        "residualPred": -10.14650771072425,
+        "persistAbsError": 0.4231281121720487,
+        "residualAbsError": 5.420434490824777,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 1429,
+        "y": -5.489589051989824,
+        "risk": -5.825940192274975,
+        "residualPred": -12.36649757676594,
+        "persistAbsError": 0.3363511402851511,
+        "residualAbsError": 6.876908524776117,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 1545,
+        "y": -5.520136886976903,
+        "risk": -6.728855682050924,
+        "residualPred": -23.210756850874166,
+        "persistAbsError": 1.208718795074021,
+        "residualAbsError": 17.690619963897262,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 1741,
+        "y": -5.992679047077257,
+        "risk": -7.429807438904273,
+        "residualPred": -18.356714024597633,
+        "persistAbsError": 1.4371283918270166,
+        "residualAbsError": 12.364034977520376,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 2115,
+        "y": -5.281415279972563,
+        "risk": -16.347753658996677,
+        "residualPred": -20.397504940734958,
+        "persistAbsError": 11.066338379024113,
+        "residualAbsError": 15.116089660762395,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 2548,
+        "y": -5.959397659885927,
+        "risk": -6.039576792922172,
+        "residualPred": -15.723355555739555,
+        "persistAbsError": 0.08017913303624447,
+        "residualAbsError": 9.763957895853629,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 2563,
+        "y": -4.187956102069774,
+        "risk": -6.322940822607839,
+        "residualPred": -21.174907680517997,
+        "persistAbsError": 2.134984720538065,
+        "residualAbsError": 16.986951578448224,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 2958,
+        "y": -4.490528647897452,
+        "risk": -6.9083330424043154,
+        "residualPred": -19.017752865097187,
+        "persistAbsError": 2.417804394506863,
+        "residualAbsError": 14.527224217199734,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 3439,
+        "y": -4.550059011226662,
+        "risk": -4.569602408613033,
+        "residualPred": -8.077243962491817,
+        "persistAbsError": 0.019543397386370565,
+        "residualAbsError": 3.5271849512651547,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 3590,
+        "y": -5.991399828238082,
+        "risk": -6.22047565667521,
+        "residualPred": -14.209911806272377,
+        "persistAbsError": 0.2290758284371277,
+        "residualAbsError": 8.218511978034295,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 3615,
+        "y": -5.602755418989613,
+        "risk": -7.260190400978641,
+        "residualPred": -20.006617936989382,
+        "persistAbsError": 1.6574349819890282,
+        "residualAbsError": 14.40386251799977,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 4104,
+        "y": -5.886056647693162,
+        "risk": -6.024798037742148,
+        "residualPred": -15.100412966941366,
+        "persistAbsError": 0.13874139004898556,
+        "residualAbsError": 9.214356319248203,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 4284,
+        "y": -5.453951133598267,
+        "risk": -6.173601217812383,
+        "residualPred": -23.18685729081043,
+        "persistAbsError": 0.7196500842141162,
+        "residualAbsError": 17.732906157212163,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 4720,
+        "y": -5.830031826003107,
+        "risk": -5.916855856856947,
+        "residualPred": -23.39126877494777,
+        "persistAbsError": 0.08682403085384038,
+        "residualAbsError": 17.56123694894466,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 4942,
+        "y": -5.99225222199926,
+        "risk": -5.595337299126277,
+        "residualPred": -14.511115459221493,
+        "persistAbsError": 0.39691492287298313,
+        "residualAbsError": 8.518863237222233,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 5253,
+        "y": -5.174898588401997,
+        "risk": -18.32615002265705,
+        "residualPred": -20.63198646178974,
+        "persistAbsError": 13.151251434255052,
+        "residualAbsError": 15.457087873387742,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 5462,
+        "y": -4.319211388493319,
+        "risk": -4.795337488251781,
+        "residualPred": -16.98791961868391,
+        "persistAbsError": 0.47612609975846176,
+        "residualAbsError": 12.668708230190592,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 5773,
+        "y": -3.913996294381618,
+        "risk": -4.055517327849832,
+        "residualPred": -24.220096719329323,
+        "persistAbsError": 0.14152103346821399,
+        "residualAbsError": 20.306100424947704,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 5863,
+        "y": -5.816730156317196,
+        "risk": -5.032171320669844,
+        "residualPred": -14.272295069449141,
+        "persistAbsError": 0.7845588356473518,
+        "residualAbsError": 8.455564913131944,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6341,
+        "y": -3.889410289700751,
+        "risk": -3.7166987712964494,
+        "residualPred": -11.625169401942202,
+        "persistAbsError": 0.17271151840430177,
+        "residualAbsError": 7.735759112241451,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6552,
+        "y": -5.06208109735222,
+        "risk": -4.762456261857126,
+        "residualPred": -17.433100068314644,
+        "persistAbsError": 0.2996248354950941,
+        "residualAbsError": 12.371018970962425,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6705,
+        "y": -5.959793372425289,
+        "risk": -11.018589159834113,
+        "residualPred": -22.38191427885267,
+        "persistAbsError": 5.058795787408823,
+        "residualAbsError": 16.42212090642738,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6723,
+        "y": -5.1252863112422204,
+        "risk": -5.118501220385017,
+        "residualPred": -13.609019790331306,
+        "persistAbsError": 0.0067850908572033575,
+        "residualAbsError": 8.483733479089086,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6792,
+        "y": -4.409938769196257,
+        "risk": -4.413750361133959,
+        "residualPred": -17.614617060352707,
+        "persistAbsError": 0.0038115919377013086,
+        "residualAbsError": 13.20467829115645,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 6980,
+        "y": -5.214955041668456,
+        "risk": -5.628932137728263,
+        "residualPred": -18.667720933199455,
+        "persistAbsError": 0.41397709605980726,
+        "residualAbsError": 13.452765891530998,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 7126,
+        "y": -5.2914091548496565,
+        "risk": -5.2819968317329815,
+        "residualPred": -15.707894429999584,
+        "persistAbsError": 0.009412323116674948,
+        "residualAbsError": 10.416485275149928,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 7629,
+        "y": -4.747389659432627,
+        "risk": -3.8074325466634544,
+        "residualPred": -17.79559840207117,
+        "persistAbsError": 0.9399571127691724,
+        "residualAbsError": 13.048208742638543,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 7678,
+        "y": -5.943095148663526,
+        "risk": -5.9995659225206825,
+        "residualPred": -14.700387799046561,
+        "persistAbsError": 0.056470773857156153,
+        "residualAbsError": 8.757292650383036,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 7717,
+        "y": -4.5176982327765565,
+        "risk": -4.512861624522814,
+        "residualPred": -18.841315642161973,
+        "persistAbsError": 0.004836608253742547,
+        "residualAbsError": 14.323617409385417,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 7888,
+        "y": -5.267445420148568,
+        "risk": -5.048856839892447,
+        "residualPred": -16.68773280119616,
+        "persistAbsError": 0.21858858025612093,
+        "residualAbsError": 11.42028738104759,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8449,
+        "y": -5.618163200001657,
+        "risk": -5.85949195696182,
+        "residualPred": -23.312058103812404,
+        "persistAbsError": 0.2413287569601632,
+        "residualAbsError": 17.693894903810747,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8550,
+        "y": -4.407601153884436,
+        "risk": -4.4204450395990005,
+        "residualPred": -13.673704698412477,
+        "persistAbsError": 0.012843885714564074,
+        "residualAbsError": 9.26610354452804,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8583,
+        "y": -5.0776379032152095,
+        "risk": -5.228118679809901,
+        "residualPred": -20.822342655945157,
+        "persistAbsError": 0.1504807765946916,
+        "residualAbsError": 15.744704752729948,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8661,
+        "y": -4.843450848668219,
+        "risk": -11.192667960708809,
+        "residualPred": -21.116189002578928,
+        "persistAbsError": 6.34921711204059,
+        "residualAbsError": 16.27273815391071,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8664,
+        "y": -4.452348341640032,
+        "risk": -3.5805399272139296,
+        "residualPred": -10.034987196653628,
+        "persistAbsError": 0.871808414426102,
+        "residualAbsError": 5.582638855013596,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8758,
+        "y": -4.557677044254426,
+        "risk": -4.5828605902726745,
+        "residualPred": -17.903935076051482,
+        "persistAbsError": 0.02518354601824857,
+        "residualAbsError": 13.346258031797056,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8767,
+        "y": -2.688034339631633,
+        "risk": -3.5721894273240093,
+        "residualPred": -18.44269380659647,
+        "persistAbsError": 0.8841550876923763,
+        "residualAbsError": 15.754659466964837,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8776,
+        "y": -5.982966660701218,
+        "risk": -6.0177740083253255,
+        "residualPred": -16.016996763757454,
+        "persistAbsError": 0.03480734762410709,
+        "residualAbsError": 10.034030103056235,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8851,
+        "y": -5.6001532872870765,
+        "risk": -4.022550772617659,
+        "residualPred": -18.457775305698714,
+        "persistAbsError": 1.577602514669418,
+        "residualAbsError": 12.857622018411638,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8887,
+        "y": -5.7675121336470125,
+        "risk": -5.06610796423579,
+        "residualPred": -17.713730072695263,
+        "persistAbsError": 0.701404169411223,
+        "residualAbsError": 11.94621793904825,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 8972,
+        "y": -5.639595945270061,
+        "risk": -4.59074334796109,
+        "residualPred": -11.614647194701814,
+        "persistAbsError": 1.0488525973089713,
+        "residualAbsError": 5.975051249431752,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 9051,
+        "y": -3.753994095923971,
+        "risk": -4.4565528199183,
+        "residualPred": -17.526025132845547,
+        "persistAbsError": 0.7025587239943287,
+        "residualAbsError": 13.772031036921575,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 9383,
+        "y": -3.5019652763129727,
+        "risk": -3.8774564759312455,
+        "residualPred": -11.572878648477632,
+        "persistAbsError": 0.3754911996182728,
+        "residualAbsError": 8.070913372164659,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 9411,
+        "y": -4.713094647027625,
+        "risk": -4.598944274228156,
+        "residualPred": -23.308022109311164,
+        "persistAbsError": 0.11415037279946905,
+        "residualAbsError": 18.59492746228354,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 9657,
+        "y": -5.483993769613953,
+        "risk": -6.350081281264581,
+        "residualPred": -21.033410863478935,
+        "persistAbsError": 0.8660875116506279,
+        "residualAbsError": 15.549417093864982,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 9851,
+        "y": -5.3661277373416665,
+        "risk": -12.239502124773471,
+        "residualPred": -23.740928821550817,
+        "persistAbsError": 6.873374387431805,
+        "residualAbsError": 18.37480108420915,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 10184,
+        "y": -4.5036239459876,
+        "risk": -4.508218224415836,
+        "residualPred": -8.817719872365055,
+        "persistAbsError": 0.004594278428236009,
+        "residualAbsError": 4.314095926377455,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 10510,
+        "y": -4.3871102307125165,
+        "risk": -4.355266072552808,
+        "residualPred": -10.36572406510652,
+        "persistAbsError": 0.03184415815970887,
+        "residualAbsError": 5.978613834394003,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 10982,
+        "y": -5.664542099310617,
+        "risk": -5.662341108973857,
+        "residualPred": -21.69594859188401,
+        "persistAbsError": 0.0022009903367594674,
+        "residualAbsError": 16.031406492573396,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11033,
+        "y": -4.584359020103847,
+        "risk": -4.3624102141613,
+        "residualPred": -23.106037762379074,
+        "persistAbsError": 0.22194880594254673,
+        "residualAbsError": 18.521678742275228,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11072,
+        "y": -5.903437561625863,
+        "risk": -7.244964066232227,
+        "residualPred": -22.21638816901543,
+        "persistAbsError": 1.3415265046063638,
+        "residualAbsError": 16.312950607389567,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11146,
+        "y": -5.428990327690696,
+        "risk": -5.4867823999320615,
+        "residualPred": -19.9307311456596,
+        "persistAbsError": 0.057792072241365844,
+        "residualAbsError": 14.501740817968905,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11180,
+        "y": -3.9017024635053024,
+        "risk": -5.11605480496572,
+        "residualPred": -23.89980724637197,
+        "persistAbsError": 1.2143523414604176,
+        "residualAbsError": 19.99810478286667,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11597,
+        "y": -5.4329736338409385,
+        "risk": -5.888401475119606,
+        "residualPred": -18.325174775290506,
+        "persistAbsError": 0.4554278412786674,
+        "residualAbsError": 12.892201141449569,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11795,
+        "y": -5.015022873584506,
+        "risk": -14.418050341626682,
+        "residualPred": -28.59136634351877,
+        "persistAbsError": 9.403027468042175,
+        "residualAbsError": 23.576343469934265,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11851,
+        "y": -4.674895017028591,
+        "risk": -4.069458470135565,
+        "residualPred": -8.815304741650458,
+        "persistAbsError": 0.6054365468930261,
+        "residualAbsError": 4.1404097246218665,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 11876,
+        "y": -5.1861522457711455,
+        "risk": -5.1938878898309095,
+        "residualPred": -15.567203700988136,
+        "persistAbsError": 0.007735644059764013,
+        "residualAbsError": 10.38105145521699,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 12769,
+        "y": -5.525201181199368,
+        "risk": -5.6679657229724825,
+        "residualPred": -12.91563637345466,
+        "persistAbsError": 0.14276454177311404,
+        "residualAbsError": 7.390435192255292,
+        "closer": "persistence"
+      },
+      {
+        "eventId": 12992,
+        "y": -5.838931614528827,
+        "risk": -6.353694319715241,
+        "residualPred": -13.369743704786043,
+        "persistAbsError": 0.5147627051864143,
+        "residualAbsError": 7.530812090257216,
+        "closer": "persistence"
+      }
+    ]
   }
 }
