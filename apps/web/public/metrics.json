@@ -1592,7 +1592,8 @@
             "mae_high_risk": 0.3792515027534161,
             "esa_loss": 0.6466910961229871,
             "mse_hr": 0.3007865563362731,
-            "f2": 0.46511627906976744
+            "f2": 0.46511627906976744,
+            "n_positives": 8.0
           },
           "abstained": {
             "mae": 5.284048569404805,
@@ -1603,7 +1604,8 @@
             "mae_high_risk": 9.18482218837797,
             "esa_loss": 430318.6399689106,
             "mse_hr": 0.43031863996891057,
-            "f2": 0.0
+            "f2": 0.0,
+            "n_positives": 4.0
           }
         },
         "conformal": {
@@ -1632,7 +1634,8 @@
             "mae_high_risk": 14.557709098156216,
             "esa_loss": 972150.8938145554,
             "mse_hr": 0.9721508938145553,
-            "f2": 0.0
+            "f2": 0.0,
+            "n_positives": 1.0
           },
           "abstained": {
             "mae": 9.247097712966898,
@@ -1643,7 +1646,8 @@
             "mae_high_risk": 2.2923265161257267,
             "esa_loss": 0.7027972260036922,
             "mse_hr": 0.28685601061375193,
-            "f2": 0.40816326530612246
+            "f2": 0.40816326530612246,
+            "n_positives": 11.0
           }
         }
       },
@@ -1674,7 +1678,8 @@
             "mae_high_risk": 2.0664574614604367,
             "esa_loss": 0.17954550836746516,
             "mse_hr": 0.06757089024582022,
-            "f2": 0.3763440860215054
+            "f2": 0.3763440860215054,
+            "n_positives": 8.0
           },
           "abstained": {
             "mae": 7.079344479212528,
@@ -1685,7 +1690,8 @@
             "mae_high_risk": 16.63821382972315,
             "esa_loss": 1697.9861560809466,
             "mse_hr": 0.0016979861560809464,
-            "f2": 0.0
+            "f2": 0.0,
+            "n_positives": 1.0
           }
         },
         "conformal": {
@@ -1714,7 +1720,8 @@
             "mae_high_risk": 15.917457980391182,
             "esa_loss": 80148.36623010997,
             "mse_hr": 0.08014836623010997,
-            "f2": 0.0
+            "f2": 0.0,
+            "n_positives": 2.0
           },
           "abstained": {
             "mae": 10.4344529150923,
@@ -1725,7 +1732,8 @@
             "mae_high_risk": 0.19070822294632578,
             "esa_loss": 0.13875585891410455,
             "mse_hr": 0.054566910808917526,
-            "f2": 0.39325842696629215
+            "f2": 0.39325842696629215,
+            "n_positives": 7.0
           }
         }
       }
@@ -3008,6 +3016,226 @@
         "persistAbsError": 0.5147627051864143,
         "residualAbsError": 7.530812090257216,
         "closer": "persistence"
+      }
+    ]
+  },
+  "thresholdSweep": {
+    "split": "frozen local test",
+    "replacesExhibit": false,
+    "retuned": false,
+    "note": "Same frozen predictions; only the class definition changes. Operational LEO reaction is nearer log10(Pc) \u22124 to \u22125. ESA scored \u22126 to have enough positives. False-reassurance analogue is an accepted forecast (existing \u22126 abstention mask, if supplied) with pred < t while y \u2265 t.",
+    "thresholds": [
+      -8.0,
+      -7.0,
+      -6.0,
+      -5.0,
+      -4.0
+    ],
+    "rows": [
+      {
+        "threshold": -8.0,
+        "nPositives": 68,
+        "systems": {
+          "persistence": {
+            "esaLoss": 1.6610468332978512,
+            "mseHr": 1.0955840815368805,
+            "f2": 0.6595744680851063,
+            "falseReassuranceAnalogue": 2,
+            "missedClass": 6
+          },
+          "xgboost": {
+            "esaLoss": 2208847.293240864,
+            "mseHr": 2.2088472932408636,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 19,
+            "missedClass": 68
+          },
+          "ensemble": {
+            "esaLoss": 9.491440531340908,
+            "mseHr": 1.9951977092908815,
+            "f2": 0.21021021021021022,
+            "falseReassuranceAnalogue": 5,
+            "missedClass": 54
+          },
+          "residual": {
+            "esaLoss": 121.6430910170015,
+            "mseHr": 2.2278954398718223,
+            "f2": 0.018315018315018316,
+            "falseReassuranceAnalogue": 19,
+            "missedClass": 67
+          },
+          "floorHurdle": {
+            "esaLoss": 10.281479306800158,
+            "mseHr": 2.0982610830204402,
+            "f2": 0.20408163265306123,
+            "falseReassuranceAnalogue": 17,
+            "missedClass": 56
+          }
+        }
+      },
+      {
+        "threshold": -7.0,
+        "nPositives": 37,
+        "systems": {
+          "persistence": {
+            "esaLoss": 0.7766605571966434,
+            "mseHr": 0.3897738855819585,
+            "f2": 0.5018587360594795,
+            "falseReassuranceAnalogue": 3,
+            "missedClass": 10
+          },
+          "xgboost": {
+            "esaLoss": 1149925.1303855483,
+            "mseHr": 1.1499251303855482,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 13,
+            "missedClass": 37
+          },
+          "ensemble": {
+            "esaLoss": 2.507349592974661,
+            "mseHr": 0.5398599602098553,
+            "f2": 0.215311004784689,
+            "falseReassuranceAnalogue": 4,
+            "missedClass": 28
+          },
+          "residual": {
+            "esaLoss": 1149925.1303855483,
+            "mseHr": 1.1499251303855482,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 13,
+            "missedClass": 37
+          },
+          "floorHurdle": {
+            "esaLoss": 1149925.1303855483,
+            "mseHr": 1.1499251303855482,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 13,
+            "missedClass": 37
+          }
+        }
+      },
+      {
+        "threshold": -6.0,
+        "nPositives": 9,
+        "systems": {
+          "persistence": {
+            "esaLoss": 0.1669832237710995,
+            "mseHr": 0.06025167868029364,
+            "f2": 0.36082474226804123,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 2
+          },
+          "xgboost": {
+            "esaLoss": 1132201.8878005068,
+            "mseHr": 1.1322018878005067,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 8,
+            "missedClass": 9
+          },
+          "ensemble": {
+            "esaLoss": 0.1669832237710995,
+            "mseHr": 0.06025167868029364,
+            "f2": 0.36082474226804123,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 2
+          },
+          "residual": {
+            "esaLoss": 1132201.8878005068,
+            "mseHr": 1.1322018878005067,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 8,
+            "missedClass": 9
+          },
+          "floorHurdle": {
+            "esaLoss": 1132201.8878005068,
+            "mseHr": 1.1322018878005067,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 8,
+            "missedClass": 9
+          }
+        }
+      },
+      {
+        "threshold": -5.0,
+        "nPositives": 3,
+        "systems": {
+          "persistence": {
+            "esaLoss": 0.031746876994443764,
+            "mseHr": 0.011074491974805964,
+            "f2": 0.3488372093023256,
+            "falseReassuranceAnalogue": 0,
+            "missedClass": 0
+          },
+          "xgboost": {
+            "esaLoss": 538862.9129565087,
+            "mseHr": 0.5388629129565087,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 3,
+            "missedClass": 3
+          },
+          "ensemble": {
+            "esaLoss": 0.031746876994443764,
+            "mseHr": 0.011074491974805964,
+            "f2": 0.3488372093023256,
+            "falseReassuranceAnalogue": 0,
+            "missedClass": 0
+          },
+          "residual": {
+            "esaLoss": 538862.9129565087,
+            "mseHr": 0.5388629129565087,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 3,
+            "missedClass": 3
+          },
+          "floorHurdle": {
+            "esaLoss": 538862.9129565087,
+            "mseHr": 0.5388629129565087,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 3,
+            "missedClass": 3
+          }
+        }
+      },
+      {
+        "threshold": -4.0,
+        "nPositives": 1,
+        "systems": {
+          "persistence": {
+            "esaLoss": 7569.644791330173,
+            "mseHr": 0.007569644791330172,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 1
+          },
+          "xgboost": {
+            "esaLoss": 7569.644791330173,
+            "mseHr": 0.007569644791330172,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 1
+          },
+          "ensemble": {
+            "esaLoss": 7569.644791330173,
+            "mseHr": 0.007569644791330172,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 1
+          },
+          "residual": {
+            "esaLoss": 7569.644791330173,
+            "mseHr": 0.007569644791330172,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 1
+          },
+          "floorHurdle": {
+            "esaLoss": 7569.644791330173,
+            "mseHr": 0.007569644791330172,
+            "f2": 0.0,
+            "falseReassuranceAnalogue": 1,
+            "missedClass": 1
+          }
+        }
       }
     ]
   }
