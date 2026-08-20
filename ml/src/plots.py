@@ -370,50 +370,74 @@ def _centers(edges: list[float]) -> list[float]:
 def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
     _setup_paper()
     written: list[Path] = []
-    horizons = [row for row in metrics.get("horizons", []) if "model" in row]
-    if horizons:
-        hours = [int(row["cutoffHours"]) for row in horizons]
-        model_mae = [float(row["model"]["mae"]) for row in horizons]
-        persist_mae = [float(row["persistence"]["mae"]) for row in horizons]
-        fig, ax = plt.subplots(figsize=(3.5, 2.6))
+    armor = metrics.get("reviewArmor") or {}
+
+    matched = (armor.get("matchedCohortHorizons") or {}).get("rows") or []
+    if matched:
+        hours = [int(row["cutoffHours"]) for row in matched]
+        model_mae = [float(row["xgboostMae"]) for row in matched]
+        persist_mae = [float(row["persistenceMae"]) for row in matched]
+        floor_rate = [float(row["floorRate"]) for row in matched]
+        fig, (ax, ax2) = plt.subplots(
+            2, 1, figsize=(3.5, 3.4), sharex=True, gridspec_kw={"height_ratios": [2.2, 1.0]}
+        )
         ax.plot(hours, persist_mae, marker="o", color=PAPER_GREY, label="Persistence")
         ax.plot(hours, model_mae, marker="o", color=PAPER_BLUE, label="XGBoost")
-        ci = (
-            ((metrics.get("honestMetrics") or {}).get("systems") or {})
-            .get("xgboost", {})
-            .get("maeAdvantageVsPersistence")
-            or {}
+        lows = []
+        highs = []
+        for row, persist, model in zip(matched, persist_mae, model_mae):
+            if row.get("deltaMaeCi95Low") is None:
+                lows.append(0.0)
+                highs.append(0.0)
+                continue
+            low_model = persist - float(row["deltaMaeCi95High"])
+            high_model = persist - float(row["deltaMaeCi95Low"])
+            lows.append(max(model - low_model, 0.0))
+            highs.append(max(high_model - model, 0.0))
+        ax.errorbar(
+            hours,
+            model_mae,
+            yerr=np.array([lows, highs]),
+            fmt="none",
+            ecolor=PAPER_BLUE,
+            capsize=3,
+            elinewidth=1.0,
+            zorder=4,
         )
-        if 48 in hours and ci.get("ci95Low") is not None:
-            i48 = hours.index(48)
-            persist48 = persist_mae[i48]
-            model48 = model_mae[i48]
-            low = persist48 - float(ci["ci95High"])
-            high = persist48 - float(ci["ci95Low"])
-            ax.errorbar(
-                [48],
-                [model48],
-                yerr=np.array([[model48 - low], [high - model48]]),
-                fmt="none",
-                ecolor=PAPER_BLUE,
-                capsize=4,
-                elinewidth=1.2,
-                zorder=4,
-            )
-        ax.set_xticks(hours)
-        ax.set_xlim(78, 6)
-        ax.set_xlabel("Time to closest approach / h")
         ax.set_ylabel("MAE of log10(Pc)")
         ax.legend(loc="upper right")
         ax.spines[["top", "right"]].set_visible(False)
+        ax2.plot(hours, floor_rate, marker="s", color=PAPER_ORANGE)
+        ax2.set_xticks(hours)
+        ax2.set_xlim(78, 6)
+        ax2.set_ylim(0, 1)
+        ax2.set_xlabel("Time to closest approach / h")
+        ax2.set_ylabel("Floor rate")
+        ax2.spines[["top", "right"]].set_visible(False)
         written.append(_save_paper(fig, output_dir / "horizon-decay.png"))
+    else:
+        horizons = [row for row in metrics.get("horizons", []) if "model" in row]
+        if horizons:
+            hours = [int(row["cutoffHours"]) for row in horizons]
+            model_mae = [float(row["model"]["mae"]) for row in horizons]
+            persist_mae = [float(row["persistence"]["mae"]) for row in horizons]
+            fig, ax = plt.subplots(figsize=(3.5, 2.6))
+            ax.plot(hours, persist_mae, marker="o", color=PAPER_GREY, label="Persistence")
+            ax.plot(hours, model_mae, marker="o", color=PAPER_BLUE, label="XGBoost")
+            ax.set_xticks(hours)
+            ax.set_xlim(78, 6)
+            ax.set_xlabel("Time to closest approach / h")
+            ax.set_ylabel("MAE of log10(Pc)")
+            ax.legend(loc="upper right")
+            ax.spines[["top", "right"]].set_visible(False)
+            written.append(_save_paper(fig, output_dir / "horizon-decay.png"))
 
     anatomy = metrics.get("errorAnatomy") or {}
     edges = anatomy.get("binEdges") or []
     if len(edges) >= 2:
         centers = _centers([float(value) for value in edges])
         width = float(edges[1]) - float(edges[0])
-        fig, ax = plt.subplots(figsize=(3.5, 2.6))
+        fig, ax = plt.subplots(figsize=(3.5, 2.8))
         ax.bar(
             centers,
             anatomy.get("actualMoveCounts") or [],
@@ -432,6 +456,7 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
         )
         ax.axvline(0.0, color=PAPER_ORANGE, linestyle="--", linewidth=1.0)
         peak = max(list(anatomy.get("actualMoveCounts") or [1]) + [1])
+        ax.annotate("exact persistence", xy=(0.4, peak * 0.85), fontsize=7, color=PAPER_GREY)
         ax.annotate(
             "−30 floor collapses",
             xy=(-20.0, peak * 0.18),
@@ -440,6 +465,7 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
             color=PAPER_ORANGE,
             arrowprops={"arrowstyle": "->", "color": PAPER_ORANGE, "lw": 0.8},
         )
+        ax.annotate("non-floor", xy=(2.0, peak * 0.22), fontsize=7, color=PAPER_BLUE)
         ax.set_xlabel("Change in log10(Pc)")
         ax.set_ylabel("Events")
         ax.legend(loc="upper right")
@@ -449,6 +475,8 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
     conformal = (metrics.get("conformal") or {}).get("test") or {}
     boot = conformal.get("bootstrap") or {}
     conf = conformal.get("conformal") or {}
+    live90 = ((metrics.get("selectedPolicy") or {}).get("exhibitConformal") or {}).get("90") or {}
+    depth = (armor.get("conformalDepth") or {}).get("overall") or {}
     if "50" in boot and "90" in boot and "50" in conf and "90" in conf:
         fig, ax = plt.subplots(figsize=(3.2, 3.2))
         ax.plot([0, 1], [0, 1], linestyle="--", color="#888888", label="y = x")
@@ -468,6 +496,18 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
             zorder=3,
             label="Split conformal",
         )
+        ci = depth.get("coverageCi95") or {}
+        if live90.get("coverage") is not None and ci.get("low") is not None:
+            live = float(live90["coverage"])
+            ax.errorbar(
+                [0.9],
+                [live],
+                yerr=np.array([[live - float(ci["low"])], [float(ci["high"]) - live]]),
+                fmt="none",
+                ecolor=PAPER_ORANGE,
+                capsize=3,
+                zorder=4,
+            )
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_xlabel("Nominal coverage")
@@ -476,30 +516,31 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save_paper(fig, output_dir / "coverage-calibration.png"))
 
-    quartiles = (metrics.get("dilutionProbe") or {}).get("quartiles") or []
-    if quartiles:
-        fig, ax = plt.subplots(figsize=(3.5, 2.6))
-        xs = [f"Q{row['quartile']}" for row in quartiles]
-        positions = list(range(len(xs)))
-        ax.bar(
-            positions,
-            [float(row["floorRate"]) for row in quartiles],
-            color=PAPER_BLUE,
-        )
-        ax.set_xticks(positions, xs)
-        ax.set_xlabel("Quartile of max_risk_estimate − risk")
-        ax.set_ylabel("Floor rate")
-        twin = ax.twinx()
-        twin.plot(
-            positions,
-            [float(row["meanAbsMove"]) for row in quartiles],
-            color=PAPER_ORANGE,
-            marker="o",
-        )
-        twin.set_ylabel("Mean |Δlog10(Pc)|")
-        ax.spines["top"].set_visible(False)
-        twin.spines["top"].set_visible(False)
+    scatter = armor.get("dilutionScatter") or {}
+    if scatter.get("gap"):
+        fig, ax = plt.subplots(figsize=(3.5, 2.8))
+        gap = np.asarray(scatter["gap"], dtype=float)
+        move = np.asarray(scatter["absMove"], dtype=float)
+        floor = np.asarray(scatter["floor"], dtype=bool)
+        ax.scatter(gap[~floor], move[~floor], s=8, alpha=0.45, color=PAPER_BLUE, label="non-floor")
+        ax.scatter(gap[floor], move[floor], s=8, alpha=0.35, color=PAPER_ORANGE, label="floor")
+        ax.set_xlabel("max_risk_estimate − risk")
+        ax.set_ylabel("|y − risk|")
+        ax.legend(loc="upper right", markerscale=2)
+        ax.spines[["top", "right"]].set_visible(False)
         written.append(_save_paper(fig, output_dir / "dilution-probe.png"))
+    else:
+        quartiles = (metrics.get("dilutionProbe") or {}).get("quartiles") or []
+        if quartiles:
+            fig, ax = plt.subplots(figsize=(3.5, 2.6))
+            xs = [f"Q{row['quartile']}" for row in quartiles]
+            positions = list(range(len(xs)))
+            ax.bar(positions, [float(row["floorRate"]) for row in quartiles], color=PAPER_BLUE)
+            ax.set_xticks(positions, xs)
+            ax.set_xlabel("Quartile of max_risk_estimate − risk")
+            ax.set_ylabel("Floor rate")
+            ax.spines[["top", "right"]].set_visible(False)
+            written.append(_save_paper(fig, output_dir / "dilution-probe.png"))
 
     esa = (metrics.get("officialTest") or {}).get("esa") or {}
     if esa:
@@ -513,18 +554,144 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
             "ensemble": "Ensemble",
         }
         present = [name for name in names if name in esa]
-        ax.bar(
-            [labels[name] for name in present],
-            [float(esa[name]["esaLoss"]) for name in present],
-            color=PAPER_BLUE,
-        )
-        ax.axhline(0.694, color=PAPER_ORANGE, linestyle="--", label="Uriot LRP 0.694")
-        ax.axhline(0.556, color=PAPER_GREY, linestyle=":", label="Uriot sesc 0.556")
+        values = [float(esa[name]["esaLoss"]) for name in present]
+        bars = ax.bar([labels[name] for name in present], values, color=PAPER_BLUE)
+        ax.axhline(0.694, color=PAPER_ORANGE, linestyle="--", label="LRP 0.694")
+        ax.axhline(0.556, color=PAPER_GREY, linestyle=":", label="sesc 0.556")
         ax.set_yscale("log")
         ax.set_ylabel("ESA-style loss L")
-        ax.legend(loc="upper right")
+        if "xgboost" in present:
+            idx = present.index("xgboost")
+            bars[idx].set_color(PAPER_ORANGE)
+            ax.annotate(
+                f"{values[idx]:.2e}",
+                xy=(idx, values[idx]),
+                xytext=(idx, values[idx] * 3),
+                ha="center",
+                fontsize=7,
+                color=PAPER_ORANGE,
+            )
+        ax.legend(loc="upper right", fontsize=7)
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save_paper(fig, output_dir / "official-test-esa.png"))
+
+    pred_vs = armor.get("predVsActual") or {}
+    if pred_vs.get("y"):
+        fig, ax = plt.subplots(figsize=(3.5, 3.2))
+        y = np.asarray(pred_vs["y"], dtype=float)
+        pred = np.asarray(pred_vs["pred"], dtype=float)
+        floor = np.asarray(pred_vs["floor"], dtype=bool)
+        ax.scatter(pred[~floor], y[~floor], s=8, alpha=0.4, color=PAPER_BLUE, label="non-floor")
+        ax.scatter(pred[floor], y[floor], s=8, alpha=0.35, color=PAPER_ORANGE, label="floor")
+        ax.axhline(-30.0, color=PAPER_GREY, linestyle="--", linewidth=0.8)
+        ax.axvline(-30.0, color=PAPER_GREY, linestyle="--", linewidth=0.8)
+        ax.plot([-32, 0], [-32, 0], color="#888888", linestyle=":", linewidth=0.8)
+        ax.set_xlabel("Predicted log10(Pc)")
+        ax.set_ylabel("Later reported log10(Pc)")
+        ax.legend(loc="lower right", markerscale=2)
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save_paper(fig, output_dir / "pred-vs-actual.png"))
+
+    reliability = (armor.get("floorClassifier") or {}).get("reliability") or []
+    if reliability:
+        fig, ax = plt.subplots(figsize=(3.2, 3.2))
+        ax.plot([0, 1], [0, 1], linestyle="--", color="#888888")
+        ax.plot(
+            [row["predicted"] for row in reliability],
+            [row["observed"] for row in reliability],
+            marker="o",
+            color=PAPER_BLUE,
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_xlabel("Predicted P(floor)")
+        ax.set_ylabel("Observed floor rate")
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save_paper(fig, output_dir / "floor-reliability.png"))
+
+    flow = armor.get("datasetFlow") or {}
+    if flow:
+        fig, ax = plt.subplots(figsize=(3.5, 2.8))
+        labels_flow = [
+            "CDM rows",
+            "Events",
+            "Eligible T−48",
+            "Train",
+            "Val",
+            "Cal",
+            "Test",
+            "Official",
+        ]
+        keys = [
+            "cdmRows",
+            "events",
+            "eligibleT48",
+            "train",
+            "validation",
+            "calibration",
+            "test",
+            "officialTest",
+        ]
+        values = [int(flow[key]) for key in keys]
+        ax.barh(list(reversed(labels_flow)), list(reversed(values)), color=PAPER_BLUE)
+        ax.set_xlabel("Count")
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save_paper(fig, output_dir / "dataset-flow.png"))
+
+        fig, ax = plt.subplots(figsize=(3.5, 2.4))
+        ax.axis("off")
+        ax.text(
+            0.5,
+            0.5,
+            (
+                "CDM rows → cutoff-safe histories → event-disjoint split\n"
+                "→ candidate models → validation selection\n"
+                "→ floor hurdle + split conformal → frozen test / official test"
+            ),
+            ha="center",
+            va="center",
+            fontsize=8,
+        )
+        written.append(_save_paper(fig, output_dir / "protocol-flow.png"))
+
+    ablation = (metrics.get("ablation") or {}).get("families") or {}
+    if ablation:
+        order = ["snapshot", "snapshot_history", "snapshot_history_covariance"]
+        present = [name for name in order if name in ablation]
+        if present:
+            fig, ax = plt.subplots(figsize=(3.5, 2.6))
+            labels_ab = ["Snapshot", "+History", "+Cov. trend"][: len(present)]
+            mae = [float(ablation[name]["mae"]) for name in present]
+            ax.bar(labels_ab, mae, color=PAPER_BLUE)
+            ax.set_ylabel("MAE")
+            ax.spines[["top", "right"]].set_visible(False)
+            written.append(_save_paper(fig, output_dir / "feature-ablation-paper.png"))
+
+    curve = (armor.get("selectivePrediction") or {}).get("curve") or []
+    if curve:
+        fig, ax = plt.subplots(figsize=(3.5, 2.6))
+        coverage = [float(row["coverage"]) for row in curve]
+        mae = [float(row["maeAccepted"]) for row in curve]
+        fr = [int(row["falseReassurance"]) for row in curve]
+        ax.plot(coverage, mae, marker="o", color=PAPER_BLUE, label="accepted MAE")
+        ax.set_xlabel("Acceptance rate")
+        ax.set_ylabel("Accepted MAE")
+        twin = ax.twinx()
+        twin.plot(coverage, fr, marker="s", color=PAPER_ORANGE, label="false reassurance")
+        twin.set_ylabel("False reassurance")
+        ax.spines["top"].set_visible(False)
+        twin.spines["top"].set_visible(False)
+        written.append(_save_paper(fig, output_dir / "selective-prediction.png"))
+
+    shap_rows = (armor.get("residualShap") or {}).get("top") or []
+    if shap_rows:
+        fig, ax = plt.subplots(figsize=(3.5, 3.0))
+        names = [row["feature"][:22] for row in reversed(shap_rows)]
+        vals = [float(row["meanAbsShap"]) for row in reversed(shap_rows)]
+        ax.barh(names, vals, color=PAPER_BLUE)
+        ax.set_xlabel("Mean |SHAP|")
+        ax.spines[["top", "right"]].set_visible(False)
+        written.append(_save_paper(fig, output_dir / "residual-shap.png"))
     return written
 
 
