@@ -675,6 +675,21 @@ def error_anatomy(y_true: np.ndarray, risk: np.ndarray, y_pred: np.ndarray) -> d
     residual = y_true - y_pred
     edges = np.linspace(-32.0, 8.0, 81)
     floor = floor_mask(y_true)
+    abs_err = np.abs(residual)
+    abs_move = np.abs(actual_move)
+    signed_bias = y_pred - y_true
+
+    def _slice_error(mask: np.ndarray) -> dict[str, float | int]:
+        if not np.any(mask):
+            return {"n": 0, "mae": float("nan"), "signedBias": float("nan")}
+        return {
+            "n": int(np.sum(mask)),
+            "mae": float(np.mean(abs_err[mask])),
+            "signedBias": float(np.mean(signed_bias[mask])),
+            "p90AbsError": float(np.quantile(abs_err[mask], 0.90)),
+            "p95AbsError": float(np.quantile(abs_err[mask], 0.95)),
+        }
+
     return {
         "replacesExhibit": False,
         "predictor": "unguarded xgboost on frozen local test",
@@ -685,6 +700,15 @@ def error_anatomy(y_true: np.ndarray, risk: np.ndarray, y_pred: np.ndarray) -> d
         "nFloor": int(floor.sum()),
         "nUnmoved": int(np.sum(np.abs(actual_move) < 1e-9)),
         "nFloorCollapse": int(np.sum(floor & (actual_move < -1.0))),
+        "exactPersistenceShare": float(np.mean(abs_move < 1e-9)),
+        "within0_5Share": float(np.mean(abs_err <= 0.5)),
+        "within1_0Share": float(np.mean(abs_err <= 1.0)),
+        "floorCollapseShare": float(np.mean(floor & (actual_move < -1.0))),
+        "p90AbsError": float(np.quantile(abs_err, 0.90)),
+        "p95AbsError": float(np.quantile(abs_err, 0.95)),
+        "signedBias": float(np.mean(signed_bias)),
+        "floor": _slice_error(floor),
+        "nonFloor": _slice_error(~floor),
         "note": (
             "actualMove is y − risk (how far the later report moved). "
             "residualError is y − pred. The −30 spike is floor collapse."
