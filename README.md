@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, and leave-one-high-risk-out are measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, leave-one-high-risk-out, and a class-threshold sweep are measured.
 
 ## Result
 
@@ -48,6 +48,18 @@ Official-test labels (Zenodo 4463683, 25 Jan 2021) were scored once after freeze
 | *F*<sub>2</sub> | **0.739** | 0.000 | 0.017 | 0.025 | **0.739** |
 
 H4 (dilution / max-risk probe, logistic and Spearman only; not an extra exhibit model). On the frozen local test, `dilution_gap = max_risk_estimate − risk` has Spearman **ρ = −0.768** with `|y − risk|` and **ρ = +0.407** with the floor label. Combined covariance volume (`log_combined_sigma_det`) has **ρ = +0.399** with `|y − risk|`. A train-fit logistic of floor ~ gap + miss distance + `n_messages` has test AUC **0.819**. Large gaps are already-floor snapshots (Q1 floor rate 0.56 and mean `|Δrisk|` 13.03; Q3–Q4 floor rate > 0.95 and mean movement < 0.75). F10 is a weak control (ρ = 0.108 with `|Δrisk|`). The naive “large max-risk gap means the report will still move” story is rejected. Large covariance predicting more movement is supported. This is a paper figure (`docs/figures/dilution-probe.png`), not a homepage widget.
+
+Class-threshold sweep on the **same frozen predictions** (no retune). Operational LEO reaction is nearer `−4` to `−5`; ESA scored `−6` to have enough positives. False-reassurance analogue: accepted forecast under the existing `−6` abstention mask with `pred < t` while `y ≥ t`.
+
+| `t` | *n*+ | Persist *F*<sub>2</sub> | Persist FR | Persist *L* | Ensemble *F*<sub>2</sub> | Ensemble FR | Ensemble *L* |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| −8 | 68 | 0.660 | 2 | 1.66 | 0.210 | 5 | 9.49 |
+| −7 | 37 | 0.502 | 3 | 0.777 | 0.215 | 4 | 2.51 |
+| −6 | 9 | 0.361 | 1 | **0.167** | 0.361 | 1 | **0.167** |
+| −5 | 3 | 0.349 | 0 | **0.032** | 0.349 | 0 | **0.032** |
+| −4 | 1 | 0 | 1 | — | 0 | 1 | — |
+
+Unguarded XGBoost, residual reconstruction, and the floor hurdle have *F*<sub>2</sub> = 0 from `−7` through `−4`. The exhibit has no threshold picker; this table lives in the paper and `metrics.json`.
 
 ## Research question
 
@@ -90,7 +102,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 7. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 26.0% and 47.7% of outcomes. Split conformal covers 49.6% and 89.7%. The case UI still shows bootstrap ranges as model spread. Conformal numbers live on the research surface (paper, laboratory, `metrics.json`).
 
-8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Leave-one-high-risk-out: train residual XGBoost without that event, score it. Persistence is closer on **66 / 66** (mean `|error|` 1.21 vs 12.59). Treat the high-risk probability as a scarce-label fit, not an operational warning system.
+8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Leave-one-high-risk-out: train residual XGBoost without that event, score it. Persistence is closer on **66 / 66** (mean `|error|` 1.21 vs 12.59). Treat the high-risk probability as a scarce-label fit, not an operational warning system. At operational cuts the local test has **3** events at `−5` and **1** at `−4`; every frozen system misses that one `−4` event.
 
 9. **Failures are not one bucket.** Of 1,659 test events, 837 are accurate to 0.5 log units. Dominant errors: 366 over-predictions, 209 under-predictions, 97 moderate errors, 63 sparse-history errors, 39 floor collapses to −30, 26 close-approach errors, 20 false high-risk calls, and 2 late high-risk jumps.
 
