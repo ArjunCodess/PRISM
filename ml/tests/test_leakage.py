@@ -78,6 +78,19 @@ def test_grouped_splits_are_disjoint(
     assert union == set(int(x) for x in features["event_id"].unique())
 
 
+def test_redraw_seeds_keep_seed_42_and_change_test_ids(
+    events_and_features: tuple[list[dict[str, object]], pd.DataFrame],
+) -> None:
+    from split import REDRAW_SEEDS
+
+    _events, features = events_and_features
+    assert REDRAW_SEEDS[0] == 42
+    first = set(grouped_splits(features, seed=42).test_ids)
+    second = set(grouped_splits(features, seed=43).test_ids)
+    assert first != second
+    assert grouped_splits(features, seed=42).test_ids == grouped_splits(features, seed=42).test_ids
+
+
 def test_derived_geometry_is_checked(
     events_and_features: tuple[list[dict[str, object]], pd.DataFrame],
 ) -> None:

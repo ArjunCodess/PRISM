@@ -328,3 +328,19 @@ def test_dilution_probe_logistic_recovers_floor_signal() -> None:
     assert report["logisticFloor"]["testAuc"] > 0.75
     assert len(report["quartiles"]) >= 2
     assert report["replacesExhibit"] is False
+
+
+def test_repeated_splits_and_loo_run_on_synthetic() -> None:
+    from constants import HIGH_RISK_THRESHOLD
+    from experiments import leave_one_high_risk_out, repeated_grouped_splits
+
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=60, seed=5))
+    features = build_feature_table(build_event_histories(frame))
+    repeats = repeated_grouped_splits(features, seeds=(5, 6))
+    assert repeats["replacesExhibit"] is False
+    assert len(repeats["splits"]) == 2
+    assert np.isfinite(repeats["summary"]["xgboost"]["maeAdvantage"]["mean"])
+    loo = leave_one_high_risk_out(features)
+    n_high = int((features["y"].to_numpy() >= HIGH_RISK_THRESHOLD).sum())
+    assert loo["nHighRisk"] == n_high
+    assert loo["persistCloser"] + loo["residualCloser"] + loo["ties"] == n_high

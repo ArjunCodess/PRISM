@@ -48,6 +48,8 @@ from experiments import (  # noqa: E402
     dilution_probe,
     forecast_horizon_table,
     historical_ablation,
+    leave_one_high_risk_out,
+    repeated_grouped_splits,
     shap_outcome_contrast,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
@@ -449,8 +451,13 @@ def score_frozen_honest_metrics() -> dict[str, object]:
     )
     metrics["uncertainty"] = uncertainty
     metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
-    official = score_official_test(ROOT, artifacts)
-    metrics["officialTest"] = official
+    metrics["repeatedSplits"] = repeated_grouped_splits(features)
+    metrics["leaveOneHighRiskOut"] = leave_one_high_risk_out(features)
+    official_existing = metrics.get("officialTest")
+    if isinstance(official_existing, dict) and official_existing.get("frozenBeforeLook"):
+        metrics["officialTest"] = official_existing
+    else:
+        metrics["officialTest"] = score_official_test(ROOT, artifacts)
     write_json(metrics_path, metrics)
     card_path = artifacts / "model_card.json"
     if card_path.exists():
@@ -467,6 +474,7 @@ def score_frozen_honest_metrics() -> dict[str, object]:
             "spearmanAbsMove": metrics["dilutionProbe"]["spearmanAbsMove"],
             "quartiles": metrics["dilutionProbe"]["quartiles"],
         }
+        official = metrics["officialTest"]
         card["officialTest"] = {
             "frozenBeforeLook": official["frozenBeforeLook"],
             "nEvents": official["nEvents"],
@@ -475,6 +483,20 @@ def score_frozen_honest_metrics() -> dict[str, object]:
             "board": official["board"],
             "esa": official["esa"],
             "replacesExhibit": False,
+        }
+        card["repeatedSplits"] = {
+            "replacesExhibit": False,
+            "summary": metrics["repeatedSplits"]["summary"],
+            "reportedSeed": metrics["repeatedSplits"]["reportedSeed"],
+        }
+        loo = metrics["leaveOneHighRiskOut"]
+        card["leaveOneHighRiskOut"] = {
+            "replacesExhibit": False,
+            "nHighRisk": loo["nHighRisk"],
+            "persistCloser": loo["persistCloser"],
+            "residualCloser": loo["residualCloser"],
+            "ties": loo["ties"],
+            "residualCloserShare": loo["residualCloserShare"],
         }
         write_json(card_path, card)
     return honest

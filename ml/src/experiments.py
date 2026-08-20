@@ -5,12 +5,18 @@ import pandas as pd
 from abstention import coverage_curve, selective_metrics
 from build_events import build_event_histories
 from constants import HIGH_RISK_THRESHOLD, HORIZON_HOURS, NEGLIGIBLE_RISK, RANDOM_STATE
-from evaluate import floor_mask, regression_metrics
+from evaluate import floor_mask, level_scoreboard_row, regression_metrics
 from explain import feature_group, shap_explainer
 from feature_sets import FAMILIES, columns_for_family
 from features import build_feature_table
-from split import subset
-from train_regressor import fit_xgboost, persistence_predict, predict_model
+from split import REDRAW_SEEDS, grouped_splits, subset
+from train_regressor import (
+    fit_residual_xgboost,
+    fit_xgboost,
+    persistence_predict,
+    predict_model,
+    predict_reconstructed,
+)
 
 
 def _keep_columns(frame: pd.DataFrame, family: str) -> pd.DataFrame:
@@ -471,4 +477,137 @@ def dilution_probe(
             "spearmanAbsMove": f10_abs,
         },
         "covarianceSpearmanAbsMove": cov_abs,
+    }
+
+
+def _mean_sd(values: list[float]) -> dict[str, float]:
+    arr = np.asarray(values, dtype=float)
+    return {"mean": float(np.mean(arr)), "sd": float(np.std(arr, ddof=1)) if arr.size > 1 else 0.0}
+
+
+def _split_scoreboard(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, object]:
+    y = test["y"].to_numpy(dtype=float)
+    persist = persistence_predict(test)
+    xgb_pred = predict_model(fit_xgboost(train), test)
+    residual_pred = predict_reconstructed(fit_residual_xgboost(train), test)
+    persist_row = level_scoreboard_row(y, persist)
+    xgb_row = level_scoreboard_row(y, xgb_pred)
+    residual_row = level_scoreboard_row(y, residual_pred)
+    persist_mae = float(persist_row["mae"])
+    return {
+        "nTest": int(len(test)),
+        "nFloor": int(floor_mask(y).sum()),
+        "nHighRisk": int((y >= HIGH_RISK_THRESHOLD).sum()),
+        "persistence": persist_row,
+        "xgboost": {
+            **xgb_row,
+            "maeAdvantage": persist_mae - float(xgb_row["mae"]),
+            "residualMae": float(xgb_row["mae"]),
+        },
+        "residual": {
+            **residual_row,
+            "maeAdvantage": persist_mae - float(residual_row["mae"]),
+            "residualMae": float(residual_row["mae"]),
+        },
+    }
+
+
+def repeated_grouped_splits(
+    features: pd.DataFrame, seeds: tuple[int, ...] = REDRAW_SEEDS
+) -> dict[str, object]:
+    rows: list[dict[str, object]] = []
+    for seed in seeds:
+        splits = grouped_splits(features, seed=seed)
+        train = subset(features, splits.train_ids)
+        test = subset(features, splits.test_ids)
+        payload = _split_scoreboard(train, test)
+        payload["seed"] = int(seed)
+        payload["reportedSplit"] = bool(seed == RANDOM_STATE)
+        rows.append(payload)
+    summary = {}
+    for system in ("xgboost", "residual"):
+        summary[system] = {
+            "maeAdvantage": _mean_sd([float(row[system]["maeAdvantage"]) for row in rows]),
+            "floorExcludedMae": _mean_sd(
+                [float(row[system]["floorExcludedMae"]) for row in rows]
+            ),
+            "residualMae": _mean_sd([float(row[system]["residualMae"]) for row in rows]),
+            "mae": _mean_sd([float(row[system]["mae"]) for row in rows]),
+        }
+    summary["persistence"] = {
+        "mae": _mean_sd([float(row["persistence"]["mae"]) for row in rows]),
+        "floorExcludedMae": _mean_sd(
+            [float(row["persistence"]["floorExcludedMae"]) for row in rows]
+        ),
+    }
+    return {
+        "seeds": list(seeds),
+        "reportedSeed": RANDOM_STATE,
+        "replacesExhibit": False,
+        "note": (
+            "Each redraw retrains unguarded XGBoost and residual XGBoost on that "
+            "seed's train ids only. Seed 42 remains the reported local split."
+        ),
+        "splits": rows,
+        "summary": summary,
+    }
+
+
+def leave_one_high_risk_out(features: pd.DataFrame) -> dict[str, object]:
+    high_ids = [
+        int(event_id)
+        for event_id in features.loc[
+            features["y"].to_numpy(dtype=float) >= HIGH_RISK_THRESHOLD, "event_id"
+        ]
+    ]
+    rows: list[dict[str, object]] = []
+    persist_closer = 0
+    residual_closer = 0
+    ties = 0
+    for event_id in high_ids:
+        train = features.loc[features["event_id"] != event_id]
+        test = features.loc[features["event_id"] == event_id]
+        if train.empty or test.empty:
+            continue
+        persist = float(persistence_predict(test)[0])
+        pred = float(predict_reconstructed(fit_residual_xgboost(train), test)[0])
+        y = float(test["y"].iloc[0])
+        persist_err = abs(y - persist)
+        residual_err = abs(y - pred)
+        if residual_err < persist_err - 1e-12:
+            winner = "residual"
+            residual_closer += 1
+        elif persist_err < residual_err - 1e-12:
+            winner = "persistence"
+            persist_closer += 1
+        else:
+            winner = "tie"
+            ties += 1
+        rows.append(
+            {
+                "eventId": event_id,
+                "y": y,
+                "risk": persist,
+                "residualPred": pred,
+                "persistAbsError": persist_err,
+                "residualAbsError": residual_err,
+                "closer": winner,
+            }
+        )
+    n = len(rows)
+    return {
+        "nHighRisk": n,
+        "replacesExhibit": False,
+        "fitOn": "all eligible events except the held-out high-risk event",
+        "persistCloser": persist_closer,
+        "residualCloser": residual_closer,
+        "ties": ties,
+        "residualCloserShare": float(residual_closer / n) if n else float("nan"),
+        "meanPersistAbsError": float(np.mean([row["persistAbsError"] for row in rows]))
+        if rows
+        else float("nan"),
+        "meanResidualAbsError": float(np.mean([row["residualAbsError"] for row in rows]))
+        if rows
+        else float("nan"),
+        "events": rows,
     }
