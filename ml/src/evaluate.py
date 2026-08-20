@@ -42,6 +42,10 @@ def floor_mask(y_true: np.ndarray, eps: float = FLOOR_EPS) -> np.ndarray:
     return np.asarray(y_true, dtype=float) <= (NEGLIGIBLE_RISK + eps)
 
 
+def floor_mask_at(y_true: np.ndarray, threshold: float, eps: float = FLOOR_EPS) -> np.ndarray:
+    return np.asarray(y_true, dtype=float) <= (float(threshold) + eps)
+
+
 def _error_slice(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
     if y_true.size == 0:
         return {"n": 0, "mae": float("nan"), "rmse": float("nan"), "median_ae": float("nan")}
@@ -267,10 +271,11 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, floa
     return metrics
 
 
-def classification_metrics(
-    y_true: np.ndarray, proba: np.ndarray, threshold: float = 0.5
+def binary_classification_metrics(
+    labels: np.ndarray, proba: np.ndarray, threshold: float = 0.5
 ) -> dict[str, float]:
-    labels = (y_true >= HIGH_RISK_THRESHOLD).astype(int)
+    labels = np.asarray(labels, dtype=int)
+    proba = np.clip(np.asarray(proba, dtype=float), 0.0, 1.0)
     preds = (proba >= threshold).astype(int)
     precision, recall, _ = precision_recall_curve(labels, proba)
     pr_auc = float(np.trapezoid(precision[::-1], recall[::-1])) if len(precision) > 1 else 0.0
@@ -281,10 +286,17 @@ def classification_metrics(
     return {
         "pr_auc": pr_auc,
         "roc_auc": roc,
-        "brier": float(brier_score_loss(labels, np.clip(proba, 0, 1))),
+        "brier": float(brier_score_loss(labels, proba)),
         "precision": float(np.mean(labels[preds == 1] == 1) if preds.any() else 0.0),
         "recall": float(np.mean(preds[labels == 1] == 1) if labels.any() else 0.0),
     }
+
+
+def classification_metrics(
+    y_true: np.ndarray, proba: np.ndarray, threshold: float = 0.5
+) -> dict[str, float]:
+    labels = (np.asarray(y_true, dtype=float) >= HIGH_RISK_THRESHOLD).astype(int)
+    return binary_classification_metrics(labels, proba, threshold=threshold)
 
 
 def persistence_improvement(
@@ -306,9 +318,15 @@ def persistence_improvement(
 
 
 def reliability_bins(
-    y_true: np.ndarray, proba: np.ndarray, n_bins: int = 8
+    y_true: np.ndarray,
+    proba: np.ndarray,
+    n_bins: int = 8,
+    labels: np.ndarray | None = None,
 ) -> list[dict[str, float]]:
-    labels = (y_true >= HIGH_RISK_THRESHOLD).astype(float)
+    if labels is None:
+        labels = (np.asarray(y_true, dtype=float) >= HIGH_RISK_THRESHOLD).astype(float)
+    else:
+        labels = np.asarray(labels, dtype=float)
     edges = np.linspace(0.0, 1.0, n_bins + 1)
     rows: list[dict[str, float]] = []
     for i in range(n_bins):
