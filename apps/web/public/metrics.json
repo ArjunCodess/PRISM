@@ -1999,5 +1999,172 @@
       "sesc": 0.556,
       "note": "Uriot et al. 2021 ESA-style loss on this official-test distribution, after clipping predictions below -6 to -6.001."
     }
+  },
+  "dilutionProbe": {
+    "hypothesis": "Events whose pessimistic max-risk sits far above the current report, or whose covariance is still large, move more before TCA. F10 is a negative control. This is not a covariance-tasking model.",
+    "dilutionGap": "max_risk_estimate - risk on the cutoff-safe snapshot",
+    "fitOn": "logistic coefficients from frozen train event ids only; Spearman and quartiles reported on test",
+    "replacesExhibit": false,
+    "spearmanAbsMove": {
+      "dilution_gap": {
+        "n": 1659,
+        "rho": -0.7678622609282103,
+        "pvalue": 0.0
+      },
+      "log_t_cov_det": {
+        "n": 1659,
+        "rho": 0.16506965209549107,
+        "pvalue": 1.3348319224221269e-11
+      },
+      "log_c_cov_det": {
+        "n": 1659,
+        "rho": 0.3540160978468425,
+        "pvalue": 3.6341101884234753e-50
+      },
+      "log_combined_sigma_det": {
+        "n": 1659,
+        "rho": 0.39869336419612256,
+        "pvalue": 2.5254365042098716e-64
+      },
+      "t_sigma_r": {
+        "n": 1659,
+        "rho": 0.11766429713412895,
+        "pvalue": 1.5424691808302757e-06
+      },
+      "t_obs_used_slope": {
+        "n": 1659,
+        "rho": -0.05139232432521208,
+        "pvalue": 0.03634405523172381
+      },
+      "n_messages": {
+        "n": 1659,
+        "rho": -0.2077351663357476,
+        "pvalue": 1.2495497211291442e-17
+      },
+      "F10": {
+        "n": 1603,
+        "rho": 0.1082565534902876,
+        "pvalue": 1.4009659236825262e-05
+      }
+    },
+    "spearmanFloor": {
+      "dilution_gap": {
+        "n": 1659,
+        "rho": 0.40748848678343796,
+        "pvalue": 2.2214961237330046e-67
+      },
+      "log_t_cov_det": {
+        "n": 1659,
+        "rho": -0.03974512224121785,
+        "pvalue": 0.10560424914982296
+      },
+      "log_c_cov_det": {
+        "n": 1659,
+        "rho": -0.2459702773036153,
+        "pvalue": 2.765762427206228e-24
+      },
+      "log_combined_sigma_det": {
+        "n": 1659,
+        "rho": -0.2566269629556398,
+        "pvalue": 2.3259075872336318e-26
+      },
+      "t_sigma_r": {
+        "n": 1659,
+        "rho": -0.014409754014878462,
+        "pvalue": 0.5575333666539208
+      },
+      "t_obs_used_slope": {
+        "n": 1659,
+        "rho": 0.011853345589043213,
+        "pvalue": 0.629486607318049
+      },
+      "n_messages": {
+        "n": 1659,
+        "rho": 0.07640041048984239,
+        "pvalue": 0.0018453298556364555
+      },
+      "F10": {
+        "n": 1603,
+        "rho": -0.04667421663638417,
+        "pvalue": 0.06172324714906924
+      }
+    },
+    "logisticFloor": {
+      "features": [
+        "dilution_gap",
+        "miss_distance",
+        "n_messages"
+      ],
+      "coefficients": {
+        "dilution_gap": 0.1399124256873696,
+        "miss_distance": -1.24526956383221e-05,
+        "n_messages": 0.018782868135902474
+      },
+      "intercept": -0.296408491481863,
+      "testAuc": 0.8192254688433591,
+      "nTrain": 3731,
+      "nTest": 1659,
+      "trainFloorRate": 0.8161350844277674,
+      "testFloorRate": 0.814948764315853
+    },
+    "quartiles": [
+      {
+        "quartile": 1,
+        "gapLow": -0.04220429907767853,
+        "gapHigh": 6.767435045893972,
+        "n": 410,
+        "floorRate": 0.5560975609756098,
+        "meanAbsMove": 13.032064516093302,
+        "persistMae": 13.032064516093302,
+        "xgboostMae": 7.346500941884829
+      },
+      {
+        "quartile": 2,
+        "gapLow": 6.767435045893972,
+        "gapHigh": 22.581608366032057,
+        "n": 416,
+        "floorRate": 0.78125,
+        "meanAbsMove": 6.145981881605485,
+        "persistMae": 6.145981881605485,
+        "xgboostMae": 2.8996415255245163
+      },
+      {
+        "quartile": 3,
+        "gapLow": 22.581608366032057,
+        "gapHigh": 23.74460468573342,
+        "n": 417,
+        "floorRate": 0.9640287769784173,
+        "meanAbsMove": 0.5210858325832971,
+        "persistMae": 0.5210858325832971,
+        "xgboostMae": 0.6893717929801287
+      },
+      {
+        "quartile": 4,
+        "gapLow": 23.74460468573342,
+        "gapHigh": 26.93866980102268,
+        "n": 414,
+        "floorRate": 0.9541062801932367,
+        "meanAbsMove": 0.7482669544428538,
+        "persistMae": 0.7482669544428538,
+        "xgboostMae": 0.36826928350582305
+      }
+    ],
+    "h4Supported": true,
+    "h4GapPredictsMoreMovement": false,
+    "h4GapAssociationExists": true,
+    "h4GapSign": "negative",
+    "negativeControl": {
+      "name": "F10",
+      "spearmanAbsMove": {
+        "n": 1603,
+        "rho": 0.1082565534902876,
+        "pvalue": 1.4009659236825262e-05
+      }
+    },
+    "covarianceSpearmanAbsMove": {
+      "n": 1659,
+      "rho": 0.39869336419612256,
+      "pvalue": 2.5254365042098716e-64
+    }
   }
 }
