@@ -344,3 +344,72 @@ def test_repeated_splits_and_loo_run_on_synthetic() -> None:
     n_high = int((features["y"].to_numpy() >= HIGH_RISK_THRESHOLD).sum())
     assert loo["nHighRisk"] == n_high
     assert loo["persistCloser"] + loo["residualCloser"] + loo["ties"] == n_high
+
+
+def test_censoring_sensitivity_changes_floor_rate() -> None:
+    from review_armor import censoring_sensitivity, trend_predict
+
+    y = np.array([-30.0, -22.0, -8.0, -6.0])
+    persist = np.array([-10.0, -22.0, -8.0, -6.0])
+    pred = np.array([-30.0, -22.0, -7.5, -12.0])
+    payload = censoring_sensitivity(y, persist, pred, pred)
+    rates = [row["floorRate"] for row in payload["thresholds"]]
+    assert rates[0] > rates[-1]
+    assert payload["thresholds"][-1]["threshold"] == -30.0
+    frame = pd.DataFrame({"risk": [-10.0, -8.0], "risk_delta_last2": [-2.0, 0.0]})
+    np.testing.assert_allclose(trend_predict(frame), np.array([-12.0, -8.0]))
+
+
+def test_floor_classifier_eval_counts_false_positives() -> None:
+    from review_armor import floor_classifier_evaluation
+
+    y = np.array([-30.0, -30.0, -8.0, -7.0])
+    proba = np.array([0.9, 0.2, 0.8, 0.1])
+    risk = np.array([-12.0, -11.0, -9.0, -7.0])
+    gap = np.array([8.0, 7.0, 1.0, 0.2])
+    payload = floor_classifier_evaluation(y, proba, risk, gap, threshold=0.5)
+    assert payload["falsePositives"]["n"] == 1
+    assert payload["scores"]["roc_auc"] >= 0.0
+    assert any(row["threshold"] == 0.15 for row in payload["confusionGrid"])
+
+
+def test_matched_cohort_uses_same_events() -> None:
+    from review_armor import matched_cohort_horizons
+    from split import grouped_splits
+
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=80, seed=11))
+    features = build_feature_table(build_event_histories(frame))
+    splits = grouped_splits(features, seed=11)
+    payload = matched_cohort_horizons(frame, splits.train_ids, splits.test_ids)
+    ns = {row["nTest"] for row in payload["rows"]}
+    assert len(ns) == 1
+    assert payload["nTest"] == next(iter(ns))
+
+
+def test_h4_partial_effects_runs_on_tiny_table() -> None:
+    from review_armor import h4_partial_effects
+
+    n = 40
+    rng = np.random.default_rng(0)
+    frame = pd.DataFrame(
+        {
+            "y": rng.uniform(-30, -6, n),
+            "risk": rng.uniform(-20, -6, n),
+            "log_combined_sigma_det": rng.normal(0, 1, n),
+            "n_messages": rng.integers(2, 10, n).astype(float),
+            "miss_distance": rng.uniform(100, 2000, n),
+            "max_risk_estimate": rng.uniform(-12, -4, n),
+        }
+    )
+    payload = h4_partial_effects(frame)
+    assert "risk" in payload["standardizedCoefficients"]
+    assert payload["language"].startswith("association")
+    from calibrate import interval_report
+
+    y = np.array([-8.0, -30.0, -6.0])
+    lo = np.array([-10.0, -32.0, -20.0])
+    hi = np.array([-6.0, -28.0, -10.0])
+    report = interval_report(y, lo, hi)
+    assert report["nCovered"] == 2
+    assert report["medianWidth"] == pytest.approx(4.0)
+    assert report["q25Width"] <= report["q75Width"]

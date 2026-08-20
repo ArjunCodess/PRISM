@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
@@ -106,5 +107,9 @@ def test_error_anatomy_counts_floor_collapses() -> None:
     payload = error_anatomy(y, risk, pred)
     assert payload["nFloorCollapse"] == 1
     assert payload["nUnmoved"] == 1
+    assert payload["exactPersistenceShare"] == pytest.approx(1.0 / 3.0)
+    assert "p90AbsError" in payload
+    assert payload["floor"]["n"] == 2
+    assert payload["nonFloor"]["n"] == 1
     assert sum(payload["actualMoveCounts"]) == 3
     assert sum(payload["residualErrorCounts"]) == 3
