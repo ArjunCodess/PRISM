@@ -4,13 +4,13 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{textcomp}
-\usepackage{xcolor}
+\usepackage{url}
 
 \graphicspath{{../docs/figures/}}
 
 \begin{document}
 
-\title{Predictive Information in Conjunction Data-Message Histories Decays as Time to Closest Approach Decreases}
+\title{How Much Can Conjunction Message Histories Predict Beyond Persistence?}
 
 \author{\IEEEauthorblockN{Arjun Vijay Prakash}
 \IEEEauthorblockA{\textit{City Montessori School, Kanpur Road Campus}\\
@@ -20,46 +20,55 @@ Lucknow, India}
 \maketitle
 
 \begin{abstract}
-Conjunction Data Messages recompute collision probability as later tracking shrinks orbital uncertainty. An earlier forecast is useful only if the history available then contains information beyond copying the latest report. This study freezes the clock at 72, 48, 24, and 12 hours before closest approach on the public ESA Collision Avoidance Challenge archive and asks that question under a leakage-safe split. Extra information is real, but it is a floor-collapse statistic and a long-horizon statistic, not a typical-event accuracy win and not a high-risk warning win. On 1659 held-out events, 1352 later reports sit at the dataset floor of $-30$, and persistence already has median absolute error 0. Unguarded XGBoost lowers mean absolute error from 5.080 to 2.809, yet floor-excluded MAE rises from 4.073 to 7.562 and a Wilcoxon test on paired absolute error does not reject equality ($p=0.91$). The learned advantage is 4.53 log units at 72 hours and 0.06 at 12 hours. Validation therefore selects a two-part floor hurdle (test MAE 2.109, $F_2=0$). On ESA's 2167 official-test events, clipped persistence matches Uriot last-risk-prediction loss $L=0.694$; the floor hurdle lowers MAE but raises $L$ to 70.5. Combined covariance volume tracks later movement; the max-risk gap tracks floor membership, not extra movement. This is a research prototype, not flight software.
+Can a cutoff-safe history of Conjunction Data Messages predict a later reported $\log_{10} P_c$ better than copying today's report? On the public ESA Collision Avoidance Challenge archive the apparent mean-error win is real, but it is almost entirely a later collapse to the dataset floor of $-30$, not a typical-event accuracy gain and not a high-risk decision gain. Predictive information beyond persistence is largest 72 hours before closest approach and is consistent with zero at 12 hours on a matched event cohort. Unguarded XGBoost lowers MAE from 5.080 to 2.809 on 1659 held-out events, yet floor-excluded MAE rises from 4.073 to 7.562 (Wilcoxon $p=0.91$). A validation-selected two-part floor hurdle reaches MAE 2.109 with $F_2=0$. On ESA's frozen official test, last-risk persistence matches Uriot $L=0.694$; unguarded XGBoost explodes to $L=1.75\times 10^{6}$ after one overconfident high-risk miss. This is a research measurement, not flight software.
 \end{abstract}
 
 \begin{IEEEkeywords}
-conjunction data message, collision probability, space debris, forecast horizon, persistence
+conjunction data message, reported collision probability, forecast horizon, persistence, selective prediction
 \end{IEEEkeywords}
 
 \section{Introduction}
 
-Two orbiting objects can pass close enough to generate a conjunction alert. The reported collision probability $P_c$ is not a physical constant: it is recomputed as radar and optical observations shrink (or fail to shrink) the combined covariance~\cite{ccsdsCdm,hejduk2016}. Waiting usually improves the estimate and leaves less time to plan. ESA posed the forecasting form of this problem in the 2019 Collision Avoidance Challenge: predict the final reported $\log_{10} P_c$ from messages with time to closest approach of at least two days~\cite{uriot2021,esaKelvins}. Persistence---copying the latest pre-cutoff risk---was a strong baseline. Only 12 of 96 teams beat it on ESA-style loss.
+Two catalogued objects can pass close enough to generate a Conjunction Data Message (CDM)~\cite{ccsdsCdm}. The reported collision probability $P_c$ is recomputed as later tracking shrinks---or fails to shrink---the combined covariance~\cite{hejduk2016}. Waiting usually improves the estimate and consumes planning time. ESA posed the forecasting form of this problem in the 2019 Collision Avoidance Challenge: predict the final reported $\log_{10} P_c$ from messages with time to closest approach of at least two days~\cite{uriot2021,esaKelvins}. Persistence---copying the latest pre-cutoff report---was already strong. Only 12 of 96 teams beat it on ESA-style loss. Conjunction volume has since grown with mega-constellations~\cite{boley2021,esaSerr2024}, so the same question is more, not less, relevant: how much extra information sits in an early CDM history?
 
-That competition does not answer how the extra information, if any, depends on remaining time, nor whether a mean-error win is a typical-event win. Physics-based $P_c$ forecasting via expected covariance reduction~\cite{duncan2014} and operational work on probability dilution~\cite{alfano2003,hejduk2016} suggest that large early covariances can make $P_c$ look safely small, then later updates either collapse risk to negligible or concentrate it. A recent machine-learning model predicts which conjunctions will keep high covariance, for extra tracking~\cite{stauch2026}. The target here is different: the later reported $\log_{10} P_c$ itself, under a frozen information cutoff.
+Physics-based $P_c$ forecasting via expected covariance reduction~\cite{duncan2014} and operational work on probability dilution~\cite{alfano2003,hejduk2016} suggest that large early covariances can make $P_c$ look safely small, after which later updates either collapse the report to negligible or concentrate it. A recent model predicts which conjunctions will keep high covariance, for extra tracking~\cite{stauch2026}. The target here is different: the later \emph{reported} $\log_{10} P_c$ under a frozen information cutoff. That target is itself an estimate, not a ground-truth collision occurrence.
 
-The working hypotheses are as follows.
-\begin{itemize}
-\item H1: Extra predictive information beyond copying the latest report is largest at long horizons and approaches zero near closest approach.
-\item H2: Most of the mean-error win is rare floor jumps, not typical events becoming more accurate.
-\item H3: Extra information does not automatically improve high-risk decisions under the ESA class $\log_{10} P_c \ge -6$.
-\item H4: Large combined covariance at T$-48$ predicts later $|\Delta\mathrm{risk}|$. The snapshot gap $\texttt{max\_risk\_estimate}-\texttt{risk}$ predicts floor membership, not larger later movement.
-\end{itemize}
+This paper makes three contributions. (1)~A leakage-safe measurement of extra information beyond persistence as a function of forecast horizon. (2)~A decomposition showing that mean-absolute-error (MAE) gains are dominated by collapses to the archive floor $-30$. (3)~Evidence that mean-error optimization can worsen ESA-style high-risk loss. The working hypotheses, and a one-line preview, are: H1 extra information decays toward closest approach (supported on a matched cohort); H2 most of the MAE win is floor jumps, not typical-event accuracy (supported); H3 extra information does not improve the $\log_{10} P_c\ge -6$ tail under this protocol (supported); H4 covariance volume and the max-risk gap are associated with later movement and floor membership (mixed after partialling).
 
-\section{Methods}
+\section{Dataset and Protocol}
 
-\subsection{Data}
-Labeled CDMs from the ESA training archive comprise 162{,}634 rows and 13{,}154 events, 2015--2019, anonymized~\cite{esaKelvins}. Events need a message at or before the cutoff and a later labeled update. That yields 8{,}293 eligible events at 48 hours before closest approach. Train, validation, calibration, and test are event-disjoint (3{,}731 / 1{,}659 / 1{,}244 / 1{,}659). Seed 42 is the reported local split. Five grouped redraws use seeds $42$--$46$ with the same recipe and no test-tuned knobs; those rows are extra measurements, not extra models. Leave-one-high-risk-out retrains residual XGBoost on all eligible events except one of the 66 local $\log_{10} P_c\ge -6$ events, then scores that event. Features use only rows with time to closest approach at or above the cutoff. The later $\log_{10} P_c$ is the label, never an input. Official-test inputs are the public Kelvins \texttt{test\_data.csv} (all $\mathrm{time\_to\_tca}\ge 2$). Labels are the released \texttt{true\_risk} column from Zenodo record 4463683 (25 January 2021), joined after freeze. Shared numeric \texttt{event\_id}s between train and test are independent numbering, not shared conjunctions (0 identical pre-cutoff snapshots). Private post-cutoff fields are not features. No hyperparameter was changed after seeing official-test scores.
+Labeled CDMs from the ESA training archive comprise 162{,}634 rows and 13{,}154 events, 2015--2019, anonymized~\cite{esaKelvins}. An event needs a message at or before the cutoff and a later labeled update, yielding 8{,}293 eligible events at 48 hours. Train, validation, calibration, and test are event-disjoint (3{,}731 / 1{,}659 / 1{,}244 / 1{,}659). Seed 42 is the reported local split. Five grouped redraws use seeds $42$--$46$ with no test-tuned knobs. Official-test inputs are public Kelvins \texttt{test\_data.csv}; labels are the released \texttt{true\_risk} column from Zenodo 4463683, joined after freeze ($n=2167$). No hyperparameter was changed after seeing official-test scores. The public file has no calendar dates and no object-pair identifiers, so a year-based split and NORAD grouping are impossible; a mission-grouped split and the official test are the available robustness checks. Fig.~\ref{fig:flow} records the counts.
 
-\subsection{Model}
-The current selected policy on the project surface is a two-part floor hurdle: a classifier for $P(y=-30)$ from the final reported risk, a residual XGBoost fit on non-floor training events only, threshold $0.15$ chosen on validation, and no $-6$ persistence guard. At inference the model predicts $-30$ when $P(\mathrm{floor})$ exceeds that threshold, otherwise $\mathrm{risk}+\widehat{\Delta}$. Live intervals are split conformal around that point, fit on the calibration split. SHAP explains the residual regressor. Baselines are persistence, the training-set median, Ridge, unguarded XGBoost, and the 18 August bootstrap ensemble with a $-6$ persistence guard (an exhibit snapshot, not a live mode). A residual candidate that predicts $y-\mathrm{risk}$ on all cutoff-safe training rows remains a research artifact. Official-test scoring uses those frozen artifacts only. Predictions below $-6$ are clipped to $-6.001$ for ESA-style loss, matching Uriot \textit{et al.}~\cite{uriot2021}. A class-threshold sweep reuses those frozen point forecasts and changes only the class cut at $\log_{10} P_c\in\{-8,-7,-6,-5,-4\}$; models are not retuned. For each cut, predictions below $t$ are clipped to $t-0.001$.
+\begin{figure}[t]
+\centerline{\includegraphics[width=\columnwidth]{dataset-flow.png}}
+\caption{Archive construction. 162{,}634 CDM rows yield 8{,}293 cutoff-safe events at T$-48$, then an event-disjoint split and a 2167-event official test.}
+\label{fig:flow}
+\end{figure}
 
-\subsection{Metrics}
-Reported scores are mean and median absolute error in $\log_{10} P_c$, the share within 0.5 log units, and ESA-style loss $L=\mathrm{MSE}_{HR}/F_2$ with $\beta=2$ on the $-6$ class~\cite{uriot2021}. Operational LEO reaction is nearer $-4$ to $-5$; ESA scored $-6$ to keep enough positives. The sweep reports $L$, $F_2$, $n{+}$, and a false-reassurance analogue (accepted forecast under the existing $-6$ abstention mask with $\widehat{y}<t$ while $y\ge t$). $L$ is omitted when $F_2=0$. An event is a floor event if the later report satisfies $y\le -30+10^{-6}$. Floor-excluded MAE is MAE on the complement. Residual MAE is $\mathrm{mean}|y-\mathrm{risk}|$ versus $\mathrm{mean}|\widehat{y}-\mathrm{risk}|$: how far the later report moved, versus how far the model moved the snapshot. A 95\% interval on MAE(persistence)$-$MAE(model) uses 1000 event-resamples. A two-sided Wilcoxon signed-rank test compares per-event absolute errors. Split conformal uses absolute residuals $|y-\widehat{y}|$ of the live floor-hurdle point on the 1244 calibration events~\cite{lei2018}. Research tables also report conformal bands around the 18 August ensemble median. Official-test $L$ is the secondary evaluation on 2167 events with 150 high-risk positives. The dilution probe is a logistic / Spearman baseline, not an extra XGBoost model: $\texttt{dilution\_gap}=\texttt{max\_risk\_estimate}-\texttt{risk}$ is excluded from the exhibit feature list. Spearman correlations are reported on the frozen test. A logistic model of floor collapse on $\texttt{dilution\_gap}$, miss distance, and message count is fit on train only; AUC is on test. Quartile edges for the gap table come from train. This probe follows Alfano and CARA dilution~\cite{alfano2003,hejduk2016}; it does not predict residual covariance for extra tracking~\cite{stauch2026}. Publication figures in \texttt{docs/figures/} are regenerated by \texttt{plots.py} with SI-style axis labels.
+Let $\mathrm{risk}$ be the latest pre-cutoff reported $\log_{10} P_c$ and $y$ the later reported value. Persistence copies $\mathrm{risk}$. A residual model predicts $\Delta=y-\mathrm{risk}$ and reconstructs $\widehat{y}=\mathrm{risk}+\widehat{\Delta}$. An event is a floor event if $y\le -30+10^{-6}$. That bound is a reporting floor / censored target, not a precise physical $P_c$. Confirmatory analyses are H1--H4 on the frozen split. Horizon, threshold, and ablation sweeps are exploratory; they are not multiplicity-corrected.
 
-Honest metrics, residual and floor models, split-conformal coverage, and the class-threshold sweep were scored on the frozen 18 August split. Validation selected the floor hurdle as the live CDM policy. The homepage shows that forecast with a conformal interval. It does not offer a threshold picker or a second ``paper mode.'' The laboratory page reports research tables, including the August ensemble snapshot.
+Features are cutoff-safe snapshot fields, history summaries of the same fields, and covariance trends (234 numeric columns after encoding; 77 snapshot, 68 history, 88 covariance trends). The shipped regressor excludes $\texttt{dilution\_gap}=\texttt{max\_risk\_estimate}-\texttt{risk}$, which is reserved as an H4 probe. XGBoost uses squared error, 250 trees, learning rate $0.05$, depth 4, min-child-weight 6, subsample $0.85$, column sample $0.8$, $\ell_1=0.1$, $\ell_2=2.0$, seed 42, native NaN handling, and no early stopping. The floor classifier is a shallower booster (180 trees, depth 3) with train-set class weighting. Inference is CPU-only.
 
-\section{Results}
+The live policy is a two-part hurdle: $P(y=-30)$, a residual booster fit on non-floor training events, threshold $0.15$ chosen on validation, and no $-6$ persistence guard. Live intervals are split conformal around that point~\cite{lei2018}. SHAP explains the residual regressor. Code: \url{https://github.com/ArjunCodess/PRISM}.
 
-Table~\ref{tab:honest} reports the frozen local test with floor slices and intervals. Of 1659 events, 1352 later reports sit at $-30$. Persistence median AE is 0: more than half of reports do not move after 48 hours. Reconstructing $\widehat{y}=\mathrm{risk}+\widehat{y-\mathrm{risk}}$ tests whether anything besides persistence exists. Residual XGBoost reaches test MAE 2.760 ($\Delta=2.319$ $[1.977,2.685]$), close to unguarded level-valued XGBoost (2.809). The two-part floor model reaches test MAE 2.109 ($\Delta=2.971$ $[2.524,3.415]$) and median AE 0. Floor-class confusion at the validation threshold $0.15$ is 1319 true positives, 174 false positives, 33 false negatives, and 133 true negatives (recall $0.976$, precision $0.883$). Floor-only MAE falls to 0.474, but floor-excluded MAE rises to 9.311 versus persistence 4.073: the mean and Wilcoxon wins ($p<10^{-33}$) come from calling the floor, including on 174 non-floor events. On validation, this candidate ranks first by MAE (1.916 versus unguarded XGBoost 2.669) and is the live CDM policy. $F_2=0$ for the floor model, residual model, and unguarded XGBoost. ESA-style loss still ties at 0.167 for persistence and the 18 August ensemble snapshot (H3). Fig.~\ref{fig:anatomy} shows why the mean win is not a typical-event win: most later reports do not move (spike at $y-\mathrm{risk}=0$), while a left tail of floor collapses to $-30$ dominates MAE. Across five grouped redraws, unguarded XGBoost MAE advantage is $2.34\pm 0.04$ and floor-excluded MAE is $7.78\pm 0.21$ (persistence floor-excluded $4.32\pm 0.23$). Residual reconstruction is $2.35\pm 0.04$ MAE advantage. Seed 42 remains the reported row in Table~\ref{tab:honest}. Leave-one-out on the 66 high-risk eligible events: persistence is closer than residual on $66/66$ (mean absolute error $1.21$ versus $12.59$). The constant training-set median still beats the Guarded ens. on overall MAE (3.002) but not the live floor hurdle (2.109).
+\section{Structure of the Target}
+
+Of 1659 local-test events, 1352 later reports sit at $-30$ (floor rate $0.815$). Persistence already has median absolute error 0: $55.6\%$ of reports do not move after 48 hours. Fig.~\ref{fig:anatomy} shows the spike at $y-\mathrm{risk}=0$ and a left tail of floor collapses. Treating the floor as $\le -20$ or $\le -25$ instead of $-30$ raises the floor rate to $0.845$ and $0.828$ and still leaves floor-excluded XGBoost MAE worse than persistence. A Tobit-style censored regression is a natural alternative formulation; this study uses a two-part hurdle instead of fitting a Tobit.
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=\columnwidth]{error-anatomy.png}}
+\caption{Later movement $y-\mathrm{risk}$ versus unguarded XGBoost residual. The spike is exact persistence; the left tail is collapse to $-30$.}
+\label{fig:anatomy}
+\end{figure}
+
+Unguarded XGBoost has $48.8\%$ of test events within $0.5$ log units and $p_{90}$ absolute error $9.51$. Mean error is the wrong headline for this distribution.
+
+\section{Forecasting Experiments}
+
+Table~\ref{tab:honest} reports the frozen local test. Unguarded XGBoost lowers MAE from 5.080 to 2.809 ($\Delta=2.270$ $[1.930,2.638]$) while floor-excluded MAE rises from 4.073 to 7.562. Wilcoxon on paired absolute error does not reject equality ($p=0.91$). Residual reconstruction is almost the same (MAE 2.760). The floor hurdle reaches MAE 2.109 and median AE 0 because it calls the floor, including on 174 non-floor events; floor-excluded MAE is 9.311. $F_2=0$ for the hurdle, residual model, and unguarded XGBoost. ESA-style loss still ties at 0.167 for persistence and an 18 August ensemble snapshot that copies today's report once that report is already $\ge -6$.
 
 \begin{table}[t]
-\caption{Frozen local test at 48 hours ($n=1659$; 1352 floor events). MAE in $\log_{10} P_c$. $\Delta$ is MAE(persistence)$-$MAE(model) with a 95\% bootstrap interval (1000 event resamples). Wilcoxon $p$ is two-sided on paired absolute error. Selected policy: floor hurdle (validation). Guarded ens.: bootstrap ensemble with a $-6$ persistence guard.}
+\caption{Frozen local test at 48~h ($n=1659$; 1352 floor). MAE in $\log_{10} P_c$. $\Delta$ is MAE(persistence)$-$MAE(model) with a 95\% bootstrap interval.}
 \label{tab:honest}
 \begin{center}
 \scriptsize
@@ -69,6 +78,8 @@ Table~\ref{tab:honest} reports the frozen local test with floor slices and inter
 \textbf{System} & \textbf{MAE} & \textbf{Med.} & \textbf{Non-fl.} & \textbf{Floor} & $\boldsymbol{\Delta}$ \textbf{[95\%]} & $\boldsymbol{p}$ \\
 \hline
 Persistence & 5.080 & 0.000 & 4.073 & 5.308 & --- & --- \\
+\hline
+Trend & 5.048 & --- & 4.331 & 5.210 & --- & --- \\
 \hline
 Unguarded XGB & 2.809 & 0.554 & 7.562 & 1.730 & 2.270 $[1.930,2.638]$ & 0.91 \\
 \hline
@@ -83,29 +94,67 @@ Guarded ens. & 3.059 & 0.473 & 7.332 & 2.088 & 2.021 $[1.716,2.380]$ & 0.31 \\
 \end{center}
 \end{table}
 
-\begin{figure}[t]
-\centerline{\includegraphics[width=\columnwidth]{error-anatomy.png}}
-\caption{Frozen test histograms of later movement $y-\mathrm{risk}$ and unguarded XGBoost residual $y-\widehat{y}$. The spike at 0 is reports that do not move. The left tail is collapse to the dataset floor $-30$.}
-\label{fig:anatomy}
-\end{figure}
-
-Table~\ref{tab:horizon} and Fig.~\ref{fig:horizon} support H1 on this freeze: the learned advantage shrinks as closest approach approaches. Whiskers at T$-48$ are the 95\% bootstrap interval on MAE(persistence)$-$MAE(XGBoost), drawn on the XGBoost point. Five grouped redraws give a $2.34\pm 0.04$ advantage at 48~h; that redraw s.d.\ is smaller than the marker. The 12-hour gap is 0.06 log units and does not yet have a redraw interval.
+A clipped one-step trend from the last two cutoff-safe reports barely moves MAE (5.048). Snapshot-only XGBoost is 2.911; history-only 2.977; covariance-only 3.148. Adding history summaries to the snapshot lowers MAE from 2.904 to 2.851; covariance trends reach 2.808. Across five grouped redraws, unguarded XGBoost MAE advantage is $2.34\pm 0.04$ and floor-excluded MAE is $7.78\pm 0.21$. Table~\ref{tab:nowork} states the pattern without a leaderboard.
 
 \begin{table}[t]
-\caption{Single XGBoost versus persistence by horizon. MAE in $\log_{10} P_c$. The 72~h and 12~h eligible sets overlap the 48~h split but are not identical.}
+\caption{What does not work, relative to persistence. Official $L$ is Uriot ESA-style loss on the frozen official test.}
+\label{tab:nowork}
+\begin{center}
+\scriptsize
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Approach} & \textbf{Mean MAE} & \textbf{Non-floor MAE} & \textbf{Official $L$} \\
+\hline
+Persistence & baseline & baseline & strong \\
+\hline
+Trend & no & no & --- \\
+\hline
+Unguarded XGB & yes & no & no \\
+\hline
+Residual XGB & yes & no & no \\
+\hline
+Floor hurdle & yes & no & no \\
+\hline
+Guarded ens. & some & no & ties \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The floor classifier at the validation threshold 0.15 has recall $0.976$, precision $0.883$, AUROC $0.920$, AUPRC $0.981$, and Brier $0.114$ (Fig.~\ref{fig:reliab}). The 174 false positives have median later $y=-14.3$; only $25\%$ sit below $-20$. They are near-floor reports, not high-risk misses. A logistic model on $\mathrm{risk}$ alone already reaches AUROC $0.799$; adding $\texttt{max\_risk\_estimate}$ or using the gap alone stays near $0.80$. XGBoost is better, but the floor phenomenon is visible to a two-feature logistic. Fig.~\ref{fig:scatter} shows why: many later reports sit on the $-30$ line.
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=0.85\columnwidth]{floor-reliability.png}}
+\caption{Reliability of $P(\mathrm{floor})$ for the hurdle classifier.}
+\label{fig:reliab}
+\end{figure}
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=0.9\columnwidth]{pred-vs-actual.png}}
+\caption{Floor-hurdle forecast versus later reported $\log_{10} P_c$. The dashed line is the archive floor.}
+\label{fig:scatter}
+\end{figure}
+
+\section{Forecast Horizon}
+
+Table~\ref{tab:horizon} uses the \emph{same} 1459 test events that have valid observations at 72, 48, 24, and 12 hours (7340 events in the archive intersection). Target floor rate is therefore constant ($0.824$). Extra MAE beyond persistence still falls from 4.49 log units at 72~h to 0.03 at 12~h, where the bootstrap interval covers zero. Non-floor $\Delta$MAE is negative at every horizon: the learned model is worse than persistence off the floor. Fig.~\ref{fig:horizon} shows MAE with those intervals. The older overlapping-set table (advantage 4.53, 2.27, 0.52, 0.06) mixed a changing eligible population with time-to-approach; the matched cohort isolates the horizon effect.
+
+\begin{table}[t]
+\caption{Matched-cohort XGBoost versus persistence. Same events at every horizon ($n_{\mathrm{test}}=1459$).}
 \label{tab:horizon}
 \begin{center}
-\begin{tabular}{|l|r|r|r|}
+\scriptsize
+\begin{tabular}{|l|r|r|r|r|}
 \hline
-\textbf{Horizon} & \textbf{XGBoost} & \textbf{Persist.} & \textbf{Adv.} \\
+\textbf{h} & \textbf{Floor} & \textbf{Overall $\Delta$} & \textbf{[95\%]} & \textbf{Non-fl.\ $\Delta$} \\
 \hline
-72 h & 3.214 & 7.748 & 4.534 \\
+72 & 0.824 & 4.487 & $[3.96,5.01]$ & $-3.86$ \\
 \hline
-48 h & 2.808 & 5.080 & 2.272 \\
+48 & 0.824 & 2.198 & $[1.76,2.59]$ & $-3.95$ \\
 \hline
-24 h & 2.110 & 2.634 & 0.524 \\
+24 & 0.824 & 0.428 & $[0.18,0.65]$ & $-2.67$ \\
 \hline
-12 h & 1.384 & 1.444 & 0.060 \\
+12 & 0.824 & 0.029 & $[-0.15,0.20]$ & $-1.70$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -113,44 +162,20 @@ Table~\ref{tab:horizon} and Fig.~\ref{fig:horizon} support H1 on this freeze: th
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=\columnwidth]{horizon-decay.png}}
-\caption{Forecast-horizon MAE for unguarded XGBoost and persistence. Whiskers at 48~h are the 95\% bootstrap interval on the MAE gap, shown on the XGBoost point.}
+\caption{Matched-cohort MAE versus time to closest approach, with floor rate on the same events.}
 \label{fig:horizon}
 \end{figure}
 
-Snapshot-only MAE is 2.904; adding historical summaries of the same fields lowers it to 2.851; covariance trends reach 2.808. History therefore adds a small increment that also still needs an interval.
+\section{High-Risk Evaluation}
 
-Live split-conformal 90\% intervals around the floor-hurdle point cover 90.1\% of the test (mean width 21.03; $q_{0.1}=10.51$). The 50\% conformal radius is 0 because most calibration residuals are exact floor hits (empirical 50\% coverage 79.5\%). Table~\ref{tab:cover} and Fig.~\ref{fig:cover} still record the August-snapshot comparison. On the live conformal abstention rule, test coverage is 90.4\% (159 of 1659 sent to review) and false reassurance is 2 of 9. A four-mission hold-out has high-risk MAE 19.2 on a single held-out high-risk event.
+The ESA class is $\log_{10} P_c\ge -6$~\cite{uriot2021}. The local test has nine such events. Leave-one-out residual XGBoost on the 66 eligible high-risk events loses to persistence $66/66$ (MAE $12.59$ versus $1.21$). That is clean and statistically fragile. Under this dataset and protocol, these models did not demonstrate improved tail performance. They do not license the broader claim that machine learning cannot forecast high-risk conjunctions.
 
-\begin{table}[t]
-\caption{Interval coverage on the frozen local test ($n=1659$). Bootstrap bands are model spread. Split conformal is fit on 1244 calibration events only.}
-\label{tab:cover}
-\begin{center}
-\begin{tabular}{|l|r|r|r|}
-\hline
-\textbf{Band} & \textbf{Nom.} & \textbf{Cover.} & \textbf{Width} \\
-\hline
-Bootstrap spread & 50\% & 26.0\% & 0.90 \\
-\hline
-Bootstrap spread & 90\% & 47.7\% & 2.05 \\
-\hline
-Split conformal & 50\% & 49.6\% & 0.93 \\
-\hline
-Split conformal & 90\% & 89.7\% & 18.33 \\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+A mission-grouped 80/20 split (15 vs 4 missions) has 37 held-out high-risk events: overall XGBoost MAE 3.07 versus persistence 4.74, but high-risk MAE 11.9 versus 1.50. An earlier four-mission draw contained a single high-risk event (MAE 19.2) and is not interpretable for the tail. The public archive cannot test object-pair leakage.
 
-\begin{figure}[t]
-\centerline{\includegraphics[width=0.85\columnwidth]{coverage-calibration.png}}
-\caption{Nominal versus empirical coverage for bootstrap spread and split conformal (frozen test).}
-\label{fig:cover}
-\end{figure}
-
-Table~\ref{tab:official} and Fig.~\ref{fig:official} report the one-shot official-test score. Persistence $L=0.694$ matches the last-risk-prediction number in Uriot \textit{et al.} on this distribution. The August ensemble snapshot ties that loss because the $-6$ guard copies the snapshot whenever it is already high-risk. Residual and floor candidates still reduce MAE (3.476 and 3.177 versus 5.209) and the floor hurdle Wilcoxon versus persistence is $p<10^{-17}$, but $F_2$ collapses and $L$ rises to 104 and 70. Unguarded XGBoost has $F_2=0$. None of these frozen models beats the published sesc $L=0.556$. That is the result; the models were not retuned.
+Table~\ref{tab:official} is confirmation, not discovery. Persistence $L=0.694$ matches Uriot last-risk-prediction. The published challenge entry \emph{sesc} reached $L=0.556$~\cite{uriot2021}. Unguarded XGBoost has $F_2=0$ and $L=1.75\times 10^{6}$: one wildly overconfident miss on a real high-risk event blows up the numerator while the denominator is zero. The floor hurdle lowers MAE and raises $L$ to 70.5. Fig.~\ref{fig:official} annotates that bar. A class-cut sweep on frozen local predictions shows that this study cannot currently say whether the model helps at the tighter operational cuts near $-4$ to $-5$; those cells have $n{+}\le 3$ and $F_2=0$ for the learned systems.
 
 \begin{table}[t]
-\caption{Official test ($n=2167$; 150 high-risk; 1673 floor). MAE in $\log_{10} P_c$. $L=\mathrm{MSE}_{HR}/F_2$ after clipping predictions below $-6$ to $-6.001$. Frozen before look.}
+\caption{Official test ($n=2167$; 150 high-risk; 1673 floor). Frozen before look. $L=\mathrm{MSE}_{HR}/F_2$.}
 \label{tab:official}
 \begin{center}
 \scriptsize
@@ -176,73 +201,35 @@ Guarded ens. & 3.107 & 0.439 & 6.750 & 0.694 & 0.739 \\
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=\columnwidth]{official-test-esa.png}}
-\caption{Official-test ESA-style loss for frozen models versus Uriot last-risk-prediction ($0.694$) and sesc ($0.556$). Log scale.}
+\caption{Official-test ESA-style loss. Persistence matches Uriot LRP $0.694$; sesc is $0.556$. The unguarded bar is annotated because it is not a typo.}
 \label{fig:official}
 \end{figure}
 
-Table~\ref{tab:dilution} and Fig.~\ref{fig:dilution} report H4. Combined $\log\det$ of the snapshot covariance correlates with later $|y-\mathrm{risk}|$ ($\rho=0.399$, $p<10^{-63}$). $F_{10}$ is weaker ($\rho=0.108$). The max-risk gap is strongly associated with ending at the floor ($\rho=0.407$; logistic test AUC $0.819$) but with \emph{less} later movement ($\rho=-0.768$): large gaps are mostly snapshots already near $-30$. Quartile 1 (small gap) has mean $|y-\mathrm{risk}|=13.03$ and floor rate $0.56$; quartiles 3--4 have floor rates above $0.95$ and mean movement below $0.75$. The naive story that a large $\texttt{max\_risk}-\texttt{risk}$ gap means the report will still move is rejected on this freeze. Large covariance volume predicting more movement is supported.
+\section{Covariance and the Max-Risk Gap}
 
-\begin{table}[t]
-\caption{Frozen test by train-quartile of $\texttt{dilution\_gap}=\texttt{max\_risk\_estimate}-\texttt{risk}$ ($n=1659$).}
-\label{tab:dilution}
-\begin{center}
-\scriptsize
-\begin{tabular}{|l|r|r|r|r|}
-\hline
-\textbf{Q} & $\boldsymbol{n}$ & \textbf{Floor} & $|\Delta\mathrm{risk}|$ & \textbf{XGB MAE} \\
-\hline
-1 & 410 & 0.556 & 13.03 & 7.35 \\
-\hline
-2 & 416 & 0.781 & 6.15 & 2.90 \\
-\hline
-3 & 417 & 0.964 & 0.52 & 0.69 \\
-\hline
-4 & 414 & 0.954 & 0.75 & 0.37 \\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+Combined snapshot $\log\det$ correlates with later $|y-\mathrm{risk}|$ ($\rho=0.399$ $[0.36,0.44]$). The max-risk gap correlates with ending at the floor (logistic test AUC $0.819$) and with \emph{less} later movement ($\rho=-0.768$ $[{-}0.79,{-}0.75]$). After standardizing and partialling $\mathrm{risk}$, $n_{\mathrm{messages}}$, and miss distance, the $\log\det$ coefficient on $|y-\mathrm{risk}|$ is $-0.60$: the univariate covariance association is not an independent partial effect once today's report is in the model. Association, not cause. Fig.~\ref{fig:dilution} is the scatter; quartile tables remain in the supplement. Residual SHAP is dominated by risk-trajectory fields ($\texttt{max\_risk\_scaling}$, $\mathrm{risk}$), not covariance volume.
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=\columnwidth]{dilution-probe.png}}
-\caption{Floor rate (bars, left axis) and mean $|y-\mathrm{risk}|$ (line, right axis) by train-quartile of the max-risk gap (frozen test).}
+\caption{Max-risk gap versus later $|y-\mathrm{risk}|$. Floor events cluster at large gap and small movement.}
 \label{fig:dilution}
 \end{figure}
 
-Table~\ref{tab:thresh} reuses the frozen local-test forecasts and changes only the class definition. Operational LEO reaction is nearer $-4$ to $-5$; ESA scored $-6$ so the positive class was large enough to estimate $F_2$. Persistence and the August ensemble snapshot still tie at $-6$ ($n{+}=9$, $L=0.167$, $F_2=0.361$, one accepted false reassurance) and at $-5$ ($n{+}=3$, $L=0.032$, $F_2=0.349$, zero accepted false reassurances). At $-8$ and $-7$ persistence has higher $F_2$ and lower $L$ than the ensemble. At $-4$ a single test event is positive and every frozen system misses it ($F_2=0$). Unguarded XGBoost, residual reconstruction, and the floor hurdle have $F_2=0$ at $-7$ through $-4$.
+\section{Uncertainty and Abstention}
 
-\begin{table}[t]
-\caption{Frozen local test ($n=1659$). Same predictions; class cut $t$ only. P is persistence; E is the August ensemble snapshot. FR is accepted $\widehat{y}<t$ while $y\ge t$ under the August $-6$ abstention mask. $L$ omitted when $F_2=0$.}
-\label{tab:thresh}
-\begin{center}
-\scriptsize
-\begin{tabular}{|r|r|r|r|r|r|r|r|}
-\hline
-$\boldsymbol{t}$ & $\boldsymbol{n{+}}$ & \textbf{P $F_2$} & \textbf{P FR} & \textbf{P $L$} & \textbf{E $F_2$} & \textbf{E FR} & \textbf{E $L$} \\
-\hline
-$-8$ & 68 & 0.660 & 2 & 1.66 & 0.210 & 5 & 9.49 \\
-\hline
-$-7$ & 37 & 0.502 & 3 & 0.777 & 0.215 & 4 & 2.51 \\
-\hline
-$-6$ & 9 & 0.361 & 1 & 0.167 & 0.361 & 1 & 0.167 \\
-\hline
-$-5$ & 3 & 0.349 & 0 & 0.032 & 0.349 & 0 & 0.032 \\
-\hline
-$-4$ & 1 & 0 & 1 & --- & 0 & 1 & --- \\
-\hline
-\end{tabular}
-\end{center}
-\end{table}
+Bootstrap 90\% spread covers $47.7\%$ of the local test. Split conformal around the floor-hurdle point covers $90.1\%$ $[0.887,0.914]$ with constant width $21.03$ log units. Floor events are well covered ($97.6\%$); non-floor coverage is $57.0\%$. Calibrated uncertainty is statistically honest and operationally almost useless at this heterogeneity. Abstaining when the 90\% band crosses $-6$ accepts $90.4\%$ of events (159 to review), accepted MAE $1.706$, and false reassurance 2 of 9. Tighter conformal radii do not abstain until the 90\% quantile, because most calibration residuals are exact floor hits (Fig.~\ref{fig:select}).
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=\columnwidth]{selective-prediction.png}}
+\caption{Selective prediction under the live conformal rule as nominal coverage changes.}
+\label{fig:select}
+\end{figure}
 
 \section{Discussion}
 
-The extra information in a T$-48$ CDM history is not a general improvement in forecasting later $\log_{10} P_c$. It is early, and it is concentrated in later collapses to the dataset floor. That reading unifies H1 and H2 with the physical story already in the conjunction literature. Large early covariance can dilute $P_c$~\cite{alfano2003}. Later contraction often drops reported risk~\cite{hejduk2016}. When the clock is stopped far from closest approach, a learned model can still tell some of those collapses from persistence. By 12 hours the latest report has already absorbed most of that update, and the learned advantage is 0.06 log units.
+Use this model, if at all, to triage reports that are likely to collapse to the archive floor. Do not use it to assess events that are already flagged high-risk. Selecting on MAE ships a floor-calling policy. Selecting on ESA-style loss would have kept persistence or the guard. Persistence becomes strong near closest approach because later reports have already absorbed later tracking; the matched-cohort decay is the statistical counterpart of that absorption.
 
-H3 follows from the same anatomy. ESA-style loss cares about the $\log_{10} P_c\ge -6$ tail. The floor hurdle, which validation selects because it wins on MAE, almost never predicts into that tail ($F_2=0$ locally; $L=70.5$ on official test). The guarded ensemble ties persistence on $L$ because it copies today's report once that report is already high-risk. Those are different jobs. Selecting on mean error ships a floor-calling policy. Selecting on ESA-style loss would have kept persistence, or the guard. The 2019 challenge already showed that beating persistence on that loss is hard~\cite{uriot2021}. This freeze does not overturn that. It says why a mean-error win can coexist with a worse high-risk score.
-
-H4 is mixed in a way that is also consistent. Covariance volume at T$-48$ tracks later $|y-\mathrm{risk}|$. The max-risk gap tracks whether the later report is already a floor event, not whether it will still move. That is a property of the CDM fields, not a covariance-tasking model~\cite{stauch2026}.
-
-The selected policy is therefore an honest floor-collapse forecast with a wide conformal band, not an operational warning system. Leave-one-out on the 66 local high-risk events still prefers persistence every time. This freeze uses historical ESA-supported missions from 2015 to 2019, not live catalogues. Manoeuvres are out of scope. The models were not retuned on official-test scores.
+The 2015--2019 archive predates today's denser catalogues~\cite{boley2021,esaSerr2024}. Floor-collapse rates could change with tracking cadence and mega-constellation geometry. Manoeuvres are out of scope. The target is later reported $\log_{10} P_c$, not physical collision probability. H1--H4 were pre-specified; sweeps are exploratory. Code, frozen split IDs, hyperparameters, and figure scripts live at \url{https://github.com/ArjunCodess/PRISM}; data remain ESA/Zenodo 4463683. This is a research prototype, not a warning system.
 
 \section*{Acknowledgment}
 
