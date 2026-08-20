@@ -48,3 +48,12 @@ if (-not (Test-Path $pdf)) {
     throw "Compile finished but paper/main.pdf is missing."
 }
 Write-Host "Wrote $pdf"
+
+if (Test-Path (Join-Path $paper "supplement.tex")) {
+    Write-Host "pdflatex supplement"
+    & pdflatex -interaction=nonstopmode -halt-on-error supplement.tex
+    if ($LASTEXITCODE -ne 0) { throw "supplement pdflatex failed" }
+    & pdflatex -interaction=nonstopmode -halt-on-error supplement.tex
+    if ($LASTEXITCODE -ne 0) { throw "supplement pdflatex failed" }
+    Write-Host "Wrote $(Join-Path $paper 'supplement.pdf')"
+}
