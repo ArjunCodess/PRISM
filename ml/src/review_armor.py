@@ -48,7 +48,7 @@ from train_regressor import (
 
 CENSOR_THRESHOLDS = (-20.0, -25.0, -30.0)
 FLOOR_POLICY_THRESHOLDS = (0.05, 0.10, 0.15, 0.20, 0.30, 0.50)
-CONFORMAL_ALPHAS = (0.50, 0.40, 0.30, 0.20, 0.10, 0.05)
+CONFORMAL_ALPHAS = (0.50, 0.20, 0.12, 0.10, 0.08, 0.05, 0.01)
 GITHUB_URL = "https://github.com/ArjunCodess/PRISM"
 
 
@@ -295,10 +295,23 @@ def mission_grouped_split(
         "persistence": _system_slice(y, persist, floor),
         "xgboostHighRiskMae": _json_float(high_risk_mae),
         "persistenceHighRiskMae": _json_float(persist_hr),
+        "splitMethod": "sklearn.model_selection.GroupShuffleSplit",
+        "groupKey": "mission_id",
+        "testFractionOfGroups": 0.2,
+        "randomState": int(seed),
+        "eventSplitUnbalanced": True,
+        "hyperparamsFrozen": True,
+        "floorHurdleNotRetuned": True,
+        "refit": (
+            "Unguarded XGBoost only, same trees/depth/lr as the shipped regressor. "
+            "The live floor-hurdle threshold 0.15 is not retuned on this split."
+        ),
         "note": (
             "The public archive has no NORAD or object-pair identifiers and no "
             "calendar dates. Mission grouping is the available entity split. "
-            "Official-test scoring is the frozen distribution-shift check."
+            "Official-test scoring is the frozen distribution-shift check. "
+            "GroupShuffleSplit holds out 20% of missions, not 20% of events, so "
+            "event counts can be lopsided."
         ),
     }
 
@@ -390,11 +403,18 @@ def scientific_baselines(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, o
         ),
     }
     rows = {name: _system_slice(y, pred, floor) for name, pred in families.items()}
+    delta = (
+        pd.to_numeric(test["risk_delta_last2"], errors="coerce").to_numpy(dtype=float)
+        if "risk_delta_last2" in test.columns
+        else np.zeros(len(test))
+    )
+    finite_delta = np.where(np.isfinite(delta), delta, 0.0)
     return {
         "note": (
             "Trend is clipped one-step extrapolation from the last two cutoff-safe "
             "risk reports. Family models are extra measurements, not shipped policies."
         ),
+        "trendShareExactZeroDelta": float(np.mean(np.abs(finite_delta) < 1e-12)),
         "systems": rows,
     }
 
