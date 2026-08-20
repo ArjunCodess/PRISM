@@ -670,15 +670,16 @@ def _paper_figures(metrics: dict, output_dir: Path) -> list[Path]:
     curve = (armor.get("selectivePrediction") or {}).get("curve") or []
     if curve:
         fig, ax = plt.subplots(figsize=(3.5, 2.6))
-        coverage = [float(row["coverage"]) for row in curve]
+        nominal = [float(row["nominalCoverage"]) for row in curve]
         mae = [float(row["maeAccepted"]) for row in curve]
         fr = [int(row["falseReassurance"]) for row in curve]
-        ax.plot(coverage, mae, marker="o", color=PAPER_BLUE, label="accepted MAE")
-        ax.set_xlabel("Acceptance rate")
+        ax.plot(nominal, mae, marker="o", color=PAPER_BLUE)
+        ax.set_xlabel("Nominal conformal coverage")
         ax.set_ylabel("Accepted MAE")
         twin = ax.twinx()
-        twin.plot(coverage, fr, marker="s", color=PAPER_ORANGE, label="false reassurance")
+        twin.plot(nominal, fr, marker="s", color=PAPER_ORANGE)
         twin.set_ylabel("False reassurance")
+        ax.set_xlim(0.48, 1.02)
         ax.spines["top"].set_visible(False)
         twin.spines["top"].set_visible(False)
         written.append(_save_paper(fig, output_dir / "selective-prediction.png"))
