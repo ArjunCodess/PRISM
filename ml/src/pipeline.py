@@ -52,6 +52,7 @@ from experiments import (  # noqa: E402
     repeated_grouped_splits,
     shap_outcome_contrast,
     threshold_sweep,
+    error_anatomy,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import assemble_demo_cases, write_json  # noqa: E402
@@ -488,6 +489,7 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         },
         abstained=boot_abs_test,
     )
+    metrics["errorAnatomy"] = error_anatomy(test_y, test["risk"].to_numpy(dtype=float), model_pred)
     if "dilutionProbe" not in metrics:
         metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
     if "repeatedSplits" not in metrics:

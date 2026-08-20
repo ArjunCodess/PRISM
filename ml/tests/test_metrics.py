@@ -17,7 +17,7 @@ from evaluate import (
     paired_wilcoxon_abs_error,
     bootstrap_mae_advantage,
 )
-from experiments import threshold_sweep
+from experiments import threshold_sweep, error_anatomy
 from explain import Factor, explanation_text, grouped_importance
 
 
@@ -97,3 +97,14 @@ def test_threshold_sweep_uses_same_predictions() -> None:
     assert analogue["missedClass"] == 1
     assert minus_six["systems"]["persistence"]["missedClass"] == 1
     assert minus_six["nPositives"] == 3
+
+
+def test_error_anatomy_counts_floor_collapses() -> None:
+    y = np.array([-30.0, -30.0, -6.0])
+    risk = np.array([-8.0, -30.0, -6.1])
+    pred = np.array([-10.0, -30.0, -6.0])
+    payload = error_anatomy(y, risk, pred)
+    assert payload["nFloorCollapse"] == 1
+    assert payload["nUnmoved"] == 1
+    assert sum(payload["actualMoveCounts"]) == 3
+    assert sum(payload["residualErrorCounts"]) == 3

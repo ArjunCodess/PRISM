@@ -665,3 +665,28 @@ def threshold_sweep(
         "thresholds": list(thresholds),
         "rows": rows,
     }
+
+
+def error_anatomy(y_true: np.ndarray, risk: np.ndarray, y_pred: np.ndarray) -> dict[str, object]:
+    y_true = np.asarray(y_true, dtype=float)
+    risk = np.asarray(risk, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    actual_move = y_true - risk
+    residual = y_true - y_pred
+    edges = np.linspace(-32.0, 8.0, 81)
+    floor = floor_mask(y_true)
+    return {
+        "replacesExhibit": False,
+        "predictor": "unguarded xgboost on frozen local test",
+        "binEdges": [float(value) for value in edges],
+        "actualMoveCounts": [int(value) for value in np.histogram(actual_move, bins=edges)[0]],
+        "residualErrorCounts": [int(value) for value in np.histogram(residual, bins=edges)[0]],
+        "n": int(y_true.size),
+        "nFloor": int(floor.sum()),
+        "nUnmoved": int(np.sum(np.abs(actual_move) < 1e-9)),
+        "nFloorCollapse": int(np.sum(floor & (actual_move < -1.0))),
+        "note": (
+            "actualMove is y − risk (how far the later report moved). "
+            "residualError is y − pred. The −30 spike is floor collapse."
+        ),
+    }
