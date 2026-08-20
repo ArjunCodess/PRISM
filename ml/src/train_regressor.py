@@ -12,7 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBRegressor
 
-EXCLUDE = {"event_id", "y", "story", "c_object_type"}
+EXCLUDE = {"event_id", "y", "story", "c_object_type", "dilution_gap"}
 
 
 @dataclass

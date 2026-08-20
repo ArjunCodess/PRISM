@@ -45,6 +45,7 @@ from evaluate import (  # noqa: E402
 from experiments import (  # noqa: E402
     abstention_study,
     cluster_test_failures,
+    dilution_probe,
     forecast_horizon_table,
     historical_ablation,
     shap_outcome_contrast,
@@ -447,6 +448,7 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         }
     )
     metrics["uncertainty"] = uncertainty
+    metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
     official = score_official_test(ROOT, artifacts)
     metrics["officialTest"] = official
     write_json(metrics_path, metrics)
@@ -458,6 +460,13 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         card["floorModel"] = metrics["floorModel"]
         card["conformal"] = metrics["conformal"]
         card["uncertainty"] = metrics["uncertainty"]
+        card["dilutionProbe"] = {
+            "replacesExhibit": False,
+            "h4Supported": metrics["dilutionProbe"]["h4Supported"],
+            "logisticFloor": metrics["dilutionProbe"]["logisticFloor"],
+            "spearmanAbsMove": metrics["dilutionProbe"]["spearmanAbsMove"],
+            "quartiles": metrics["dilutionProbe"]["quartiles"],
+        }
         card["officialTest"] = {
             "frozenBeforeLook": official["frozenBeforeLook"],
             "nEvents": official["nEvents"],

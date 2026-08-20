@@ -293,6 +293,38 @@ def generate_plots(metrics_path: Path, output_dir: Path) -> list[Path]:
         ax.spines[["top", "right"]].set_visible(False)
         written.append(_save(fig, output_dir / "official-test-esa.png"))
 
+    probe = metrics.get("dilutionProbe") or {}
+    quartiles = probe.get("quartiles") or []
+    if quartiles:
+        fig, ax = plt.subplots(figsize=(7.2, 4.8))
+        xs = [f"Q{row['quartile']}" for row in quartiles]
+        positions = list(range(len(xs)))
+        ax.bar(
+            positions,
+            [float(row["floorRate"]) for row in quartiles],
+            color=CYAN,
+            label="floor rate",
+        )
+        ax.set_xticks(positions, xs)
+        ax.set_ylabel("Floor rate")
+        ax.set_xlabel("dilution_gap quartile (train edges)")
+        twin = ax.twinx()
+        twin.plot(
+            positions,
+            [float(row["meanAbsMove"]) for row in quartiles],
+            color=AMBER,
+            marker="o",
+            label="mean |y − risk|",
+        )
+        twin.set_ylabel("Mean |Δrisk|")
+        ax.set_title("Floor collapse and report movement by max-risk gap", loc="left", pad=16)
+        h1, l1 = ax.get_legend_handles_labels()
+        h2, l2 = twin.get_legend_handles_labels()
+        ax.legend(h1 + h2, l1 + l2, frameon=False, labelcolor=TEXT)
+        ax.spines[["top"]].set_visible(False)
+        twin.spines[["top"]].set_visible(False)
+        written.append(_save(fig, output_dir / "dilution-probe.png"))
+
     return written
 
 

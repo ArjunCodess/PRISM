@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from abstention import coverage_curve, selective_metrics
 from build_events import build_event_histories
-from constants import HIGH_RISK_THRESHOLD, HORIZON_HOURS, NEGLIGIBLE_RISK
-from evaluate import regression_metrics
+from constants import HIGH_RISK_THRESHOLD, HORIZON_HOURS, NEGLIGIBLE_RISK, RANDOM_STATE
+from evaluate import floor_mask, regression_metrics
 from explain import feature_group, shap_explainer
 from feature_sets import FAMILIES, columns_for_family
 from features import build_feature_table
@@ -270,4 +270,205 @@ def abstention_study(
         ),
         "operatingPoint": operating,
         "coverageCurve": curve,
+    }
+
+
+def attach_dilution_gap(frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    if "dilution_gap" not in out.columns:
+        out["dilution_gap"] = pd.to_numeric(
+            out["max_risk_estimate"], errors="coerce"
+        ) - pd.to_numeric(out["risk"], errors="coerce")
+    return out
+
+
+def _spearman(x: np.ndarray, y: np.ndarray) -> dict[str, float | int]:
+    from scipy.stats import spearmanr
+
+    xx = np.asarray(x, dtype=float)
+    yy = np.asarray(y, dtype=float)
+    mask = np.isfinite(xx) & np.isfinite(yy)
+    n = int(mask.sum())
+    if n < 10:
+        return {"n": n, "rho": float("nan"), "pvalue": float("nan")}
+    rho, pvalue = spearmanr(xx[mask], yy[mask])
+    return {"n": n, "rho": float(rho), "pvalue": float(pvalue)}
+
+
+def _quartile_slices(
+    gap: np.ndarray,
+    abs_move: np.ndarray,
+    floor: np.ndarray,
+    persist_err: np.ndarray,
+    model_err: np.ndarray | None,
+    edges: np.ndarray,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for i in range(len(edges) - 1):
+        lo = float(edges[i])
+        hi = float(edges[i + 1])
+        if i == len(edges) - 2:
+            mask = (gap >= lo) & (gap <= hi)
+        else:
+            mask = (gap >= lo) & (gap < hi)
+        mask = mask & np.isfinite(gap)
+        payload: dict[str, object] = {
+            "quartile": i + 1,
+            "gapLow": lo,
+            "gapHigh": hi,
+            "n": int(mask.sum()),
+            "floorRate": float(np.mean(floor[mask])) if mask.any() else float("nan"),
+            "meanAbsMove": float(np.mean(abs_move[mask])) if mask.any() else float("nan"),
+            "persistMae": float(np.mean(persist_err[mask])) if mask.any() else float("nan"),
+        }
+        if model_err is not None:
+            payload["xgboostMae"] = (
+                float(np.mean(model_err[mask])) if mask.any() else float("nan")
+            )
+        rows.append(payload)
+    return rows
+
+
+def dilution_probe(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    persist_test: np.ndarray | None = None,
+    xgb_test: np.ndarray | None = None,
+) -> dict[str, object]:
+    from sklearn.impute import SimpleImputer
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score
+    from sklearn.pipeline import Pipeline
+
+    train = attach_dilution_gap(train)
+    test = attach_dilution_gap(test)
+    y_test = test["y"].to_numpy(dtype=float)
+    risk_test = test["risk"].to_numpy(dtype=float)
+    abs_move = np.abs(y_test - risk_test)
+    floor = floor_mask(y_test).astype(float)
+    persist_err = (
+        np.abs(y_test - np.asarray(persist_test, dtype=float))
+        if persist_test is not None
+        else abs_move
+    )
+    model_err = (
+        np.abs(y_test - np.asarray(xgb_test, dtype=float)) if xgb_test is not None else None
+    )
+
+    candidates = {
+        "dilution_gap": test["dilution_gap"],
+        "log_t_cov_det": test.get("log_t_cov_det"),
+        "log_c_cov_det": test.get("log_c_cov_det"),
+        "log_combined_sigma_det": test.get("log_combined_sigma_det"),
+        "t_sigma_r": test.get("t_sigma_r"),
+        "t_obs_used_slope": test.get("t_obs_used_slope"),
+        "n_messages": test.get("n_messages"),
+        "F10": test.get("F10"),
+    }
+    spearman_abs: dict[str, object] = {}
+    spearman_floor: dict[str, object] = {}
+    for name, series in candidates.items():
+        if series is None:
+            continue
+        values = np.asarray(series, dtype=float)
+        spearman_abs[name] = _spearman(values, abs_move)
+        spearman_floor[name] = _spearman(values, floor)
+
+    logit_cols = ["dilution_gap", "miss_distance", "n_messages"]
+    y_floor_train = floor_mask(train["y"].to_numpy(dtype=float)).astype(int)
+    y_floor_test = floor_mask(y_test).astype(int)
+    pipe = Pipeline(
+        [
+            ("impute", SimpleImputer(strategy="median")),
+            (
+                "model",
+                LogisticRegression(max_iter=2000, random_state=RANDOM_STATE),
+            ),
+        ]
+    )
+    pipe.fit(train[logit_cols], y_floor_train)
+    proba = pipe.predict_proba(test[logit_cols])[:, 1]
+    auc = (
+        float(roc_auc_score(y_floor_test, proba))
+        if len(np.unique(y_floor_test)) > 1
+        else float("nan")
+    )
+    coef = pipe.named_steps["model"].coef_[0]
+    intercept = float(pipe.named_steps["model"].intercept_[0])
+
+    train_gap = train["dilution_gap"].to_numpy(dtype=float)
+    edges = np.unique(np.nanquantile(train_gap, [0.0, 0.25, 0.5, 0.75, 1.0]))
+    if len(edges) < 3:
+        edges = np.array([float(np.nanmin(train_gap)), float(np.nanmax(train_gap))])
+    quartiles = _quartile_slices(
+        test["dilution_gap"].to_numpy(dtype=float),
+        abs_move,
+        floor,
+        persist_err,
+        model_err,
+        edges,
+    )
+    gap_abs = spearman_abs.get("dilution_gap") or {}
+    cov_abs = spearman_abs.get("log_combined_sigma_det") or {}
+    if not cov_abs:
+        cov_abs = spearman_abs.get("log_t_cov_det") or {}
+    f10_abs = spearman_abs.get("F10") or {}
+
+    def _sig_positive(row: dict[str, object]) -> bool:
+        rho = row.get("rho")
+        pvalue = row.get("pvalue")
+        if not isinstance(rho, (int, float)) or not isinstance(pvalue, (int, float)):
+            return False
+        return bool(np.isfinite(rho) and np.isfinite(pvalue) and rho > 0.05 and pvalue < 0.05)
+
+    def _sig(row: dict[str, object]) -> bool:
+        rho = row.get("rho")
+        pvalue = row.get("pvalue")
+        if not isinstance(rho, (int, float)) or not isinstance(pvalue, (int, float)):
+            return False
+        return bool(
+            np.isfinite(rho) and np.isfinite(pvalue) and abs(float(rho)) >= 0.05 and pvalue < 0.05
+        )
+
+    gap_rho = gap_abs.get("rho")
+    return {
+        "hypothesis": (
+            "Events whose pessimistic max-risk sits far above the current report, "
+            "or whose covariance is still large, move more before TCA. "
+            "F10 is a negative control. This is not a covariance-tasking model."
+        ),
+        "dilutionGap": "max_risk_estimate - risk on the cutoff-safe snapshot",
+        "fitOn": (
+            "logistic coefficients from frozen train event ids only; "
+            "Spearman and quartiles reported on test"
+        ),
+        "replacesExhibit": False,
+        "spearmanAbsMove": spearman_abs,
+        "spearmanFloor": spearman_floor,
+        "logisticFloor": {
+            "features": logit_cols,
+            "coefficients": {
+                name: float(value) for name, value in zip(logit_cols, coef, strict=True)
+            },
+            "intercept": intercept,
+            "testAuc": auc,
+            "nTrain": int(len(train)),
+            "nTest": int(len(test)),
+            "trainFloorRate": float(y_floor_train.mean()),
+            "testFloorRate": float(y_floor_test.mean()),
+        },
+        "quartiles": quartiles,
+        "h4Supported": _sig_positive(cov_abs),
+        "h4GapPredictsMoreMovement": _sig_positive(gap_abs),
+        "h4GapAssociationExists": _sig(gap_abs),
+        "h4GapSign": (
+            "negative"
+            if isinstance(gap_rho, (int, float)) and float(gap_rho) < 0
+            else "positive"
+        ),
+        "negativeControl": {
+            "name": "F10",
+            "spearmanAbsMove": f10_abs,
+        },
+        "covarianceSpearmanAbsMove": cov_abs,
     }

@@ -22,7 +22,7 @@ from abstention import (  # noqa: E402
 )
 from build_events import build_event_histories  # noqa: E402
 from constants import CUTOFF_DAYS, DEMO_SLOTS, HIGH_RISK_THRESHOLD  # noqa: E402
-from experiments import cluster_test_failures  # noqa: E402
+from experiments import cluster_test_failures, dilution_probe  # noqa: E402
 from export_demo_cases import story_fit  # noqa: E402
 from feature_sets import (  # noqa: E402
     FAMILIES,
@@ -33,6 +33,7 @@ from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
 from train_regressor import (  # noqa: E402
     fit_residual_xgboost,
+    numeric_columns,
     predict_reconstructed,
     reconstruct_from_residual,
     residual_target,
@@ -287,3 +288,43 @@ def test_split_conformal_covers_gaussian_near_nominal() -> None:
     lo50, hi50 = conformal_bounds(pred, q50)
     mid = interval_report(y_test, lo50, hi50)
     assert 0.42 <= mid["coverage"] <= 0.60
+
+
+def test_dilution_gap_is_max_risk_minus_risk() -> None:
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=40, seed=3))
+    features = build_feature_table(build_event_histories(frame))
+    expected = features["max_risk_estimate"] - features["risk"]
+    np.testing.assert_allclose(features["dilution_gap"], expected, equal_nan=True)
+    assert "dilution_gap" not in numeric_columns(features)
+
+
+def test_dilution_probe_logistic_recovers_floor_signal() -> None:
+    rng = np.random.default_rng(0)
+    n = 400
+    gap = rng.normal(2.0, 1.0, size=n)
+    miss = rng.uniform(50.0, 2000.0, size=n)
+    messages = rng.integers(2, 12, size=n).astype(float)
+    floor = (gap + 0.001 * miss > 2.2).astype(float)
+    y = np.where(floor > 0.5, -30.0, -8.0)
+    risk = np.full(n, -8.0)
+    frame = pd.DataFrame(
+        {
+            "event_id": np.arange(n),
+            "y": y,
+            "risk": risk,
+            "max_risk_estimate": risk + gap,
+            "dilution_gap": gap,
+            "miss_distance": miss,
+            "n_messages": messages,
+            "F10": rng.normal(70.0, 5.0, size=n),
+            "log_t_cov_det": rng.normal(0.0, 1.0, size=n),
+        }
+    )
+    train = frame.iloc[:280].copy()
+    test = frame.iloc[280:].copy()
+    report = dilution_probe(train, test)
+    rho = float(report["spearmanAbsMove"]["dilution_gap"]["rho"])
+    assert -1.0 <= rho <= 1.0
+    assert report["logisticFloor"]["testAuc"] > 0.75
+    assert len(report["quartiles"]) >= 2
+    assert report["replacesExhibit"] is False

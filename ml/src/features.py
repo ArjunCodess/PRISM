@@ -52,6 +52,13 @@ def event_features(
             value = snapshot[column]
             features[column] = float(value) if pd.notna(value) else np.nan
 
+    max_risk = features.get("max_risk_estimate")
+    risk = features.get("risk")
+    if isinstance(max_risk, (int, float)) and isinstance(risk, (int, float)):
+        features["dilution_gap"] = float(max_risk) - float(risk)
+    else:
+        features["dilution_gap"] = np.nan
+
     features["c_object_type"] = str(snapshot.get("c_object_type", "UNKNOWN"))
 
     pos = np.array(
