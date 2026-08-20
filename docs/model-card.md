@@ -8,7 +8,7 @@
 
 **Threshold.** High-risk class is `log10(Pc) ≥ −6`. This is the ESA challenge scoring class, not an ISRO operational rule. Only 66 eligible events in the labeled archive meet it, including nine in the frozen test split. Because only nine test events are positive, this probability estimate should be treated as a scarce-label fit, not an operational warning system.
 
-**Split.** Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. A separate four-mission hold-out tests generalization beyond random event splits.
+**Split.** Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. A `GroupShuffleSplit` by `mission_id` (20% of missions) is the entity-level robustness check; the public file has no object-pair IDs.
 
 **Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events → 3,731 / 1,659 / 1,244 / 1,659 train / validation / calibration / test events. The public file has no calendar dates and no object-pair IDs. Official-test labels (Zenodo 4463683) are scored once after freeze.
 
@@ -20,7 +20,7 @@
 
 **History.** The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency. Snapshot-only MAE is 2.904. Adding those summaries lowers it to 2.851. Covariance trends add a little more (2.808).
 
-**Horizons.** On a matched cohort of 1,459 test events, extra MAE beyond persistence is 4.49 / 2.20 / 0.43 / 0.03 at T−72 / T−48 / T−24 / T−12. Non-floor ΔMAE is negative at every horizon. The overlapping-set table is not the identification result.
+**Horizons.** On a matched cohort of 1,459 test events, extra MAE beyond persistence is 4.49 / 2.20 / 0.43 / 0.03 at T−72 / T−48 / T−24 / T−12. Non-floor ΔMAE is negative at every horizon: off the floor the model never beats persistence in that cohort. The overlapping-set table is not the identification result.
 
 **Abstention.** Live conformal coverage is 90.4% (159 of 1,659 abstained) and accepted MAE is 1.706. False reassurance is 2 of 9 high-risk test events.
 
@@ -30,7 +30,7 @@
 
 **Policy.** The live floor hurdle abstains when the 90% conformal band crosses `log10(Pc) ≥ −6` or a critical field is missing. Threshold 0.15 and no persist guard were frozen on validation. The August snapshot used bootstrap spread and a 1.25 disagreement cap.
 
-**Mission identity.** Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the exhibit. A mission-grouped split with 37 held-out high-risk events prefers persistence on the tail (high-risk MAE 1.50 vs 11.9).
+**Mission identity.** Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the exhibit. A GroupShuffleSplit by mission (seed 42, 20% of missions; 15/3957 vs 4/4336 events; same XGBoost spec, hurdle not retuned) has 37 held-out high-risk events and prefers persistence on the tail (high-risk MAE 1.50 vs 11.9).
 
 **Failures.** Tracking-completeness features often have higher mean |SHAP| among large errors than among accurate cases. This is an association in model attribution, not a physical cause.
 
