@@ -69,6 +69,8 @@ from ingest import (  # noqa: E402
     validate_official_test_compatibility,
 )
 from official_test import score_official_test  # noqa: E402
+from review_armor import score_review_armor  # noqa: E402
+from selected_policy import load_floor_hurdle, predict_floor_hurdle  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
 from train_classifier import TrainedClassifier, fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
@@ -502,6 +504,28 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         metrics["officialTest"] = official_existing
     else:
         metrics["officialTest"] = score_official_test(ROOT, artifacts)
+
+    exhibit_conformal = json.loads((artifacts / "exhibit_conformal.json").read_text(encoding="utf-8"))
+    hurdle_bundle = load_floor_hurdle(artifacts, schema)
+    floor_cal, _ = predict_floor_hurdle(hurdle_bundle, calibration)
+    mission_features = build_feature_table(events, include_mission=True)
+    metrics["reviewArmor"] = score_review_armor(
+        raw=raw,
+        features=features,
+        mission_features=mission_features,
+        train=train,
+        test=test,
+        calibration=calibration,
+        manifest=manifest,
+        persist=persist_test,
+        xgb_pred=model_pred,
+        floor_pred=floor_test,
+        floor_proba=floor_proba_test,
+        residual_model=hurdle_bundle["residual"],
+        cal_pred=floor_cal,
+        q90=float(exhibit_conformal["q90"]),
+        metrics=metrics,
+    )
     write_json(metrics_path, metrics)
     card_path = artifacts / "model_card.json"
     if card_path.exists():
