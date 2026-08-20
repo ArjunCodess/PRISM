@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, and a dilution / max-risk probe are measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, and leave-one-high-risk-out are measured.
 
 ## Result
 
@@ -27,7 +27,7 @@ Held-out performance on 1,659 untouched test events. 1,352 of them later report 
 | Wilcoxon *p* | — | 0.91 | 0.92 | **&lt;10<sup>−33</sup>** | 0.31 |
 | ESA-style loss | **0.167** | ∞ (F2 = 0) | ∞ (F2 = 0) | ∞ (F2 = 0) | **0.167** |
 
-The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-event win for unguarded or residual XGBoost: floor-excluded MAE is worse than persistence, median AE for persistence is already 0, and Wilcoxon does not reject equal `|error|`. Predicting `y − risk` and adding the hat back to persistence is almost the same as unguarded level-valued XGBoost (test MAE 2.760 vs 2.809). A two-part floor model — `P(y = −30)` plus a residual regressor fit only on non-floor training events, with threshold `0.15` chosen on validation and no persistence guard — reaches test MAE **2.109** and median AE 0. Floor-class confusion on test is TP 1319 / FP 174 / FN 33 / TN 133 (recall 0.976, precision 0.883). Wilcoxon versus persistence is `p < 10^−33`, but floor-excluded MAE is 9.311: the win is still a floor-call statistic (H2). On **validation**, the floor hurdle ranks first by MAE (1.916 vs unguarded XGBoost 2.669). It is a stored candidate (`floor_classifier.json`, `replacesExhibit: false`), not the live exhibit. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2). F2 is 0.361 for persistence and the selected ensemble, and 0 for the unguarded, residual, and floor candidates. The exact tie is the persistence guard copying the current report whenever it is already at or above `−6`.
+The overall MAE drop is real as a mean (the CI excludes 0) and is not a typical-event win for unguarded or residual XGBoost: floor-excluded MAE is worse than persistence, median AE for persistence is already 0, and Wilcoxon does not reject equal `|error|`. Across **five grouped redraws** (seeds 42–46; seed 42 is still the reported split), unguarded XGBoost MAE advantage is **2.34 ± 0.04** and floor-excluded MAE is **7.78 ± 0.21** (persistence floor-excluded **4.32 ± 0.23**). Residual reconstruction is **2.35 ± 0.04** MAE advantage. Predicting `y − risk` and adding the hat back to persistence is almost the same as unguarded level-valued XGBoost (test MAE 2.760 vs 2.809). A two-part floor model — `P(y = −30)` plus a residual regressor fit only on non-floor training events, with threshold `0.15` chosen on validation and no persistence guard — reaches test MAE **2.109** and median AE 0. Floor-class confusion on test is TP 1319 / FP 174 / FN 33 / TN 133 (recall 0.976, precision 0.883). Wilcoxon versus persistence is `p < 10^−33`, but floor-excluded MAE is 9.311: the win is still a floor-call statistic (H2). On **validation**, the floor hurdle ranks first by MAE (1.916 vs unguarded XGBoost 2.669). It is a stored candidate (`floor_classifier.json`, `replacesExhibit: false`), not the live exhibit. ESA-style loss is the challenge objective: high-risk MSE divided by F2 (F-beta with β=2). F2 is 0.361 for persistence and the selected ensemble, and 0 for the unguarded, residual, and floor candidates. The exact tie is the persistence guard copying the current report whenever it is already at or above `−6`.
 
 A constant training-set median scores 3.002 MAE.
 
@@ -90,7 +90,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 7. **Ensemble disagreement is not equivalent to calibrated uncertainty.** Nominal 50% and 90% bootstrap bands cover 26.0% and 47.7% of outcomes. Split conformal covers 49.6% and 89.7%. The case UI still shows bootstrap ranges as model spread. Conformal numbers live on the research surface (paper, laboratory, `metrics.json`).
 
-8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Treat that probability as a scarce-label fit, not an operational warning system.
+8. **The high-risk estimate is based on a very small positive class.** Only 66 eligible events meet the ESA class `log10(Pc) ≥ −6`, including nine in the test split. Leave-one-high-risk-out: train residual XGBoost without that event, score it. Persistence is closer on **66 / 66** (mean `|error|` 1.21 vs 12.59). Treat the high-risk probability as a scarce-label fit, not an operational warning system.
 
 9. **Failures are not one bucket.** Of 1,659 test events, 837 are accurate to 0.5 log units. Dominant errors: 366 over-predictions, 209 under-predictions, 97 moderate errors, 63 sparse-history errors, 39 floor collapses to −30, 26 close-approach errors, 20 false high-risk calls, and 2 late high-risk jumps.
 
@@ -100,7 +100,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 **Information constraint.** Features use only messages with `time_to_tca ≥` the cutoff. The later update is the label, never an input.
 
-**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. Official-test `true_risk` is joined only after that freeze.
+**Data.** 162,634 CDM rows → cutoff-safe event histories → 8,293 eligible events. The frozen bundle uses 3,731 training, 1,659 validation, 1,244 calibration, and 1,659 test events. Train, validation, calibration, and test are event-disjoint; all model and policy choices are frozen before the untouched test evaluation. Validation is not reused for test selection. Official-test `true_risk` is joined only after that freeze. Seeds 43–46 are extra grouped redraws in `metrics.json`, not extra apps.
 
 **Model.** Event-level XGBoost on inspectable summaries. A sequence model is not used so temporal signals can be inspected directly. Inference is a CPU-only 10-model XGBoost ensemble on a few hundred tabular features; no GPU is required.
 
