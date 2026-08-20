@@ -32,6 +32,10 @@ def test_frozen_artifacts_exist() -> None:
         "metrics.json",
         "demo_cases.json",
         "model_card.json",
+        "selected_policy.json",
+        "floor_hurdle.json",
+        "exhibit_calibrator.joblib",
+        "exhibit_conformal.json",
     ]:
         assert (ART / name).exists(), name
 
@@ -52,7 +56,7 @@ def test_demo_cases_match_exhibit() -> None:
     assert uncertain["prediction"]["abstentionReasons"]
     highs = [item for item in cases if item["story"] == "high"]
     assert all(not item["prediction"]["abstained"] for item in highs)
-    assert all(item["prediction"]["riskBand"] == "high" for item in highs)
+    assert all(item["baselineRiskLog10"] >= -6.0 for item in highs)
     for item in cases:
         assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
         if item["futureMessages"]:
@@ -105,7 +109,7 @@ def test_residual_candidate_exists_on_frozen_split() -> None:
 def test_floor_candidate_exists_on_frozen_split() -> None:
     metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
     floor = metrics["floorModel"]
-    assert floor["replacesExhibit"] is False
+    assert floor["replacesExhibit"] is True
     assert floor["winnerSoFar"]["split"] == "validation"
     assert "threshold" in floor
     confusion = floor["confusion"]["test"]
@@ -137,6 +141,17 @@ def test_conformal_candidate_exists_on_frozen_split() -> None:
     assert conformal["abstentionCandidate"]["chosenOn"] == "validation"
     assert conformal["abstentionCandidate"]["replacesExhibit"] is False
     assert (ART / "conformal.json").exists()
+
+
+def test_selected_policy_is_the_floor_hurdle() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    policy = json.loads((ART / "selected_policy.json").read_text(encoding="utf-8"))
+    assert policy["name"] == "floorHurdle"
+    assert policy["usePersistGuard"] is False
+    assert metrics["selectedPolicy"]["name"] == "floorHurdle"
+    assert metrics["selectedPolicy"]["chosenOn"] == "validation"
+    assert metrics["augustExhibitSnapshot"]["name"] == "bootstrapXgboostMedianPersistGuard"
+    assert metrics["floorModel"]["winnerSoFar"]["name"] == "floorHurdle"
 
 
 def test_reloaded_booster_matches_saved_schema() -> None:

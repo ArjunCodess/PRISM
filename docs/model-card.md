@@ -14,21 +14,21 @@
 
 **Why T−48.** The ESA challenge test set contains only messages with `time_to_tca ≥ 2` days. PRISM inherits that information cutoff as the primary experiment and also reports T−72 / T−24 / T−12.
 
-**Why XGBoost.** The claim is about inspectable event-level summaries of the T−48 history, not sequence modeling. XGBoost fits medium-sized, missing-valued tabular features, stays reproducible offline, and keeps SHAP attached to named quantities. Inference is a CPU-only 10-model ensemble that predicts final `log10(Pc)` directly. Snapshot features include encounter-plane geometry and object-type dummies. No GPU is required.
+**Why this model.** The claim is about inspectable event-level summaries of the T−48 history. The live policy is a floor hurdle chosen on validation: a classifier for later floor reports plus residual XGBoost on non-floor training events (threshold 0.15, no persist guard). SHAP is attached to the residual regressor. The 18 August 10-model bootstrap ensemble is a baseline snapshot, not a live mode.
 
-**Current result.** MAE is in `log10(Pc)` units. The selected T−48 ensemble reduces held-out MAE from 5.080 for persistence to 3.059, but both score 0.167 on ESA-style loss (high-risk MSE / F2, β=2) with F2 0.361. That exact tie is expected: the persistence guard copies the current report whenever it is already at or above `−6`. Unguarded single XGBoost is 2.808 MAE with F2 = 0. The MAE gain is continuous-risk accuracy, not a better risk-weighted decision score.
+**Current result.** (1) Here is the model: T−48 floor hurdle, conformal interval, SHAP. Test MAE 2.109 versus persistence 5.080; median AE 0; floor-excluded MAE 9.311; F2 = 0. (2) Here is what the study measured: horizon decay, floor anatomy, official-test *L*, and the August exhibit snapshot (ensemble MAE 3.059, ESA-style loss 0.167 / F2 0.361). The August numbers are a baseline row, not a live mode.
 
 **History.** The history block consists of temporal transforms of variables already available in the latest snapshot, plus message count and recency. Snapshot-only MAE is 2.904. Adding those summaries lowers it to 2.851. Covariance trends add a little more (2.808).
 
 **Horizons.** The value of learned forecasting is highest when information is sparse. T−72 / T−48 / T−24 / T−12 single-XGBoost MAE: 3.214 / 2.808 / 2.110 / 1.384, versus persistence 7.748 / 5.080 / 2.634 / 1.444.
 
-**Abstention.** Coverage is 77.7% (370 of 1,659 abstained) and accepted MAE is 1.902, versus 3.059 on all test events. Eight of nine test high-risk events are flagged or sent to review.
+**Abstention.** Live conformal coverage is 90.4% (159 of 1,659 abstained) and accepted MAE is 1.706. False reassurance is 2 of 9 high-risk test events.
 
-**False reassurance.** An accepted forecast (no abstention) with predicted `log10(Pc) < −6` while the final reported value is `≥ −6`. There is **one** such case on this split.
+**False reassurance.** An accepted forecast (no abstention) with predicted `log10(Pc) < −6` while the final reported value is `≥ −6`. Live count is **two** on this split.
 
-**Uncertainty.** Ensemble disagreement is not equivalent to calibrated uncertainty. Nominal 50% and 90% bootstrap bands cover 25.8% and 47.7% of outcomes. They are shown as model spread, not predictive probability.
+**Uncertainty.** Live intervals are split conformal around the floor-hurdle point. August snapshot bootstrap 50% and 90% bands cover 25.8% and 47.7% of outcomes (model spread).
 
-**Policy.** PRISM abstains when the 90% bootstrap band crosses `log10(Pc) ≥ −6`, when current risk or miss distance is missing, or when bootstrap disagreement exceeds 1.25 log-risk units. The persistence guard and 1.25 disagreement threshold were fixed design choices before evaluating the test split.
+**Policy.** The live floor hurdle abstains when the 90% conformal band crosses `log10(Pc) ≥ −6` or a critical field is missing. Threshold 0.15 and no persist guard were frozen on validation. The August snapshot used bootstrap spread and a 1.25 disagreement cap.
 
 **Mission identity.** Adding `mission_id` slightly worsens unguarded XGBoost MAE (2.808 → 2.840) and is excluded from the deployed exhibit. Mission-held-out overall MAE is 2.688 versus persistence 4.843. High-risk MAE is 19.2 on one held-out high-risk event.
 

@@ -107,10 +107,12 @@ def _join_reasons(items: list[Factor]) -> str:
     return ", ".join(labels[:-1]) + f", and {labels[-1]}"
 
 
-def explanation_text(factors: list[Factor]) -> str:
+def explanation_text(factors: list[Factor], floor_called: bool = False) -> str:
     higher = [item for item in factors if item.direction == "higher"][:2]
     lower = [item for item in factors if item.direction == "lower"][:2]
     parts: list[str] = []
+    if floor_called:
+        parts.append("The model called a later collapse to the dataset floor.")
     if higher:
         parts.append(f"More worrying: {_join_reasons(higher)}.")
     if lower:

@@ -23,11 +23,11 @@ DISCLAIMER = (
     "Not flight software. Not an operational decision system."
 )
 ABSTENTION_RULE = (
-    "PRISM abstains when the 90% bootstrap band crosses the ESA challenge class "
-    "log10(Pc) ≥ −6, when current risk or miss distance is missing, or when "
-    "bootstrap disagreement exceeds 1.25 log-risk units. The −6 class follows "
-    "the ESA challenge definition. The persistence guard and 1.25 disagreement "
-    "threshold were fixed design choices before evaluating the test split."
+    "PRISM abstains when the 90% conformal band around the floor-hurdle forecast "
+    "crosses the ESA challenge class log10(Pc) ≥ −6, or when current risk or miss "
+    "distance is missing. The −6 class follows the ESA challenge definition. The "
+    "floor threshold 0.15 and the choice not to copy today's report were frozen "
+    "on validation before evaluating the test split."
 )
 FALSE_REASSURANCE_DEFINITION = (
     "An accepted forecast (no abstention) with predicted log10(Pc) < −6 while "
@@ -169,13 +169,13 @@ DEMO_SLOTS = [
         "key": "uncertain",
         "story": "uncertain",
         "title": "Needs a person",
-        "blurb": "The bootstrap spread crosses the ESA class, so PRISM withholds a call.",
+        "blurb": "The conformal band crosses the ESA class, so PRISM withholds a call.",
     },
     {
         "key": "high_now",
         "story": "high",
         "title": "Already at the line",
-        "blurb": "Today's report is already in the ESA high-risk class, so the forecast copies it.",
+        "blurb": "Today's report is already in the ESA high-risk class. The forecast may still call a later drop.",
     },
     {
         "key": "high_stays",

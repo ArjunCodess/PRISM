@@ -11,6 +11,7 @@ export type Prediction = {
   predictedFinalPc: number;
   interval90Log10: [number, number] | number[];
   interval50Log10?: [number, number] | number[];
+  intervalKind?: string;
   configuredHighRiskProbability: number;
   highRiskThresholdLog10: number;
   riskBand: string;
@@ -136,6 +137,30 @@ export type MetricsFile = {
     modes?: Record<string, Record<string, number>>;
   };
   abstentionRule?: string;
+  selectedPolicy?: {
+    name: string;
+    chosenOn?: string;
+    liveMae?: number;
+    liveMedianAe?: number;
+    liveFloorExcludedMae?: number;
+    liveEsaLoss?: number | null;
+    liveF2?: number;
+    abstention?: string;
+    exhibitConformal?: {
+      "50"?: { coverage: number; meanWidth: number; n: number };
+      "90"?: { coverage: number; meanWidth: number; n: number };
+    };
+    test?: { chosen?: Record<string, number | Record<string, number>> };
+  };
+  augustExhibitSnapshot?: {
+    name: string;
+    note?: string;
+    ensemble?: Record<string, number>;
+  };
+  floorModel?: {
+    replacesExhibit?: boolean;
+    test?: Record<string, Record<string, number>>;
+  };
   featureGroups?: Array<{ group: string; gain: number }>;
   failures?: {
     worstUnderpredictions: Array<Record<string, number>>;

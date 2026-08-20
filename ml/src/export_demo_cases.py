@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from abstention import REASON_TEXT, decide_abstention
+from abstention import REASON_TEXT, AbstentionDecision, decide_abstention
 from constants import CUTOFF_DAYS, DEMO_SLOTS, DISCLAIMER, HIGH_RISK_THRESHOLD
 from explain import explanation_text, local_factors
 from train_regressor import TrainedRegressor
@@ -26,32 +26,45 @@ def risk_band(prob: float, abstained: bool, point: float | None = None) -> str:
 def predict_event(
     *,
     trained: TrainedRegressor,
-    ensemble_preds: np.ndarray,
     calibrator,
     explainer,
     row: pd.Series,
     messages: list[dict[str, Any]],
     event_id: str,
+    ensemble_preds: np.ndarray | None = None,
+    point: float | None = None,
+    interval90: tuple[float, float] | None = None,
+    interval50: tuple[float, float] | None = None,
+    decision: AbstentionDecision | None = None,
+    floor_called: bool = False,
+    interval_kind: str = "bootstrap",
 ) -> dict[str, Any]:
-    point = float(np.median(ensemble_preds))
-    lo, inner_lo, inner_hi, hi = np.quantile(ensemble_preds, [0.05, 0.25, 0.75, 0.95])
+    if ensemble_preds is not None:
+        point = float(np.median(ensemble_preds))
+        lo, inner_lo, inner_hi, hi = np.quantile(ensemble_preds, [0.05, 0.25, 0.75, 0.95])
+        current_risk = float(row["risk"]) if pd.notna(row.get("risk")) else float("nan")
+        miss_distance = (
+            float(row["miss_distance"]) if pd.notna(row.get("miss_distance")) else float("nan")
+        )
+        decision = decide_abstention(ensemble_preds, current_risk, miss_distance)
+    else:
+        if point is None or interval90 is None or interval50 is None or decision is None:
+            raise ValueError("point, intervals, and abstention decision are required")
+        lo, hi = interval90
+        inner_lo, inner_hi = interval50
     proba = float(calibrator.predict_proba(np.array([point]))[0])
-    current_risk = float(row["risk"]) if pd.notna(row.get("risk")) else float("nan")
-    miss_distance = (
-        float(row["miss_distance"]) if pd.notna(row.get("miss_distance")) else float("nan")
-    )
-    decision = decide_abstention(ensemble_preds, current_risk, miss_distance)
     abstained = decision.abstained
     _, factors = local_factors(trained, explainer, row)
     payload = {
         "eventId": str(event_id),
-        "predictedFinalRiskLog10": point,
-        "predictedFinalPc": float(10**point),
+        "predictedFinalRiskLog10": float(point),
+        "predictedFinalPc": float(10 ** float(point)),
         "interval90Log10": [float(lo), float(hi)],
         "interval50Log10": [float(inner_lo), float(inner_hi)],
+        "intervalKind": interval_kind,
         "configuredHighRiskProbability": proba,
         "highRiskThresholdLog10": HIGH_RISK_THRESHOLD,
-        "riskBand": risk_band(proba, abstained, point),
+        "riskBand": risk_band(proba, abstained, float(point)),
         "abstained": abstained,
         "abstentionReasons": [REASON_TEXT[reason] for reason in decision.reasons],
         "topFactors": [
@@ -63,7 +76,7 @@ def predict_event(
             }
             for item in factors[:6]
         ],
-        "explanation": explanation_text(factors),
+        "explanation": explanation_text(factors, floor_called=floor_called),
         "disclaimer": DISCLAIMER,
         "cutoffHours": int(CUTOFF_DAYS * 24),
         "nMessagesUsed": len(messages),
@@ -99,7 +112,9 @@ def case_briefing(story: str, persist: float, pred: float, actual: float, abstai
     if story == "low":
         return f"Today {today}. Forecast stays quiet ({guess})."
     if story == "high_now":
-        return f"Today {today}. Already at the ESA class, so the forecast copies today's report."
+        if pred >= HIGH_RISK_THRESHOLD:
+            return f"Today {today}. Already at the ESA class; the forecast stays there ({guess})."
+        return f"Today {today}. Already at the ESA class; the forecast calls a later drop ({guess})."
     if story == "high_stays":
         return f"Today {today}. Forecast copies today's report ({guess})."
     if story == "high_drop":
@@ -264,12 +279,12 @@ def assemble_demo_cases(
         future = later[later["time_to_tca"] < CUTOFF_DAYS]
         prediction = predict_event(
             trained=trained,
-            ensemble_preds=ensemble_matrix[position],
             calibrator=calibrator,
             explainer=explainer,
             row=aligned.iloc[position],
             messages=history,
             event_id=f"demo-{event_id}",
+            ensemble_preds=ensemble_matrix[position],
         )
         persist = float(feature_row["risk"])
         actual = float(feature_row["y"])
@@ -297,58 +312,93 @@ def assemble_demo_cases(
     return demo_cases
 
 
+def assemble_demo_cases_from_model(
+    *,
+    predictions: dict[int, dict[str, Any]],
+    features: pd.DataFrame,
+    event_by_id: dict[int, dict[str, Any]],
+    model: Any,
+    test_ids: set[int],
+) -> list[dict[str, Any]]:
+    selected = select_demo_event_ids(DEMO_SLOTS, predictions, features, test_ids)
+    indexed = features.copy()
+    indexed["event_id"] = indexed["event_id"].map(_as_int_id)
+    features_by_id = indexed.set_index("event_id", drop=False)
+    events = {_as_int_id(event_id): event for event_id, event in event_by_id.items()}
+    demo_cases: list[dict[str, Any]] = []
+    for slot, event_id in selected:
+        event = events[event_id]
+        feature_row = features_by_id.loc[event_id]
+        history = messages_from_history(event["history"])
+        later = event["full_history"]
+        future = later[later["time_to_tca"] < CUTOFF_DAYS]
+        prediction = model.predict_messages(f"demo-{event_id}", history)
+        persist = float(feature_row["risk"])
+        actual = float(feature_row["y"])
+        demo_cases.append(
+            {
+                "id": f"demo-{event_id}",
+                "story": slot["story"],
+                "missionAlias": f"MISSION-{int(event['mission_id']):02d}",
+                "title": slot["title"],
+                "blurb": slot["blurb"],
+                "briefing": case_briefing(
+                    slot["key"],
+                    persist,
+                    float(prediction["predictedFinalRiskLog10"]),
+                    actual,
+                    bool(prediction["abstained"]),
+                ),
+                "prediction": prediction,
+                "baselineRiskLog10": persist,
+                "actualFinalRiskLog10": actual,
+                "messages": history,
+                "futureMessages": messages_from_history(future),
+            }
+        )
+    return demo_cases
+
+
 def refresh_from_frozen() -> list[dict[str, Any]]:
-    from abstention import abstain_mask
     from build_events import build_event_histories
+    from features import build_feature_table
     from inference import PrismModel
-    from ingest import load_esa_training
+    from ingest import load_esa_training, realistic_training_events
+    from selected_policy import decide_policy_abstention
     from validate import validate_cdm_frame
 
     root = Path(__file__).resolve().parents[2]
-    features = pd.read_csv(root / "data" / "processed" / "events.csv")
-    features["event_id"] = features["event_id"].map(_as_int_id)
-    split_path = root / "ml" / "artifacts" / "split_manifest.json"
-    splits = json.loads(split_path.read_text(encoding="utf-8"))
-    test_ids = {int(event_id) for event_id in splits["test"]}
-    model = PrismModel()
-    aligned = features[model.feature_names].apply(pd.to_numeric, errors="coerce")
-    raw_ensemble = np.column_stack([member.predict(aligned) for member in model.ensemble])
-    persist = features["risk"].to_numpy(dtype=float)
-    ensemble_matrix = np.where(
-        (persist >= HIGH_RISK_THRESHOLD)[:, None],
-        persist[:, None],
-        raw_ensemble,
-    )
-    point = np.median(ensemble_matrix, axis=1)
-    abstained, _, _ = abstain_mask(
-        ensemble_matrix,
-        persist,
-        features["miss_distance"].to_numpy(dtype=float),
-    )
-    predictions = {
-        int(event_id): {
-            "predictedFinalRiskLog10": float(point[index]),
-            "abstained": bool(abstained[index]),
-        }
-        for index, event_id in enumerate(features["event_id"].to_numpy())
-    }
-    chosen = select_demo_event_ids(DEMO_SLOTS, predictions, features, test_ids)
-    selected_ids = {event_id for _, event_id in chosen}
-    raw = load_esa_training(root / "data" / "raw")
-    raw = raw[raw["event_id"].map(_as_int_id).isin(selected_ids)].copy()
+    raw = realistic_training_events(load_esa_training(root / "data" / "raw"))
     events = build_event_histories(validate_cdm_frame(raw))
+    features = build_feature_table(events)
+    features["event_id"] = features["event_id"].map(_as_int_id)
+    splits = json.loads(
+        (root / "ml" / "artifacts" / "split_manifest.json").read_text(encoding="utf-8")
+    )
+    model = PrismModel()
+    scored = model.predict_frame(features)
+    persist = features["risk"].to_numpy(dtype=float)
+    miss = features["miss_distance"].to_numpy(dtype=float)
+    predictions = {}
+    for index, event_id in enumerate(features["event_id"].to_numpy()):
+        decision = decide_policy_abstention(
+            rule=model.abstention_rule,
+            current_risk=float(persist[index]),
+            miss_distance=float(miss[index]),
+            lo90=float(scored["lo90"][index]),
+            hi90=float(scored["hi90"][index]),
+        )
+        predictions[int(event_id)] = {
+            "predictedFinalRiskLog10": float(scored["point"][index]),
+            "abstained": decision.abstained,
+        }
     event_by_id = {_as_int_id(event["event_id"]): event for event in events}
-    cases = assemble_demo_cases(
-        slots=DEMO_SLOTS,
+    cases = assemble_demo_cases_from_model(
         predictions=predictions,
         features=features,
         event_by_id=event_by_id,
-        aligned=aligned,
-        ensemble_matrix=ensemble_matrix,
-        trained=model.trained,
-        calibrator=model.calibrator,
-        explainer=model.explainer,
-        test_ids=test_ids,
+        model=model,
+        test_ids={int(event_id) for event_id in splits["test"]},
     )
     write_json(root / "ml" / "artifacts" / "demo_cases.json", cases)
     write_json(root / "apps" / "web" / "public" / "demo_cases.json", cases)

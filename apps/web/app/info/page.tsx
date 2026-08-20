@@ -15,7 +15,7 @@ export default function InfoPage() {
           Currently, satellite operators get warning messages as debris gets close, but <I>waiting for the final, most accurate data</I> leaves them with almost no time to plan a safe escape. Therefore, PRISM <B>freezes the clock exactly 48 hours before closest approach</B>.
         </p>
         <p>
-          Instead of just <I>carrying the latest warning snapshot forward</I>, it analyzes the entire history of those warnings using an <B>XGBoost machine-learning ensemble</B>. This method reduces prediction errors by <B>39.9%</B> on our untouched test events. Hence, operators get a highly accurate early-warning forecast that is <B>fully explainable</B> rather than a <I>black box</I>.
+          Instead of just <I>carrying the latest warning snapshot forward</I>, it reads the history of those warnings and forecasts the later reported collision chance. The live model is a two-part floor hurdle: it can call a later collapse to the dataset floor, otherwise it adjusts today&apos;s report. SHAP explains the residual forecast in named quantities, not a black box.
         </p>
         <p className="pt-2 text-sm text-stone-500">
           <Link href="/" className="interactive text-ink hover:text-cyan">

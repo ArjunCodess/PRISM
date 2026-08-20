@@ -23,6 +23,9 @@ REASON_TEXT = {
     REASON_DISAGREEMENT: (
         f"bootstrap models disagree by more than {ABSTENTION_DISAGREEMENT} log-risk units"
     ),
+    REASON_CONFORMAL: (
+        "the 90% conformal band crosses the ESA challenge class log10(Pc) ≥ −6"
+    ),
 }
 
 

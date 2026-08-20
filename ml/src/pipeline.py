@@ -274,7 +274,8 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         raise FileNotFoundError("frozen split_manifest.json and metrics.json are required")
 
     raw = realistic_training_events(load_esa_training(ROOT / "data" / "raw"))
-    features = build_feature_table(build_event_histories(validate_cdm_frame(raw)))
+    events = build_event_histories(validate_cdm_frame(raw))
+    features = build_feature_table(events)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     test = subset(features, manifest["test"])
     if test.empty:
@@ -557,6 +558,15 @@ def score_frozen_honest_metrics() -> dict[str, object]:
             ],
         }
         write_json(card_path, card)
+    from selected_policy import ship_selected_policy
+
+    ship_selected_policy(
+        features=features,
+        events=events,
+        manifest=manifest,
+        artifacts=artifacts,
+        metrics=metrics,
+    )
     return honest
 
 
@@ -909,7 +919,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--frozen",
         action="store_true",
-        help="score frozen exhibit models and the residual candidate; do not replace the exhibit",
+        help="score frozen artifacts, then ship the validation-selected CDM policy",
     )
     args = parser.parse_args()
     if args.frozen:
