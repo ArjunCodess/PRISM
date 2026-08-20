@@ -1,0 +1,1538 @@
+Alright, going section by section, everything I can think of, including the stuff from before.
+
+Title
+Too long and reads like an abstract sentence instead of a title. It also front loads a conclusion instead of a question, which is a strange choice since your whole paper is about testing something rather than asserting it. Something shorter that poses the question would pull a reader in faster.
+
+Abstract
+It works but it is packed wall to wall with numbers. A reader skimming for the one sentence takeaway has to dig for it. Consider one sentence near the top that states the core finding in plain words before the numbers start, something like: the model looks like it wins on average error, but that win comes almost entirely from predicting collapses to the risk floor, not from genuinely better forecasts. Right now that idea is there but it is diluted across many clauses.
+
+Introduction
+The four hypotheses are a strong structural choice, that part is genuinely good. Two things to add. First, give the reader a one line preview of which hypotheses held and which did not, right at the end of the intro. Right now they have to read the whole results section to find out. Second, the opening sentence is a bit flat. You are sitting on a good hook, actual satellites, actual collision risk, actual public agency data, and the intro undersells that.
+
+Methods
+This is where the most real gaps are.
+
+You never give a feature list. You mention snapshot fields, history summaries, and covariance trends as ablation steps that move MAE from 2.904 to 2.851 to 2.808, but you never tell the reader what is actually in those buckets. A short table listing feature names and where they come from would answer a question every reviewer will ask.
+
+You mention SHAP explains the fitted residual regressor in the discussion, but you never show it. Either cut the SHAP mention or include the actual output, even as a small figure. Right now it is a claim with no evidence attached.
+
+No hyperparameters are given for XGBoost. Depth, learning rate, number of trees, early stopping rule, anything. This matters for reproducibility even though you do release the freeze seed and rerun protocol.
+
+The notation is a little loose. Risk and y appear before they are formally defined as the pre cutoff snapshot value and the final reported value. A single defining sentence early in Methods would remove any ambiguity for a reader who has not internalized CDM vocabulary yet.
+
+One line in the PDF extraction looks garbled, the yb equals risk plus y minus risk sentence in section III-A. Worth checking your LaTeX source, since that is either an OCR artifact or an actual typo in the equation.
+
+Results
+The two most damning and most convincing findings in the whole paper are both under told. The leave one out result, persistence beating your model on 66 out of 66 high risk events, is sitting in the middle of a paragraph in III-A. That is about as clean a piece of evidence as you will ever get that the model should not be trusted near the tail, and it deserves its own sentence or its own line in the abstract.
+
+The unguarded XGBoost loss of 1.75 times 10 to the 6 in Table IV needs narration. As written it looks like a typo. It is actually one of the most important numbers in the paper because it shows a model that looks strong on MAE can be catastrophic on the metric that matters operationally. Explain in one sentence what happened, almost certainly one wildly overconfident prediction on a real high risk event blowing up the numerator.
+
+Sesc appears twice as a comparison number, 0.556, and is never defined. Anyone not deep in the Uriot 2022 paper will not know what it stands for.
+
+Section III-F ends with an honest but soft admission, that the local split does not have enough positives to support a claim at the tighter operational cuts. That is a real limitation and it is currently phrased almost as a footnote. State it more directly, something like: this study cannot currently say whether the model helps or hurts at the cutoffs operators actually use, only at the looser ESA cutoff.
+
+No discussion of the 174 false positives from the floor classifier at threshold 0.15. What do those events look like. Are they clustered near the boundary or scattered. A practitioner reading this paper will want to know what a false floor call costs them.
+
+Figures
+Fig 2 only has uncertainty whiskers at the 48 hour point. If you have the five seed redraws at other horizons too, showing bars at all four points would let a reader see whether the horizon effect itself is stable or noisy.
+
+Fig 4 is log scale and the unguarded XGBoost bar towers over everything. Annotate the actual value on the bar itself rather than making the reader go back to the table.
+
+No calibration or reliability plot for the floor classifier probabilities. Given that the classifier threshold of 0.15 is doing a lot of work in your selected policy, a reliability diagram would strengthen trust in that choice.
+
+No predicted versus actual scatter plot anywhere. Given how central the floor collapse behavior is to your story, a scatter with the floor line marked would make the mechanism visually obvious in a way the histogram in Fig 1 only partly does.
+
+Discussion
+Good synthesis, but it stays at the level of statistics without translating to what an operator should actually do differently. One paragraph of concrete guidance would help: something like, use this model to triage which reports are safe to deprioritize, not to assess ones that are already flagged high risk.
+
+No mention of compute cost or inference latency anywhere, even though your PRISM repo apparently runs CPU only. That is a relevant practical detail for a paper that is implicitly making a case for real world usefulness of early forecasting.
+
+No discussion of how a 2015 to 2019 dataset generalizes to today's much denser catalog, given how much conjunction volume has grown with mega constellations. You note manoeuvres are out of scope and the data is historical, but you do not discuss whether the floor collapse rate itself might be different in a denser tracking environment now. That is a meaningful limitation given the paper's forward looking framing.
+
+References
+Eight references is thin for a paper claiming to unify its results with the existing dilution literature. Citations 2 and 6 are both pre 2020. A couple of more recent works on CDM based forecasting or space situational awareness would strengthen the related work grounding and preempt an obvious reviewer question about why the lit review stops around 2018.
+
+General
+No statement of code or data availability. Since your whole argument rests on transparency about a negative result, a line pointing to where the code and frozen splits live would match the spirit of the paper and let others actually check your work.
+
+No correction for multiple comparisons across the many tests you run, horizon sweeps, threshold sweeps, quartile splits. Given the exploratory framing this is probably fine, but a one sentence caveat acknowledging it would preempt a sharp reviewer.
+
+No stated target venue. The polish level, single high school author, and the honest negative result framing suggest this could go several directions, arXiv preprint, a space situational awareness workshop, or a science fair style write up. The right next edit pass depends a lot on which one you are aiming for, since the acceptable density of unexplained numbers is very different across those.
+
+---
+
+Yeah. I read it as a **paper**, not as a school project. That changes the standard.
+
+The core idea is strong. The paper is also much more self-critical than most ML papers. But there are still places where a serious reviewer could attack you hard.
+
+The biggest problem is not that the model is weak. **The biggest problem is that some of your strongest scientific claims are not yet isolated cleanly enough from dataset artifacts, cohort differences, and protocol choices.**
+
+Here is what I would fix, in order.
+
+---
+
+# 1. THE BIGGEST SCIENTIFIC ISSUE: THE −30 FLOOR
+
+This is the elephant in the room.
+
+You correctly discover that **1,352 of 1,659 local test events land at −30**, and that most of the apparent XGBoost gain comes from predicting those collapses. Your own table makes this painfully clear:
+
+* Persistence MAE: 5.080
+* XGBoost MAE: 2.809
+* But floor-excluded MAE: 4.073 → 7.562
+* Wilcoxon: p = 0.91 
+
+That is a great result.
+
+But then you still treat the floor as a normal numerical target in several places.
+
+That is scientifically awkward.
+
+**−30 is not really “a very low physical collision probability.” It is a dataset floor.**
+
+You're effectively dealing with a **censored / quantized target**. Once the reported probability hits the archive's lower bound, the exact latent value is unknown.
+
+That means your two-part hurdle is actually closer to:
+
+> “Will this event collapse to the reporting floor?”
+
+than:
+
+> “What is the final collision probability?”
+
+That distinction should become central.
+
+### What I would do
+
+Run a dedicated **censoring analysis**.
+
+At minimum:
+
+1. Treat `−30` as a separate floor/censor class.
+2. Model floor vs non-floor.
+3. Model the continuous value conditional on non-floor.
+4. Report results separately.
+5. Run sensitivity where the floor is treated as something like ≤ −20, ≤ −25, ≤ −30, etc., rather than assuming −30 is a literal value.
+
+Even better, discuss a **censored regression / Tobit-style framing** as an alternative formulation.
+
+That would turn what currently looks like a dataset pathology into part of the methodological contribution.
+
+Right now you discovered the artifact.
+
+**Next level is formally modeling it.**
+
+---
+
+# 2. YOUR H1 CLAIM IS A LITTLE TOO STRONG
+
+You say:
+
+> “Extra predictive information is largest at long horizons and approaches zero near closest approach.”
+
+Your horizon table gives:
+
+* 72h: 4.534
+* 48h: 2.272
+* 24h: 0.524
+* 12h: 0.060 
+
+That is a compelling pattern.
+
+But here's the catch.
+
+The eligible sets at each horizon are **not identical**. Your own caption admits this. 
+
+So you're mixing two effects:
+
+**time-to-approach effect + population/cohort effect**
+
+Maybe the advantage really decays.
+
+Maybe the set of events available at each horizon also changes.
+
+You need to kill that objection.
+
+### Better experiment
+
+Take the **same events that have valid observations at all four horizons**.
+
+Then compare:
+
+[
+\Delta_h = MAE(Persistence_h) - MAE(Model_h)
+]
+
+for exactly the same event cohort.
+
+Then report floor rate at each horizon.
+
+Even better, report:
+
+| Horizon |  N | Floor rate | Overall ΔMAE | Non-floor ΔMAE |
+| ------- | -: | ---------: | -----------: | -------------: |
+| 72h     |    |            |              |                |
+| 48h     |    |            |              |                |
+| 24h     |    |            |              |                |
+| 12h     |    |            |              |                |
+
+Because right now your gorgeous decay curve could partly be a **changing denominator story**.
+
+Don't let a reviewer make that point before you do.
+
+---
+
+# 3. YOU NEED A TIME-BASED GENERALIZATION TEST
+
+Your split is event-disjoint, which is good.
+
+But the data are historical and span 2015–2019. 
+
+A reviewer can ask:
+
+> “Does this generalize to unseen events, or just a random mixture of the same historical regime?”
+
+Random event-level splitting does not answer temporal generalization.
+
+### Add this
+
+A second evaluation:
+
+**Train → early years**
+
+**Validation → middle years**
+
+**Test → later years**
+
+Or rolling-origin evaluation.
+
+Something like:
+
+* 2015–2017 train
+* 2018 validation
+* 2019 test
+
+Exact years depend on event counts.
+
+This matters because tracking practices, catalog quality, spacecraft populations, and reporting behavior can drift.
+
+You should explicitly test:
+
+> Does the phenomenon survive temporal shift?
+
+That would massively strengthen the paper.
+
+---
+
+# 4. YOU NEED OBJECT-LEVEL GROUPING IF THE DATA ALLOW IT
+
+This is another reviewer attack.
+
+You say the split is event-disjoint. Good.
+
+But are two events ever associated with the same spacecraft pair?
+
+If yes, you could have:
+
+**Event A → train**
+
+**Event B involving same objects → test**
+
+That's not necessarily leakage in the conventional sense, but it can create **entity-specific memorization**.
+
+The model could learn recurring conjunction characteristics.
+
+### Test this
+
+If spacecraft/object identifiers are available:
+
+* group by object pair
+* group by mission
+* group by primary object
+* optionally group by time
+
+Then see what survives.
+
+If the performance drops, **that result is valuable too**.
+
+Don't hide it.
+
+---
+
+# 5. YOUR FEATURE DESCRIPTION IS WAY TOO THIN
+
+This is one of the biggest reproducibility weaknesses.
+
+You say:
+
+> “Event-level XGBoost is fit on inspectable snapshot and history summaries.”
+
+But a reader doesn't actually know what those features are. 
+
+That's not enough.
+
+I want a table like:
+
+| Feature           | Definition        | Source field | Units | History window | Missingness | Leakage-safe? |
+| ----------------- | ----------------- | ------------ | ----- | -------------- | ----------- | ------------- |
+| risk              | latest log10 Pc   | ...          | log10 | latest         | ...         | yes           |
+| max risk          | max over history  | ...          | log10 | cutoff-safe    | ...         | yes           |
+| Δrisk             | latest − previous | ...          | log10 | ...            | ...         | yes           |
+| covariance logdet | ...               | ...          | ...   | ...            | ...         | yes           |
+
+Especially because your paper's scientific argument depends on **what information is actually available at T−48**.
+
+Right now the reader has to trust that.
+
+Don't make them trust you.
+
+Show them.
+
+---
+
+# 6. XGBOOST NEEDS A REPRODUCIBILITY SPECIFICATION
+
+You call it XGBoost, but not enough detail is given.
+
+You need:
+
+* number of trees
+* max depth
+* learning rate
+* subsampling
+* column sampling
+* regularization
+* minimum child weight
+* objective
+* early stopping
+* random seed
+* missing-value handling
+* feature preprocessing
+
+Your current Methods section isn't reproducible enough for someone to rebuild the exact model. 
+
+This is especially important because you report extremely precise numbers like:
+
+> 2.809
+> 2.760
+> 2.109
+
+Precision implies reproducibility.
+
+---
+
+# 7. YOUR MODEL SELECTION PIPELINE NEEDS TO BE VISUALLY EXPLICIT
+
+You say:
+
+> selected by MAE, then floor-excluded MAE, then ESA-style loss
+
+and the threshold 0.15 was chosen on validation. 
+
+That's good.
+
+But the paper makes the reader reconstruct the pipeline.
+
+Make a simple diagram:
+
+**Raw CDMs**
+
+↓
+
+**Cutoff-safe event histories**
+
+↓
+
+**Train / validation / calibration / test**
+
+↓
+
+**Candidate models**
+
+↓
+
+**Validation selection**
+
+↓
+
+**Floor classifier + residual model**
+
+↓
+
+**Conformal calibration**
+
+↓
+
+**Frozen test**
+
+That would make your leakage argument much stronger.
+
+Right now the protocol is correct-looking.
+
+You need to make it **obviously correct**.
+
+---
+
+# 8. YOU SHOULD ADD A REAL FLOOR-CLASSIFIER EVALUATION
+
+The floor hurdle gets:
+
+* 1319 TP
+* 174 FP
+* 33 FN
+* 133 TN
+* recall 0.976
+* precision 0.883 
+
+Good.
+
+But that's incomplete.
+
+You should add:
+
+* AUROC
+* AUPRC
+* Brier score
+* calibration curve
+* precision/recall across threshold
+* confusion matrices at several thresholds
+
+Because your threshold `0.15` is a policy choice.
+
+And that threshold is doing a *lot* of work.
+
+Show how the system behaves at:
+
+0.05
+0.10
+0.15
+0.20
+0.30
+0.50
+
+Then the reader can see whether 0.15 is actually meaningful or just the point that happened to win.
+
+---
+
+# 9. YOUR CONFORMAL SECTION IS GOOD, BUT IT NEEDS MORE DEPTH
+
+This is actually one of the coolest parts.
+
+You show bootstrap spread having awful empirical coverage:
+
+* nominal 50% → empirical 26.0%
+* nominal 90% → empirical 47.7%
+
+while split conformal gets:
+
+* 50% → 49.6%
+* 90% → 89.7% 
+
+That's a fantastic demonstration.
+
+But then the 90% interval has **18.33 log-unit mean width**.
+
+That's enormous.
+
+Your conclusion should hit harder:
+
+> calibrated uncertainty is statistically honest but operationally almost useless at this level of heterogeneity.
+
+That is more interesting than simply saying “conformal works.”
+
+### Add
+
+* interval width distribution, not only mean
+* median width
+* 25th / 75th percentile
+* coverage by floor/non-floor subgroup
+* coverage by horizon
+* coverage by risk regime
+
+Then show **where conformal intervals are useful and where they become absurdly wide**.
+
+---
+
+# 10. THE ABSTENTION ANALYSIS NEEDS TO BECOME A REAL SELECTIVE-PREDICTION ANALYSIS
+
+You currently say:
+
+> accepts 1500 of 1659
+> coverage 90.4%
+> false reassurance 2 of 9 
+
+Interesting.
+
+But this deserves its own analysis.
+
+You have an abstaining forecaster.
+
+So evaluate:
+
+[
+\text{coverage} \leftrightarrow \text{risk of accepted set}
+]
+
+As the abstention threshold changes.
+
+Show:
+
+* acceptance rate
+* MAE among accepted events
+* high-risk recall
+* false reassurance
+* average interval width
+* number of abstentions
+
+That turns “we abstain when the band crosses −6” into an actual **selective prediction study**.
+
+---
+
+# 11. THE HIGH-RISK SAMPLE IS TINY
+
+This is important.
+
+You have:
+
+**66 local high-risk events**
+
+and only:
+
+**9 at −6** in the local test.
+
+The official test has 150 positives. 
+
+Your paper correctly recognizes that high-risk evaluation is hard.
+
+But then you sometimes speak about H3 in a way that sounds broader than the evidence.
+
+Your result is not:
+
+> “ML does not improve high-risk conjunction forecasting.”
+
+It is:
+
+> “Under this dataset and evaluation protocol, these models did not demonstrate improved performance in the high-risk tail.”
+
+That's much safer.
+
+Especially because one of your strongest results comes from leave-one-out over just 66 high-risk events, where persistence wins 66/66. 
+
+That is fascinating, but statistically fragile.
+
+---
+
+# 12. THE FOUR-MISSION HOLDOUT RESULT IS WAY TOO SMALL TO LEAN ON
+
+You write:
+
+> “A four-mission hold-out has high-risk MAE 19.2 on a single held-out high-risk event.”
+
+That's effectively **n = 1** for the high-risk metric. 
+
+Don't make this sound like substantial validation.
+
+I would either:
+
+**A. Expand it**, if possible.
+
+or
+
+**B. Put it clearly in an exploratory appendix.**
+
+Something like:
+
+> “The mission-level holdout contained one high-risk event, so high-risk conclusions from this analysis are not statistically interpretable.”
+
+That sentence protects you.
+
+---
+
+# 13. H4 IS STRONG, BUT YOU NEED TO BE CAREFUL ABOUT CAUSAL LANGUAGE
+
+Your result:
+
+* covariance log determinant vs later absolute movement:
+  (\rho = 0.399)
+* max-risk gap vs floor:
+  AUC = 0.819
+* max-risk gap vs movement:
+  (\rho = -0.768) 
+
+This is interesting.
+
+But don't accidentally slide from:
+
+> “associated with”
+
+into:
+
+> “causes.”
+
+You mostly don't.
+
+Keep it that way.
+
+And I'd add **partial correlations / multivariable regression**.
+
+Because covariance volume, risk, gap, and message count are probably related.
+
+Your current correlations are univariate.
+
+A reviewer can ask:
+
+> “Is covariance volume genuinely informative, or is it just proxying for risk / number of updates?”
+
+Answer that.
+
+For example:
+
+[
+|\Delta risk| \sim \log\det(\Sigma) + risk + message_count + miss_distance
+]
+
+Then report standardized coefficients / partial effects.
+
+That would make H4 substantially more defensible.
+
+---
+
+# 14. YOUR “DILUTION GAP” RESULT DESERVES A FIGURE THAT PEOPLE CAN ACTUALLY UNDERSTAND
+
+Table V is good:
+
+Q1 has:
+
+* floor rate 0.556
+* mean movement 13.03
+
+Q3/Q4 have floor rates above 0.95 and movement below 0.75. 
+
+That is probably one of the most physically interpretable results in the paper.
+
+But the current presentation makes the reader work for it.
+
+I would add a scatterplot:
+
+**x = max-risk-estimate − risk**
+
+**y = later |Δrisk|**
+
+with floor events clearly marked.
+
+Then a second panel:
+
+**x = gap**
+
+**y = P(floor)**
+
+The quartile table can remain supplementary.
+
+---
+
+# 15. ADD A PROPER ERROR DISTRIBUTION ANALYSIS
+
+Your histogram on page 3 is important because it visually exposes the entire story: huge spike at zero and left-tail collapse to −30. 
+
+But you should quantify the distribution.
+
+Report:
+
+* proportion exact persistence
+* proportion within ±0.5
+* proportion within ±1
+* proportion floor-collapse
+* 90th / 95th percentile absolute error
+* error separately by floor/non-floor
+* signed bias
+
+Because mean absolute error alone is doing too much work.
+
+Your own evidence already shows how misleading MAE can be here.
+
+Make the metric critique explicit.
+
+---
+
+# 16. YOU SHOULD REPORT BASE-RATE INFORMATION EVERYWHERE
+
+This is a big one.
+
+For every horizon:
+
+**what percentage of events hit the floor?**
+
+For every risk class:
+
+**how many positives?**
+
+For every split:
+
+**what is the floor rate?**
+
+For every subgroup:
+
+**what is the prevalence?**
+
+Because your entire problem is heavily imbalanced.
+
+A classifier with 97.6% recall means something very different depending on prevalence.
+
+You do give counts in places. But the paper should make them systematically visible.
+
+---
+
+# 17. DON'T JUST REPORT ONE SPLIT
+
+You already did five grouped redraws, which is excellent:
+
+48h MAE advantage:
+
+**2.34 ± 0.04**
+
+floor-excluded MAE:
+
+**7.78 ± 0.21** 
+
+But this is buried.
+
+Bring it forward.
+
+This is one of the strongest arguments that your result is not merely seed 42 nonsense.
+
+I'd add a compact table:
+
+| Seed | MAE | Floor-excluded MAE | Advantage |
+| ---- | --: | -----------------: | --------: |
+| 42   | ... |                ... |       ... |
+| 43   | ... |                ... |       ... |
+| 44   | ... |                ... |       ... |
+| 45   | ... |                ... |       ... |
+| 46   | ... |                ... |       ... |
+
+Then aggregate mean ± SD.
+
+Right now the reproducibility evidence exists, but it feels like a footnote.
+
+Make it part of the proof.
+
+---
+
+# 18. YOU NEED BETTER BASELINES, NOT MORE MODELS
+
+Don't turn this into a leaderboard.
+
+You don't need 17 algorithms.
+
+You need **better scientific baselines**.
+
+I'd add two very domain-specific ones:
+
+### Persistence
+
+You already have it.
+
+### Trend extrapolation
+
+For example:
+
+[
+\hat{y}_{t+1}
+=============
+
+y_t + (y_t-y_{t-1})
+]
+
+or a clipped trend estimate.
+
+Because your scientific question is fundamentally:
+
+> Is there information in the *trajectory* beyond the latest value?
+
+A simple temporal extrapolator directly tests that.
+
+Then:
+
+### Covariance-only model
+
+Features based only on physically motivated covariance quantities.
+
+Then:
+
+### History-only model
+
+No instantaneous covariance.
+
+Then:
+
+### Snapshot-only model
+
+You already partly do this.
+
+That makes the paper a much cleaner scientific decomposition.
+
+---
+
+# 19. YOUR HISTORY ABLATION IS GOOD. MAKE IT MORE RUTHLESS.
+
+You report:
+
+* snapshot-only: 2.904
+* after history: 2.851
+* after covariance trends: 2.808 
+
+That's actually a valuable result.
+
+It says history adds relatively little compared with the snapshot itself.
+
+But you barely discuss it.
+
+I would make a dedicated ablation figure.
+
+Something like:
+
+**Snapshot → +History → +Covariance trend**
+
+with:
+
+* MAE
+* floor-excluded MAE
+* high-risk metric
+
+That makes the contribution much clearer.
+
+---
+
+# 20. YOUR ABSTRACT IS TOO DENSE
+
+The abstract is technically strong but overloaded.
+
+You are trying to communicate:
+
+* dataset
+* horizon
+* floor effect
+* model comparison
+* Wilcoxon
+* hurdle
+* official test
+* covariance
+* max-risk gap
+* deployment caveat
+
+all at once. 
+
+It reads like a miniature results section.
+
+You need a cleaner hierarchy:
+
+**Question → method → main finding → implication → limitation**
+
+The most important sentence should probably be something like:
+
+> Predictive information beyond persistence exists primarily at long horizons and is concentrated in later collapses to the dataset floor; it does not translate into improved high-risk decision performance.
+
+That's your paper.
+
+Everything else supports that.
+
+---
+
+# 21. THE TITLE CAN BE MUCH BETTER
+
+Current:
+
+> **Predictive Information in Conjunction Data-Message Histories Decays as Time to Closest Approach Decreases** 
+
+It is technically accurate.
+
+But clunky.
+
+And “Data-Message” is awkward.
+
+You're also making a causal-sounding claim with “decays.”
+
+I'd consider something closer to:
+
+> **Predictive Information in Conjunction Message Histories Decreases Near Closest Approach**
+
+or:
+
+> **How Much Can Conjunction Message Histories Predict Beyond Persistence?**
+
+The second is stronger for a research paper because it states the actual scientific question instead of prematurely claiming the answer.
+
+---
+
+# 22. YOUR CONTRIBUTION SHOULD BE MORE EXPLICIT
+
+Right now the contribution is spread across H1–H4.
+
+I'd state three contributions explicitly:
+
+**1. Measurement:**
+A leakage-safe measurement of how predictive information beyond persistence varies with forecast horizon.
+
+**2. Decomposition:**
+Demonstration that apparent MAE gains are dominated by floor collapses rather than typical-event improvement.
+
+**3. Decision mismatch:**
+Evidence that mean-error optimization can worsen ESA-style high-risk performance.
+
+Those are your real contributions.
+
+The specific XGBoost model is almost irrelevant.
+
+That is a good thing.
+
+---
+
+# 23. YOU SHOULD ADD A “WHAT DOESN'T WORK” TABLE
+
+This would be unusually powerful.
+
+Something like:
+
+| Approach         | Improves mean MAE? | Improves non-floor MAE? | Improves high-risk loss? |
+| ---------------- | -----------------: | ----------------------: | -----------------------: |
+| Persistence      |           baseline |                baseline |                   strong |
+| XGBoost          |                Yes |                      No |                       No |
+| Residual XGB     |                Yes |                      No |                       No |
+| Floor hurdle     |                Yes |                      No |                       No |
+| Guarded ensemble |               Some |                No clear |      Matches persistence |
+
+Your existing tables basically contain this story already.  
+
+Make the reader see it instantly.
+
+---
+
+# 24. YOU SHOULD ATTACK YOUR OWN MAIN RESULT WITH NULL MODELS
+
+This is missing.
+
+Suppose the huge floor prediction gain comes from some obvious baseline information.
+
+Can a ridiculously simple model identify most floor events?
+
+Try:
+
+* latest risk only
+* latest risk + max risk
+* latest risk + message count
+* max risk gap only
+* threshold rule
+* logistic regression
+
+Then compare to XGBoost.
+
+Because if a 2-feature logistic regression gets almost the same floor performance, then **XGBoost is not the finding.**
+
+The finding is the structure of the data.
+
+And again, that's completely fine.
+
+Actually, it would make the paper stronger.
+
+---
+
+# 25. YOU NEED MORE FEATURE IMPORTANCE INTERPRETATION
+
+You mention SHAP and correctly caveat that it doesn't establish physical causality. 
+
+But I don't see a real SHAP story in the paper text you uploaded.
+
+If SHAP is important enough to mention, give it:
+
+* top 10 features
+* global importance
+* dependence plot for 2–3 important features
+* maybe SHAP interaction for risk/gap/covariance
+
+Then explicitly compare:
+
+**What the model uses**
+
+vs
+
+**What the physical hypothesis predicts**
+
+That is much more interesting than a generic SHAP bar chart.
+
+---
+
+# 26. YOUR LIMITATIONS SECTION SHOULD BE MUCH STRONGER
+
+You have a good beginning:
+
+* historical 2015–2019 data
+* no live catalogues
+* manoeuvres out of scope
+* SHAP not causal
+* no official-test retuning. 
+
+But I would add:
+
+* lower-bound censoring at −30
+* heavy class imbalance
+* small number of high-risk events
+* possible object-pair dependence
+* temporal distribution shift
+* different horizon cohorts
+* archive/reporting-process effects
+* inability to establish operational utility
+* no real-time latency evaluation
+* no intervention/manoeuvre outcomes
+* final reported Pc is itself an estimate, not ground-truth collision probability
+
+That last point matters.
+
+Your target is **later reported log10 Pc**, not actual collision occurrence.
+
+Make that distinction impossible to miss.
+
+---
+
+# 27. YOUR TERMINOLOGY SHOULD BE TIGHTER
+
+There are a few places where the language could be sharpened.
+
+For example:
+
+> “collision probability”
+
+sometimes sounds like you're predicting physical collision probability.
+
+But the target is explicitly the **later reported log10 Pc**. 
+
+Say:
+
+**reported collision probability estimate**
+
+or
+
+**later reported log10 Pc**
+
+when precision matters.
+
+That avoids implying ground truth.
+
+---
+
+# 28. YOUR “OPERATIONAL” LANGUAGE NEEDS RESTRAINT
+
+You repeatedly correctly say this is not flight software.
+
+Good.
+
+But words like:
+
+* warning system
+* operational
+* high-risk decisions
+
+can tempt readers into interpreting this as a deployable conjunction-assessment system.
+
+Your actual result is much more academic:
+
+> You studied whether historical CDM information contains predictive signal beyond persistence.
+
+That's enough.
+
+Don't oversell operational implications.
+
+---
+
+# 29. THE PAPER NEEDS A DATASET FLOW DIAGRAM
+
+This would be one of the highest-value visual additions.
+
+Something like:
+
+**162,634 CDM rows**
+
+↓
+
+**13,154 events**
+
+↓
+
+**8,293 eligible at T−48**
+
+↓
+
+**3,731 train**
+
+↓
+
+**1,659 validation**
+
+↓
+
+**1,244 calibration**
+
+↓
+
+**1,659 test**
+
+↓
+
+**2167 official test**
+
+The numbers are already in the Methods. 
+
+But a reader shouldn't have to parse prose to understand the dataset construction.
+
+---
+
+# 30. YOU NEED A TABLE OF ALL HYPOTHESES AND THEIR TESTS
+
+This would make the paper feel extremely deliberate.
+
+| Hypothesis | Test                          | Result             | Supported?       |
+| ---------- | ----------------------------- | ------------------ | ---------------- |
+| H1         | ΔMAE vs horizon               | decays 4.53 → 0.06 | Yes, with caveat |
+| H2         | floor-excluded MAE + Wilcoxon | worse / p=.91      | Yes              |
+| H3         | ESA L / high-risk metrics     | no improvement     | Yes              |
+| H4a        | covariance vs movement        | ρ=.399             | Yes              |
+| H4b        | gap vs floor                  | AUC=.819           | Yes              |
+| H4c        | gap vs movement               | ρ=-.768            | Yes              |
+
+You already have the ingredients.
+
+Package them.
+
+---
+
+# 31. STATISTICAL REPORTING CAN BE MORE COMPLETE
+
+You report p-values, which is good.
+
+But emphasize **effect sizes + uncertainty**, not just significance.
+
+For example:
+
+> MAE improvement = 2.271 [bootstrap 95% CI ...]
+
+You already do this for the 48h model. 
+
+Extend that logic.
+
+For correlations:
+
+* confidence intervals for Spearman ρ
+* bootstrap CIs for AUC
+* CIs for recall / precision
+* possibly DeLong if appropriate for AUC
+
+A p-value without an uncertainty interval is weaker than it needs to be.
+
+---
+
+# 32. CORRECT FOR MULTIPLE COMPARISONS WHERE YOU NEED TO
+
+You are testing:
+
+* multiple horizons
+* multiple class cuts
+* several models
+* multiple hypotheses
+* multiple correlations
+
+Not necessarily every test requires formal correction, because these are hypothesis-driven analyses.
+
+But explicitly say which analyses are **pre-specified confirmatory** and which are **exploratory**.
+
+This is much better than throwing a dozen p-values into a paper.
+
+---
+
+# 33. YOUR OFFICIAL-TEST RESULTS SHOULD BE FRAMED AS CONFIRMATION, NOT DISCOVERY
+
+You did this mostly right.
+
+But the paper should clearly state:
+
+**all model and policy choices were frozen before official-test evaluation.**
+
+Then separate:
+
+**local development result**
+
+from
+
+**official frozen evaluation**
+
+visually.
+
+Page 4 already has a good Table IV, but the reader should instantly understand why it exists. 
+
+---
+
+# 34. THE FIGURES COULD BE MUCH BETTER
+
+The current figures are functional. They are not yet beautiful.
+
+### Figure 1
+
+Good concept.
+
+But add labels for:
+
+* floor mass
+* exact-zero persistence mass
+* non-floor region
+
+### Figure 2
+
+Probably your strongest figure.
+
+I'd add:
+
+* floor rate under each horizon
+* maybe a second axis or a companion plot of floor-excluded advantage
+
+Because right now someone can interpret the giant early advantage without immediately seeing whether the floor prevalence changed.
+
+### Figure 3
+
+Good demonstration.
+
+But add confidence intervals to empirical coverage estimates.
+
+### Figure 4
+
+The log-scale official loss chart works.
+
+But make the **persistence = 0.694** and **sesc = 0.556** references easier to read.
+
+### Figure 5
+
+Conceptually good.
+
+But the line + bar dual-axis design is easy to misread.
+
+A scatterplot would probably tell the story better.
+
+---
+
+# 35. THE PAPER NEEDS A REPRODUCIBILITY CHECKLIST
+
+You clearly care about leakage and freezing.
+
+Go all the way.
+
+At the end:
+
+**Reproducibility**
+
+* code available
+* dataset source
+* exact commit hash
+* seed
+* split IDs
+* feature schema
+* environment
+* model hyperparameters
+* figure-generation script
+* official test freeze date
+* evaluation script
+
+You already say figures are regenerated by `plots.py`. 
+
+Good.
+
+Now make the entire experiment equally reproducible.
+
+---
+
+# 36. YOUR DISCUSSION IS GOOD BUT CAN BE MORE AGGRESSIVE
+
+The discussion currently says:
+
+> “The extra information ... is not a general improvement... It is early, and ... concentrated in later collapses to the dataset floor.” 
+
+That's good.
+
+But I would push one deeper question:
+
+### Why does persistence become so strong?
+
+Your answer is partly:
+
+> later reports have already absorbed later tracking.
+
+But can you actually demonstrate that?
+
+That's the causal/physical hypothesis underlying the whole story.
+
+You need an analysis like:
+
+**forecast horizon vs number of updates vs covariance contraction vs risk movement**
+
+Then you can say something stronger about *why* the predictive information decays.
+
+Right now you have a plausible explanation.
+
+You want evidence for that explanation.
+
+---
+
+# 37. THE PAPER'S REAL NOVELTY MAY BE DIFFERENT FROM WHAT YOU THINK
+
+This is the part I'd pay attention to.
+
+Your novelty probably isn't:
+
+> “XGBoost can forecast conjunction probability.”
+
+That has already been explored heavily.
+
+Your interesting result is:
+
+> **The apparent predictive advantage over persistence is dominated by a highly asymmetric floor-collapse regime, and this advantage fades as the cutoff approaches closest approach without translating into high-risk decision improvement.**
+
+That is a much more specific scientific claim.
+
+Build the entire manuscript around it.
+
+Once you understand that, a lot of the editing becomes obvious.
+
+The model becomes the instrument.
+
+**The phenomenon becomes the contribution.**
+
+---
+
+# 38. I WOULD REWRITE THE ENTIRE PAPER AROUND THIS STRUCTURE
+
+Not because your current structure is bad.
+
+Because the research question is now sharper.
+
+### I. Introduction
+
+Problem → persistence baseline → unknown dependence on horizon → research question.
+
+### II. Dataset and Leakage-Safe Protocol
+
+Dataset → event construction → cutoffs → splits → target → floor definition.
+
+### III. Statistical Structure of the Target
+
+Show the gigantic floor mass and persistence spike **before discussing ML**.
+
+This is important.
+
+### IV. Forecasting Experiments
+
+Baselines → XGB → residual model → hurdle.
+
+### V. Forecast Horizon
+
+72/48/24/12.
+
+### VI. High-Risk Decision Evaluation
+
+ESA loss, F2, abstention.
+
+### VII. Physical / Covariance Analysis
+
+Covariance volume and max-risk gap.
+
+### VIII. Uncertainty
+
+Bootstrap vs conformal.
+
+### IX. Discussion
+
+What the study actually establishes.
+
+### X. Limitations
+
+Censoring, high-risk scarcity, temporal generalization, target definition.
+
+That would feel much more like a mature scientific paper.
+
+---
+
+# 39. THREE EXPERIMENTS I WOULD ABSOLUTELY ADD
+
+If you only have time for three more analyses, do these.
+
+## Experiment 1: Same-cohort horizon analysis
+
+Same events at 72/48/24/12h.
+
+Report:
+
+**overall + floor-excluded + floor rate**
+
+This strengthens H1.
+
+## Experiment 2: Censored-target sensitivity
+
+Treat −30 as floor/censored.
+
+Compare:
+
+**ordinary regression**
+
+vs
+
+**two-part hurdle**
+
+vs
+
+**simple floor baseline**
+
+This strengthens H2 and potentially becomes part of the methodological contribution.
+
+## Experiment 3: Temporal + object-grouped generalization
+
+Evaluate:
+
+**random event split**
+
+vs
+
+**temporal split**
+
+vs
+
+**object-pair grouped split**
+
+This tells you whether your result is a real behavioral property of conjunction histories or a property of the dataset split.
+
+Those three would materially change the paper's credibility.
+
+---
+
+# 40. THINGS I WOULD NOT DO
+
+This matters too.
+
+Do **not** suddenly add:
+
+* neural networks
+* transformers
+* random forests
+* CatBoost
+* LightGBM
+* 20 more models
+* massive hyperparameter searches
+
+That is not the bottleneck.
+
+You've already got the interesting result.
+
+The bottleneck is **identification, robustness, and interpretation**.
+
+More models would mostly create noise.
+
+---
+
+# 41. ONE MORE BRUTAL POINT
+
+Your paper is unusually honest about the fact that your model doesn't really solve the operational problem.
+
+Good.
+
+But now you need to be equally ruthless about your own **success metric**.
+
+You currently lead with the MAE improvement because that's what makes the story initially exciting.
+
+But your own evidence says:
+
+> **MAE is basically being dominated by whether the model catches the −30 floor.**
+
+You know this.
+
+So I would seriously consider making **floor-excluded MAE** much more prominent, possibly alongside overall MAE everywhere.
+
+Because otherwise someone can read the abstract, see:
+
+**5.08 → 2.81**
+
+and think:
+
+> “Wow, huge forecasting improvement.”
+
+Then five pages later they discover:
+
+> “Oh. The model got worse on the ordinary events.”
+
+That is too much interpretive whiplash.
+
+Lead with the truth.
+
+---
+
+# MY PRIORITY STACK
+
+If I were sitting beside you editing this tonight:
+
+### P0. Must fix before submission
+
+1. Formalize the −30 floor as censoring.
+2. Same-event horizon analysis.
+3. Temporal generalization.
+4. Object-pair/mission grouping if possible.
+5. Full feature table.
+6. Full XGBoost specification.
+7. Stronger floor-classifier evaluation.
+8. Clearer distinction between reported Pc and physical collision probability.
+9. Strengthen limitations.
+10. Rewrite abstract around the actual scientific finding.
+
+### P1. High-value additions
+
+11. Trend baseline.
+12. Simple floor-only baselines.
+13. Better uncertainty analysis.
+14. Selective prediction / abstention curves.
+15. Partial correlation / multivariable H4 analysis.
+16. Hypothesis-results summary table.
+17. Dataset flow diagram.
+18. Better Figure 5.
+
+### P2. Polish
+
+19. Tighten title.
+20. Clean terminology.
+21. Improve figure aesthetics.
+22. Bring five-seed robustness into the main results.
+23. Add reproducibility checklist.
+24. Clean all formatting, typography, table alignment, and citation consistency.
+
+---
+
+# And here's the thing I really want you to understand
+
+**Do not turn this into a “better ML model” paper.**
+
+That would actually make it worse.
+
+You've accidentally stumbled into something more interesting:
+
+You started asking:
+
+> **“Can ML predict the future Pc?”**
+
+And the data answered:
+
+> **“Sometimes. But mostly the apparent gain is a weird floor-collapse phenomenon, it disappears as the clock runs down, and it doesn't solve the high-risk decision problem.”**
+
+That's a real scientific story.
+
+Now your job is to **attack that story until it either survives or dies**.
+
+If it survives the censoring analysis, matched horizons, temporal split, entity grouping, and stronger baselines, then you've got something much harder to dismiss.
+
+And honestly?
+
+**That version of the paper could be considerably stronger than the one you have right now.**
+
+The current paper has a brain.
+
+The next revision needs armor.
