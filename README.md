@@ -10,7 +10,7 @@ The selected policy is a **T−48 bootstrap XGBoost median**: it forecasts the l
 
 The living manuscript is IEEE conference format: [`paper/main.tex`](paper/main.tex) ([`paper/main.pdf`](paper/main.pdf)). Rebuild it after every paper change with `scripts/compile-paper.ps1`.
 
-Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, leave-one-high-risk-out, and a class-threshold sweep are measured.
+Honest metrics on the frozen 18 August models (`python main.py --skip-train --build-only`) live in `ml/artifacts/metrics.json`. Floor-excluded MAE, residual MAE, bootstrap CIs, Wilcoxon tests, a residual-to-persistence candidate, a two-part floor candidate, split-conformal coverage, a one-shot official-test score, a dilution / max-risk probe, five grouped-split redraws, leave-one-high-risk-out, a class-threshold sweep, and SI-style paper figures (`python ml/src/plots.py`) are measured.
 
 ## Result
 
@@ -47,7 +47,7 @@ Official-test labels (Zenodo 4463683, 25 Jan 2021) were scored once after freeze
 | ESA-style loss | **0.694** | ~1.75×10<sup>6</sup> (*F*<sub>2</sub>=0) | 104 | 70.5 | **0.694** |
 | *F*<sub>2</sub> | **0.739** | 0.000 | 0.017 | 0.025 | **0.739** |
 
-H4 (dilution / max-risk probe, logistic and Spearman only; not an extra exhibit model). On the frozen local test, `dilution_gap = max_risk_estimate − risk` has Spearman **ρ = −0.768** with `|y − risk|` and **ρ = +0.407** with the floor label. Combined covariance volume (`log_combined_sigma_det`) has **ρ = +0.399** with `|y − risk|`. A train-fit logistic of floor ~ gap + miss distance + `n_messages` has test AUC **0.819**. Large gaps are already-floor snapshots (Q1 floor rate 0.56 and mean `|Δrisk|` 13.03; Q3–Q4 floor rate > 0.95 and mean movement < 0.75). F10 is a weak control (ρ = 0.108 with `|Δrisk|`). The naive “large max-risk gap means the report will still move” story is rejected. Large covariance predicting more movement is supported. This is a paper figure (`docs/figures/dilution-probe.png`), not a homepage widget.
+H4 (dilution / max-risk probe, logistic and Spearman only; not an extra exhibit model). On the frozen local test, `dilution_gap = max_risk_estimate − risk` has Spearman **ρ = −0.768** with `|y − risk|` and **ρ = +0.407** with the floor label. Combined covariance volume (`log_combined_sigma_det`) has **ρ = +0.399** with `|y − risk|`. A train-fit logistic of floor ~ gap + miss distance + `n_messages` has test AUC **0.819**. Large gaps are already-floor snapshots (Q1 floor rate 0.56 and mean `|Δrisk|` 13.03; Q3–Q4 floor rate > 0.95 and mean movement < 0.75). F10 is a weak control (ρ = 0.108 with `|Δrisk|`). The naive “large max-risk gap means the report will still move” story is rejected. Large covariance predicting more movement is supported. This is a paper figure (`docs/figures/dilution-probe.png`), not a homepage widget. Horizon decay with T−48 redraw whiskers is `docs/figures/horizon-decay.png`. Error anatomy (`y − risk` versus `y − pred`, with the −30 floor tail) is `docs/figures/error-anatomy.png`.
 
 Class-threshold sweep on the **same frozen predictions** (no retune). Operational LEO reaction is nearer `−4` to `−5`; ESA scored `−6` to have enough positives. False-reassurance analogue: accepted forecast under the existing `−6` abstention mask with `pred < t` while `y ≥ t`.
 
@@ -134,7 +134,7 @@ The contribution is a controlled evaluation of whether historical CDM evolution 
 
 Six frozen real-data cases (two low, one review, three high). Each shows the current report, the T−48 forecast of the final reported `log10(Pc)`, model-spread bands, a calibrated estimate of high-risk-event probability based on a very small positive class, SHAP factors, and a reveal-only later outcome.
 
-The figures that carry the argument are [`docs/figures/forecast-horizon.png`](docs/figures/forecast-horizon.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), [`docs/figures/official-test-esa.png`](docs/figures/official-test-esa.png), [`docs/figures/dilution-probe.png`](docs/figures/dilution-probe.png), [`docs/figures/abstention-coverage.png`](docs/figures/abstention-coverage.png), and [`docs/figures/shap-contrast.png`](docs/figures/shap-contrast.png).
+The figures that carry the argument are [`docs/figures/horizon-decay.png`](docs/figures/horizon-decay.png), [`docs/figures/error-anatomy.png`](docs/figures/error-anatomy.png), [`docs/figures/coverage-calibration.png`](docs/figures/coverage-calibration.png), and [`docs/figures/dilution-probe.png`](docs/figures/dilution-probe.png). Optional official-test loss is [`docs/figures/official-test-esa.png`](docs/figures/official-test-esa.png). Regenerate them with `python ml/src/plots.py`. They are paper figures, not homepage widgets.
 
 Run the exhibit on the presentation laptop with Next and FastAPI both up (`NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`). Wi-Fi can be off. If the API is down, the site shows an error.
 
@@ -170,7 +170,7 @@ Stage-by-stage notes are in [`docs/data-guide.md`](docs/data-guide.md).
 - [`ml/artifacts/metrics.json`](ml/artifacts/metrics.json): metrics, ablations, horizons, abstention, calibration, coverage, robustness, mission tests, failure clusters, SHAP contrast.
 - [`ml/artifacts/demo_cases.json`](ml/artifacts/demo_cases.json): six curated real-data cases. The API serves these; the website does not read them as a fallback.
 - [`ml/artifacts/model_card.json`](ml/artifacts/model_card.json) and [`docs/model-card.md`](docs/model-card.md).
-- [`docs/figures`](docs/figures): comparison, ablation, horizon, abstention, failure, and SHAP charts.
+- [`docs/figures`](docs/figures): SI-style paper figures (`horizon-decay`, `error-anatomy`, `coverage-calibration`, `dilution-probe`) plus lab charts.
 - [`paper/main.pdf`](paper/main.pdf): living paper
 - [`data/processed/events.csv`](data/processed/events.csv): event-level feature table.
 
