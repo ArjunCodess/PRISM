@@ -5,6 +5,9 @@ HORIZON_HOURS = (72, 48, 24, 12)
 # 1.25 disagreement threshold are fixed design choices, not test-tuned.
 HIGH_RISK_THRESHOLD = -6.0
 LOW_RISK_CLIP = -6.001
+# Same frozen predictions; only the class definition changes.
+# Operational LEO reaction is nearer −4 to −5. ESA scored −6 for positives.
+CLASS_THRESHOLDS = (-8.0, -7.0, -6.0, -5.0, -4.0)
 NEGLIGIBLE_RISK = -30.0
 FLOOR_EPS = 1e-6
 RANDOM_STATE = 42

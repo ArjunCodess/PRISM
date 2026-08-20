@@ -4,8 +4,15 @@ import numpy as np
 import pandas as pd
 from abstention import coverage_curve, selective_metrics
 from build_events import build_event_histories
-from constants import HIGH_RISK_THRESHOLD, HORIZON_HOURS, NEGLIGIBLE_RISK, RANDOM_STATE
-from evaluate import floor_mask, level_scoreboard_row, regression_metrics
+from constants import CLASS_THRESHOLDS, HIGH_RISK_THRESHOLD, HORIZON_HOURS, NEGLIGIBLE_RISK, RANDOM_STATE
+from evaluate import (
+    clip_for_esa,
+    esa_loss,
+    false_reassurance_analogue,
+    floor_mask,
+    level_scoreboard_row,
+    regression_metrics,
+)
 from explain import feature_group, shap_explainer
 from feature_sets import FAMILIES, columns_for_family
 from features import build_feature_table
@@ -610,4 +617,51 @@ def leave_one_high_risk_out(features: pd.DataFrame) -> dict[str, object]:
         if rows
         else float("nan"),
         "events": rows,
+    }
+
+
+def threshold_sweep(
+    y_true: np.ndarray,
+    predictions: dict[str, np.ndarray],
+    abstained: np.ndarray | None = None,
+    thresholds: tuple[float, ...] = CLASS_THRESHOLDS,
+) -> dict[str, object]:
+    y_true = np.asarray(y_true, dtype=float)
+    rows: list[dict[str, object]] = []
+    for threshold in thresholds:
+        systems: dict[str, object] = {}
+        n_positives = int((y_true >= threshold).sum())
+        for name, pred in predictions.items():
+            pred_arr = np.asarray(pred, dtype=float)
+            esa = esa_loss(y_true, clip_for_esa(pred_arr, threshold), threshold)
+            analogue = false_reassurance_analogue(
+                y_true, pred_arr, threshold, abstained=abstained
+            )
+            systems[name] = {
+                "esaLoss": esa["esa_loss"],
+                "mseHr": esa["mse_hr"],
+                "f2": esa["f2"],
+                "falseReassuranceAnalogue": analogue["falseReassuranceAnalogue"],
+                "missedClass": analogue["missedClass"],
+            }
+        rows.append(
+            {
+                "threshold": threshold,
+                "nPositives": n_positives,
+                "systems": systems,
+            }
+        )
+    return {
+        "split": "frozen local test",
+        "replacesExhibit": False,
+        "retuned": False,
+        "note": (
+            "Same frozen predictions; only the class definition changes. "
+            "Operational LEO reaction is nearer log10(Pc) −4 to −5. "
+            "ESA scored −6 to have enough positives. "
+            "False-reassurance analogue is an accepted forecast (existing −6 "
+            "abstention mask, if supplied) with pred < t while y ≥ t."
+        ),
+        "thresholds": list(thresholds),
+        "rows": rows,
     }

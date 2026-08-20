@@ -10,12 +10,14 @@ sys.path.insert(0, str(SRC))
 
 from constants import NEGLIGIBLE_RISK
 from evaluate import (
-    bootstrap_mae_advantage,
     clip_for_esa,
     esa_loss,
+    false_reassurance_analogue,
     floor_mask,
     paired_wilcoxon_abs_error,
+    bootstrap_mae_advantage,
 )
+from experiments import threshold_sweep
 from explain import Factor, explanation_text, grouped_importance
 
 
@@ -73,3 +75,25 @@ def test_trend_features_are_not_lumped_into_current_risk() -> None:
     names = {item["group"]: item["gain"] for item in groups}
     assert names["today's reported risk"] == 1.0
     assert names["whether risk is climbing or falling"] == 2.0
+
+
+def test_esa_loss_at_minus_six_still_clips_to_low_risk() -> None:
+    clipped = clip_for_esa(np.array([-7.0, -5.0]), threshold=-6.0)
+    assert clipped[0] == -6.001
+    assert clipped[1] == -5.0
+
+
+def test_threshold_sweep_uses_same_predictions() -> None:
+    y = np.array([-3.5, -4.5, -5.5, -6.5, -7.5])
+    persist = np.array([-3.6, -7.0, -5.6, -6.4, -7.4])
+    other = persist.copy()
+    sweep = threshold_sweep(y, {"persistence": persist, "xgboost": other})
+    n_pos = [row["nPositives"] for row in sweep["rows"]]
+    assert n_pos == [5, 4, 3, 2, 1]
+    assert sweep["retuned"] is False
+    minus_six = next(row for row in sweep["rows"] if row["threshold"] == -6.0)
+    analogue = false_reassurance_analogue(y, persist, threshold=-6.0)
+    assert analogue["nPositives"] == 3
+    assert analogue["missedClass"] == 1
+    assert minus_six["systems"]["persistence"]["missedClass"] == 1
+    assert minus_six["nPositives"] == 3

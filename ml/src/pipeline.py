@@ -8,7 +8,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from xgboost import XGBRegressor
+from xgboost import XGBClassifier, XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = Path(__file__).resolve().parent
@@ -51,16 +51,14 @@ from experiments import (  # noqa: E402
     leave_one_high_risk_out,
     repeated_grouped_splits,
     shap_outcome_contrast,
+    threshold_sweep,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import assemble_demo_cases, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
 from floor_model import (  # noqa: E402
-    choose_hurdle_policy,
     combine_floor_hurdle,
-    fit_floor_classifier,
     floor_confusion,
-    non_floor_rows,
     predict_floor_proba,
 )
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
@@ -71,8 +69,9 @@ from ingest import (  # noqa: E402
 )
 from official_test import score_official_test  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
-from train_classifier import fit_warning_classifier  # noqa: E402
+from train_classifier import TrainedClassifier, fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
+    TrainedRegressor,
     fit_residual_xgboost,
     fit_ridge,
     fit_xgboost,
@@ -107,6 +106,70 @@ def _guarded_ensemble(
     guard = risk >= HIGH_RISK_THRESHOLD
     matrix = np.where(guard[:, None], risk[:, None], raw)
     return np.median(matrix, axis=1), matrix
+
+
+def _booster_feature_names(model: XGBRegressor | XGBClassifier, fallback: list[str]) -> list[str]:
+    stored = model.get_booster().feature_names
+    if stored:
+        return list(stored)
+    return list(fallback)
+
+
+def _load_frozen_candidates(
+    test: pd.DataFrame,
+    validation: pd.DataFrame,
+    artifacts: Path,
+    schema: list[str],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
+    residual_model = XGBRegressor()
+    residual_model.load_model(str(artifacts / "residual_regressor.json"))
+    residual = TrainedRegressor(
+        model=residual_model,
+        feature_names=_booster_feature_names(residual_model, schema),
+        kind="residual_xgboost",
+    )
+    residual_test = predict_reconstructed(residual, test)
+    residual_val = predict_reconstructed(residual, validation)
+
+    floor_clf_model = XGBClassifier()
+    floor_clf_model.load_model(str(artifacts / "floor_classifier.json"))
+    floor_clf = TrainedClassifier(
+        model=floor_clf_model,
+        feature_names=_booster_feature_names(floor_clf_model, schema),
+    )
+    floor_residual_model = XGBRegressor()
+    floor_residual_model.load_model(str(artifacts / "floor_residual_regressor.json"))
+    floor_residual = TrainedRegressor(
+        model=floor_residual_model,
+        feature_names=_booster_feature_names(floor_residual_model, schema),
+        kind="residual_xgboost",
+    )
+    policy = json.loads((artifacts / "floor_hurdle.json").read_text(encoding="utf-8"))
+    floor_proba_test = predict_floor_proba(floor_clf, test)
+    floor_proba_val = predict_floor_proba(floor_clf, validation)
+    floor_test = combine_floor_hurdle(
+        floor_proba_test,
+        predict_reconstructed(floor_residual, test),
+        float(policy["threshold"]),
+        risk=test["risk"].to_numpy(dtype=float),
+        use_persist_guard=bool(policy["usePersistGuard"]),
+    )
+    floor_val = combine_floor_hurdle(
+        floor_proba_val,
+        predict_reconstructed(floor_residual, validation),
+        float(policy["threshold"]),
+        risk=validation["risk"].to_numpy(dtype=float),
+        use_persist_guard=bool(policy["usePersistGuard"]),
+    )
+    return (
+        residual_test,
+        residual_val,
+        floor_test,
+        floor_val,
+        floor_proba_test,
+        floor_proba_val,
+        policy,
+    )
 
 
 def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
@@ -244,51 +307,15 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         raise RuntimeError("frozen calibration ids did not match the rebuilt feature table")
     ens_cal, _ = _guarded_ensemble(calibration, ensemble, feature_names)
 
-    residual = fit_residual_xgboost(train)
-    residual.model.save_model(str(artifacts / "residual_regressor.json"))
-    residual_test = predict_reconstructed(residual, test)
-    residual_val = predict_reconstructed(residual, validation)
-
-    floor_clf = fit_floor_classifier(train)
-    floor_clf.model.save_model(str(artifacts / "floor_classifier.json"))
-    non_floor_train = non_floor_rows(train)
-    if non_floor_train.empty:
-        raise RuntimeError("frozen train has no non-floor events for the hurdle regressor")
-    floor_residual = fit_residual_xgboost(non_floor_train)
-    floor_residual.model.save_model(str(artifacts / "floor_residual_regressor.json"))
-    floor_recon_val = predict_reconstructed(floor_residual, validation)
-    floor_recon_test = predict_reconstructed(floor_residual, test)
-    floor_proba_val = predict_floor_proba(floor_clf, validation)
-    floor_proba_test = predict_floor_proba(floor_clf, test)
-    hurdle = choose_hurdle_policy(
-        validation["y"].to_numpy(),
-        floor_proba_val,
-        floor_recon_val,
-        validation["risk"].to_numpy(dtype=float),
-    )
-    floor_val = combine_floor_hurdle(
-        floor_proba_val,
-        floor_recon_val,
-        hurdle.threshold,
-        risk=validation["risk"].to_numpy(dtype=float),
-        use_persist_guard=hurdle.use_persist_guard,
-    )
-    floor_test = combine_floor_hurdle(
+    (
+        residual_test,
+        residual_val,
+        floor_test,
+        floor_val,
         floor_proba_test,
-        floor_recon_test,
-        hurdle.threshold,
-        risk=test["risk"].to_numpy(dtype=float),
-        use_persist_guard=hurdle.use_persist_guard,
-    )
-    write_json(
-        artifacts / "floor_hurdle.json",
-        {
-            "threshold": hurdle.threshold,
-            "usePersistGuard": hurdle.use_persist_guard,
-            "chosenOn": "validation",
-            "replacesExhibit": False,
-        },
-    )
+        floor_proba_val,
+        policy,
+    ) = _load_frozen_candidates(test, validation, artifacts, schema)
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     honest = _write_honest_metrics(
@@ -339,11 +366,11 @@ def score_frozen_honest_metrics() -> dict[str, object]:
             "policy": "ml/artifacts/floor_hurdle.json",
         },
         "replacesExhibit": False,
-        "threshold": hurdle.threshold,
-        "usePersistGuard": hurdle.use_persist_guard,
+        "threshold": float(policy["threshold"]),
+        "usePersistGuard": bool(policy["usePersistGuard"]),
         "confusion": {
-            "test": floor_confusion(test_y, floor_proba_test, hurdle.threshold),
-            "validation": floor_confusion(val_y, floor_proba_val, hurdle.threshold),
+            "test": floor_confusion(test_y, floor_proba_test, float(policy["threshold"])),
+            "validation": floor_confusion(val_y, floor_proba_val, float(policy["threshold"])),
         },
         "test": test_board,
         "validation": val_board,
@@ -450,9 +477,23 @@ def score_frozen_honest_metrics() -> dict[str, object]:
         }
     )
     metrics["uncertainty"] = uncertainty
-    metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
-    metrics["repeatedSplits"] = repeated_grouped_splits(features)
-    metrics["leaveOneHighRiskOut"] = leave_one_high_risk_out(features)
+    metrics["thresholdSweep"] = threshold_sweep(
+        test_y,
+        {
+            "persistence": persist_test,
+            "xgboost": model_pred,
+            "ensemble": ens_pred,
+            "residual": residual_test,
+            "floorHurdle": floor_test,
+        },
+        abstained=boot_abs_test,
+    )
+    if "dilutionProbe" not in metrics:
+        metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
+    if "repeatedSplits" not in metrics:
+        metrics["repeatedSplits"] = repeated_grouped_splits(features)
+    if "leaveOneHighRiskOut" not in metrics:
+        metrics["leaveOneHighRiskOut"] = leave_one_high_risk_out(features)
     official_existing = metrics.get("officialTest")
     if isinstance(official_existing, dict) and official_existing.get("frozenBeforeLook"):
         metrics["officialTest"] = official_existing
@@ -497,6 +538,21 @@ def score_frozen_honest_metrics() -> dict[str, object]:
             "residualCloser": loo["residualCloser"],
             "ties": loo["ties"],
             "residualCloserShare": loo["residualCloserShare"],
+        }
+        sweep = metrics["thresholdSweep"]
+        card["thresholdSweep"] = {
+            "replacesExhibit": False,
+            "retuned": sweep["retuned"],
+            "thresholds": sweep["thresholds"],
+            "rows": [
+                {
+                    "threshold": row["threshold"],
+                    "nPositives": row["nPositives"],
+                    "persistence": row["systems"]["persistence"],
+                    "ensemble": row["systems"]["ensemble"],
+                }
+                for row in sweep["rows"]
+            ],
         }
         write_json(card_path, card)
     return honest

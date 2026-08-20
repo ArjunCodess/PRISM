@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from constants import FLOOR_EPS, HIGH_RISK_THRESHOLD, LOW_RISK_CLIP, NEGLIGIBLE_RISK, RANDOM_STATE
+from constants import FLOOR_EPS, HIGH_RISK_THRESHOLD, NEGLIGIBLE_RISK, RANDOM_STATE
 from scipy.stats import wilcoxon
 from sklearn.metrics import (
     brier_score_loss,
@@ -15,16 +15,27 @@ from sklearn.metrics import (
 N_BOOTSTRAP = 1000
 
 
-def esa_loss(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
-    high = y_true >= HIGH_RISK_THRESHOLD
-    pred_high = y_pred >= HIGH_RISK_THRESHOLD
+def esa_loss(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    threshold: float = HIGH_RISK_THRESHOLD,
+) -> dict[str, float]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    high = y_true >= threshold
+    pred_high = y_pred >= threshold
     f2 = float(fbeta_score(high.astype(int), pred_high.astype(int), beta=2, zero_division=0))
     if high.any():
         mse_hr = float(mean_squared_error(y_true[high], y_pred[high]))
     else:
         mse_hr = 0.0
     loss = mse_hr / max(f2, 1e-6)
-    return {"esa_loss": loss, "mse_hr": mse_hr, "f2": f2}
+    return {
+        "esa_loss": loss,
+        "mse_hr": mse_hr,
+        "f2": f2,
+        "n_positives": float(int(high.sum())),
+    }
 
 
 def floor_mask(y_true: np.ndarray, eps: float = FLOOR_EPS) -> np.ndarray:
@@ -207,10 +218,35 @@ def honest_metrics_bundle(
     }
 
 
-def clip_for_esa(y_pred: np.ndarray) -> np.ndarray:
-    clipped = y_pred.copy()
-    clipped[clipped < HIGH_RISK_THRESHOLD] = LOW_RISK_CLIP
+def clip_for_esa(
+    y_pred: np.ndarray, threshold: float = HIGH_RISK_THRESHOLD
+) -> np.ndarray:
+    clipped = np.asarray(y_pred, dtype=float).copy()
+    clip_value = threshold - 0.001
+    clipped[clipped < threshold] = clip_value
     return clipped
+
+
+def false_reassurance_analogue(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    threshold: float = HIGH_RISK_THRESHOLD,
+    abstained: np.ndarray | None = None,
+) -> dict[str, int]:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    high = y_true >= threshold
+    pred_high = y_pred >= threshold
+    missed = high & ~pred_high
+    if abstained is None:
+        accepted_miss = missed
+    else:
+        accepted_miss = (~np.asarray(abstained, dtype=bool)) & missed
+    return {
+        "nPositives": int(high.sum()),
+        "missedClass": int(missed.sum()),
+        "falseReassuranceAnalogue": int(accepted_miss.sum()),
+    }
 
 
 def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
