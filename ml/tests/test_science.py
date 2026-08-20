@@ -386,6 +386,24 @@ def test_matched_cohort_uses_same_events() -> None:
     assert payload["nTest"] == next(iter(ns))
 
 
+def test_selective_curve_sweeps_several_nominal_coverages() -> None:
+    from review_armor import CONFORMAL_ALPHAS, selective_prediction_curve
+
+    assert len(CONFORMAL_ALPHAS) >= 4
+    y = np.array([-30.0, -30.0, -8.0, -5.0, -12.0, -30.0])
+    pred = np.array([-30.0, -29.0, -9.0, -20.0, -11.0, -30.0])
+    persist = np.array([-12.0, -11.0, -8.0, -6.0, -12.0, -10.0])
+    cal_y = np.array([-30.0, -30.0, -8.0, -7.0])
+    cal_pred = np.array([-30.0, -30.0, -9.0, -8.0])
+    risk = np.array([-12.0, -11.0, -8.0, -6.5, -12.0, -10.0])
+    miss = np.full(6, 800.0)
+    curve = selective_prediction_curve(y, pred, persist, cal_y, cal_pred, risk, miss)
+    nominal = [row["nominalCoverage"] for row in curve["curve"]]
+    assert nominal == sorted(nominal)
+    assert len(set(nominal)) >= 4
+    assert max(row["nAbstained"] for row in curve["curve"]) >= 0
+
+
 def test_h4_partial_effects_runs_on_tiny_table() -> None:
     from review_armor import h4_partial_effects
 
