@@ -1,0 +1,7 @@
+{
+  "q50": 0.0,
+  "q90": 10.514813294999286,
+  "replacesExhibit": true,
+  "pointPredictor": "floorHurdle",
+  "fitOn": "frozen calibration event ids only"
+}

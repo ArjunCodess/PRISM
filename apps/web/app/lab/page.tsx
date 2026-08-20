@@ -29,15 +29,17 @@ const MODE_LABEL: Record<string, string> = {
 export default async function LabPage() {
   const metrics = await loadMetrics();
 
-  const improvement = metrics.improvement.mae_improvement / metrics.persistence.mae * 100;
+  const liveMae = metrics.selectedPolicy?.liveMae ?? metrics.floorModel?.test?.floorHurdle?.mae ?? metrics.ensemble.mae;
+  const liveF2 = metrics.selectedPolicy?.liveF2 ?? 0;
+  const conformal90 = metrics.selectedPolicy?.exhibitConformal?.["90"];
+  const liveOperating = (metrics.selectedPolicy?.test?.chosen ?? metrics.abstention?.operatingPoint ?? {}) as Record<string, number | Record<string, number>>;
+  const coverage = typeof liveOperating.coverage === "number" ? liveOperating.coverage : null;
+  const maeAccepted = typeof liveOperating.maeAccepted === "number" ? liveOperating.maeAccepted : null;
   const featureGroups = metrics.featureGroups ?? [];
   const maxGain = Math.max(...featureGroups.map((item) => item.gain), 1);
   const slices = metrics.robustness?.byMessageCount ?? {};
   const families = metrics.ablation?.families ?? {};
   const horizons = (metrics.horizons ?? []).filter((row) => row.model);
-  const operating = metrics.abstention?.operatingPoint ?? {};
-  const coverage = typeof operating.coverage === "number" ? operating.coverage : null;
-  const maeAccepted = typeof operating.maeAccepted === "number" ? operating.maeAccepted : null;
   const warning = metrics.warning;
   const nHighRiskTest = typeof warning.nHighRiskTest === "number" ? warning.nHighRiskTest : null;
   const nHighRiskEligible = typeof warning.nHighRiskEligible === "number" ? warning.nHighRiskEligible : metrics.nHighRiskEligible;
@@ -66,12 +68,12 @@ export default async function LabPage() {
               <PrintButton />
             </div>
             <dl className="mt-8 grid gap-6 sm:grid-cols-3">
-              <HeroMetric label="T−48 MAE" value={metrics.ensemble.mae} note={`persistence ${metrics.persistence.mae.toFixed(3)}`} />
-              <HeroMetric label="ESA-style loss" value={metrics.ensemble.esa_loss} note={`persistence ${metrics.persistence.esa_loss.toFixed(3)}`} />
-              <HeroMetric label="90% band coverage" value={metrics.uncertainty?.interval90Coverage ?? Number.NaN} percent note="nominal 90%" />
+              <HeroMetric label="T−48 MAE" value={liveMae} note={`persistence ${metrics.persistence.mae.toFixed(3)}`} />
+              <HeroMetric label="ESA-style F2" value={liveF2} note="floor hurdle; F2 is 0 on the local test" />
+              <HeroMetric label="Conformal 90% coverage" value={conformal90?.coverage ?? Number.NaN} percent note="split conformal around the live forecast" />
             </dl>
             <p className="mt-6 max-w-[62ch] text-sm leading-7 text-stone-600">
-              Average error falls {improvement.toFixed(1)}%, but ESA-style loss and F2 tie persistence exactly because the persistence guard copies any current report already at or above −6. The MAE gain is continuous-risk accuracy, not a better high-risk decision score. On missions never seen in training, high-risk MAE is {(metrics.missionHoldout?.model.mae_high_risk ?? Number.NaN).toFixed(1)}.
+              The live forecast is the validation-selected floor hurdle (MAE {liveMae.toFixed(3)}). Mean error falls because the model calls later floor collapses; floor-excluded MAE is worse than persistence, and ESA-style F2 is 0 on this local test. The 18 August ensemble remains a baseline snapshot, not a second live mode.
             </p>
           </div>
           <aside className="rounded-lg bg-[#eeeae0] p-6 text-sm leading-6 text-stone-600">
@@ -133,19 +135,21 @@ export default async function LabPage() {
           </Section>
         ) : null}
 
-        <Section title="When should the model refuse?" copy="The −6 class follows ESA. The persistence guard and 1.25 disagreement threshold were fixed before test evaluation. False reassurance is an accepted forecast below −6 while the final reported value is ≥ −6.">
+        <Section title="When should the model refuse?" copy="The live floor hurdle abstains from a validation-chosen rule (conformal 90% band crossing −6, or missing fields). The −6 class follows ESA. False reassurance is an accepted forecast below −6 while the final reported value is ≥ −6.">
           <div className="grid gap-6 lg:grid-cols-3">
             <HeroBox label="Coverage" value={coverage === null ? "—" : `${(coverage * 100).toFixed(1)}%`} note={coverage === null ? "events that receive a firm forecast" : `${((1 - coverage) * 100).toFixed(1)}% sent to review`} />
-            <HeroBox label="Accepted MAE" value={maeAccepted === null ? "—" : maeAccepted.toFixed(3)} note={`all-event MAE ${metrics.ensemble.mae.toFixed(3)}`} />
+            <HeroBox label="Accepted MAE" value={maeAccepted === null ? "—" : maeAccepted.toFixed(3)} note={`all-event MAE ${liveMae.toFixed(3)}`} />
             <HeroBox label="High-risk events" value={nHighRiskTest === null ? "—" : nHighRiskTest.toString()} note="nine in the test split; check false reassurance in metrics" />
           </div>
         </Section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <Section title="Ensemble disagreement is not equivalent to calibrated uncertainty" copy="A 90% label that covers 47.7% of outcomes is not a little off. The interface therefore calls these ranges model spread.">
+          <Section title="Coverage is not a 90% promise" copy="Live intervals are split-conformal around the floor-hurdle forecast. Bootstrap numbers below are the 18 August ensemble snapshot.">
             <div className="panel grid grid-cols-2 gap-6 p-6">
-              <Coverage label="50% band" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
-              <Coverage label="90% band" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
+              <Coverage label="Live conformal 50%" value={metrics.selectedPolicy?.exhibitConformal?.["50"]?.coverage ?? metrics.uncertainty?.conformal50Coverage} width={metrics.selectedPolicy?.exhibitConformal?.["50"]?.meanWidth ?? metrics.uncertainty?.conformal50Width} />
+              <Coverage label="Live conformal 90%" value={conformal90?.coverage ?? metrics.uncertainty?.conformal90Coverage} width={conformal90?.meanWidth ?? metrics.uncertainty?.conformal90Width} />
+              <Coverage label="August bootstrap 50%" value={metrics.uncertainty?.interval50Coverage} width={metrics.uncertainty?.meanInterval50Width} />
+              <Coverage label="August bootstrap 90%" value={metrics.uncertainty?.interval90Coverage} width={metrics.uncertainty?.meanInterval90Width} />
             </div>
           </Section>
           <Section title="Mission identity adds little" copy={metrics.missionIdComparison?.why ?? "Adding mission_id provides negligible improvement and does not materially change performance, so it is excluded from the deployed exhibit."}>
@@ -160,7 +164,7 @@ export default async function LabPage() {
         </section>
 
         {failureModes.length > 0 ? (
-          <Section title="How failures cluster" copy="These are mutually exclusive tags on the selected T−48 ensemble. Accurate cases are included so the shares sum to the test set.">
+          <Section title="How failures cluster" copy="These are mutually exclusive tags on the August exhibit snapshot. Accurate cases are included so the shares sum to the test set.">
             <div className="overflow-x-auto rounded-lg border hairline bg-panel">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">Mode</th><th>n</th><th>Share</th><th>MAE</th><th>Mean messages</th><th>Mean miss (m)</th></tr></thead>
@@ -202,11 +206,24 @@ export default async function LabPage() {
           </Section>
         ) : null}
 
-        <Section title="Baseline comparison" copy="Lower is better. One log unit is a tenfold probability error. The selected policy is a T−48 bootstrap XGBoost median with a persistence guard on the ESA −6 class.">
+        <Section title="Baseline comparison" copy="Lower is better. One log unit is a tenfold probability error. The live policy is the validation-selected floor hurdle. The 18 August ensemble is a snapshot row, not a live mode.">
           <div className="overflow-x-auto rounded-lg border hairline bg-panel">
             <table className="w-full min-w-[650px] text-left text-sm">
               <thead className="border-b hairline text-xs text-stone-500"><tr><th className="px-5 py-4">System</th><th>MAE</th><th>RMSE</th><th>High-risk MAE</th><th>Within 1 unit</th><th>ESA loss</th></tr></thead>
-              <tbody><ModelRow name="Persistence" data={metrics.persistence} /><ModelRow name="Ridge" data={metrics.ridge} /><ModelRow name="XGBoost" data={metrics.xgboost} /><ModelRow name="T−48 ensemble" data={metrics.ensemble} selected /></tbody>
+              <tbody>
+                <ModelRow name="Persistence" data={metrics.persistence} />
+                <ModelRow name="Ridge" data={metrics.ridge} />
+                <ModelRow name="XGBoost" data={metrics.xgboost} />
+                <ModelRow name="August exhibit snapshot" data={metrics.ensemble} />
+                <ModelRow
+                  name="Floor hurdle (live)"
+                  data={{
+                    mae: liveMae,
+                    esa_loss: metrics.selectedPolicy?.liveEsaLoss ?? Number.NaN,
+                  }}
+                  selected
+                />
+              </tbody>
             </table>
           </div>
         </Section>

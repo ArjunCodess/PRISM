@@ -2,13 +2,18 @@
 
 Print this. Keep it next to the keyboard. Numbers stay the same even if your brain does not.
 
-Selected policy: T−48 bootstrap XGBoost median of the later reported `log10(Pc)`, with a persistence guard at −6.
+Selected policy: T−48 floor hurdle (classifier for later −30, residual XGBoost otherwise). No persist guard. Conformal interval.
+
+## Two beats
+
+1. **Here is the model.** Open a case. Today's report, the live forecast of the later report, conformal band or review required, SHAP in plain language.
+2. **Here is what the study measured.** Horizon decay, floor anatomy, official-test *L*. The 18 August ensemble (MAE 5.080 → 3.059, ESA loss tie 0.167) is a snapshot row, not a live mode.
 
 ## If you blank
 
-Say this and then open the abstention case:
+Say this and then open the review-required case:
 
-"Two objects might get close. The reported collision chance keeps changing as new tracking data arrives. Waiting gives a better number, and it also eats planning time. PRISM stops the clock 48 hours early and asks: can the history of those reports beat just copying today's value? On average, yes: MAE falls from 5.080 to 3.059. On the ESA high-risk score, it ties at 0.167, because if today's report is already at −6 or worse, PRISM copies it on purpose. The ranges on screen are model spread. They are not a 90 percent promise. This is a school research exhibit. A person still has to review it."
+"Two objects might get close. The reported collision chance keeps changing as new tracking data arrives. Waiting gives a better number, and it also eats planning time. PRISM stops the clock 48 hours early. The live model can call a later collapse to the dataset floor, or it can adjust today's report. On average MAE falls from 5.080 to 2.109, mostly by calling those floor jumps. It does not copy today's report just because that report is already at −6. The band is a conformal interval. This is a school research exhibit. A person still has to review it."
 
 Then click Reveal. Breathe. Keep going.
 
@@ -33,9 +38,9 @@ The high-risk line `log10(Pc) >= -6` is the ESA scoring class. It is not an ISRO
 3. Train, validation, calibration, and test use different event IDs. Validation is not reused to pick the test set.
 4. Each event becomes one row of inspectable summaries: latest snapshot, plus slopes, changes, ranges, and observation-count history of those same snapshot fields.
 5. Fit XGBoost on the final reported `log10(Pc)`. Also fit median, Ridge, and persistence.
-6. Take the median of ten bootstrap XGBoost models. If the current report is already at or above -6, copy that report. That is the persistence guard.
-7. A separate calibration split maps the forecast to "chance this later report is high-risk."
-8. Abstain when the 90 percent bootstrap band crosses -6, a critical field is missing, or the models disagree by more than 1.25 log units.
+6. Fit a floor classifier and a residual XGBoost on non-floor training events. Threshold 0.15 on validation. Do not copy today's −6 report.
+7. Fit split conformal on calibration around that point. Abstain if the 90 percent band crosses −6 or a field is missing.
+8. Keep the 18 August bootstrap ensemble in the metrics tables as a snapshot.
 
 You can say "XGBoost on named T-48 history features" if someone asks why it is not a transformer. 8,293 events. Lots of missing cells. We wanted to read the reasons. A sequence model can wait until it wins on the same frozen split.
 
@@ -44,9 +49,9 @@ You can say "XGBoost on named T-48 history features" if someone asks why it is n
 Held-out test, 1,659 events. MAE is in `log10(Pc)` units.
 
 - Persistence MAE: 5.080
-- PRISM MAE: 3.059 (about 40 percent lower)
-- ESA-style loss: 0.167 for both
-- F2: 0.361 for both
+- Live floor hurdle MAE: 2.109 (median AE 0; F2 = 0)
+- August snapshot MAE: 3.059; ESA-style loss 0.167 for persistence and that snapshot
+- F2: 0.361 for the snapshot; 0 for the live floor hurdle
 
 ESA-style loss is high-risk MSE divided by F2. F2 is F-beta with beta 2, so missing a high-risk event hurts more than a false alarm.
 
@@ -92,13 +97,13 @@ Start FastAPI and Next before anyone sits down. `NEXT_PUBLIC_API_URL` must be se
 
 Open the abstention case.
 
-"These six cases are real ESA events: two low, one that needs a person, three high. The page is frozen before T-48. You see today's reported risk, the live forecast of the later report, the high-risk estimate, and the spread across ten bootstrap models. The band crosses -6, so PRISM says review required. SHAP tells us why this fitted model moved. It does not tell us what physically caused the encounter. The future is hidden on purpose."
+"These six cases are real ESA events: two low, one that needs a person, three already high today. The page is frozen before T-48. You see today's reported risk, the live floor-hurdle forecast, the high-risk estimate, and a conformal interval. SHAP tells us why the residual model moved. It does not tell us what physically caused the encounter. The future is hidden on purpose."
 
 Click Reveal.
 
 "Later messages and the final reported value show up now. Reveal is the only way to load that truth."
 
-If there is time: "In the lab, MAE drops from 5.080 to 3.059. ESA-style loss ties at 0.167 because of the guard. The 90 percent band only covers 47.7 percent of outcomes."
+If there is time: "In the lab, live MAE is 2.109. The August snapshot was 3.059 with an ESA-style loss tie at 0.167. The live model does not keep that tie."
 
 ### 3 minutes
 

@@ -22,7 +22,7 @@ from abstention import (  # noqa: E402
 )
 from build_events import build_event_histories  # noqa: E402
 from constants import CUTOFF_DAYS, DEMO_SLOTS, HIGH_RISK_THRESHOLD  # noqa: E402
-from experiments import cluster_test_failures  # noqa: E402
+from experiments import cluster_test_failures, dilution_probe  # noqa: E402
 from export_demo_cases import story_fit  # noqa: E402
 from feature_sets import (  # noqa: E402
     FAMILIES,
@@ -31,6 +31,13 @@ from feature_sets import (  # noqa: E402
 )
 from features import build_feature_table  # noqa: E402
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
+from train_regressor import (  # noqa: E402
+    fit_residual_xgboost,
+    numeric_columns,
+    predict_reconstructed,
+    reconstruct_from_residual,
+    residual_target,
+)
 from validate import validate_cdm_frame  # noqa: E402
 
 
@@ -192,3 +199,148 @@ def test_story_fit_scores_exhibit_slots() -> None:
     assert story_fit("high_now", -5.0, -8.0, -5.0, False) < 0
     assert story_fit("high_stays", -5.0, -5.0, -5.2, False) > 0
     assert story_fit("high_drop", -5.0, -5.0, -12.0, False) > 0
+
+
+def test_residual_target_is_label_minus_snapshot_risk() -> None:
+    frame = pd.DataFrame({"y": [-30.0, -8.0, -6.0], "risk": [-10.0, -8.0, -12.0]})
+    np.testing.assert_allclose(residual_target(frame), np.array([-20.0, 0.0, 6.0]))
+
+
+def test_reconstruct_adds_residual_to_persistence() -> None:
+    frame = pd.DataFrame({"risk": [-10.0, -8.0]})
+    pred = reconstruct_from_residual(frame, np.array([-2.0, 1.5]))
+    np.testing.assert_allclose(pred, np.array([-12.0, -6.5]))
+
+
+def test_residual_xgboost_reconstructs_on_tiny_table() -> None:
+    rng = np.random.default_rng(0)
+    n = 40
+    risk = rng.uniform(-20.0, -8.0, size=n)
+    move = rng.normal(0.0, 1.0, size=n)
+    train = pd.DataFrame(
+        {
+            "event_id": np.arange(n),
+            "y": risk + move,
+            "risk": risk,
+            "miss_distance": rng.uniform(200.0, 2000.0, size=n),
+            "n_messages": rng.integers(2, 8, size=n).astype(float),
+        }
+    )
+    trained = fit_residual_xgboost(train)
+    pred = predict_reconstructed(trained, train)
+    assert pred.shape == (n,)
+    assert np.isfinite(pred).all()
+    residual_hat = pred - train["risk"].to_numpy()
+    np.testing.assert_allclose(pred, train["risk"].to_numpy() + residual_hat)
+
+
+def test_floor_labels_come_from_final_reported_risk() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import floor_labels, non_floor_rows
+
+    frame = pd.DataFrame(
+        {
+            "y": [NEGLIGIBLE_RISK, -8.0, -29.0],
+            "risk": [-5.0, -8.0, -12.0],
+            "post_cutoff_leak": [1.0, 1.0, 1.0],
+        }
+    )
+    np.testing.assert_array_equal(floor_labels(frame["y"]), np.array([1, 0, 0]))
+    kept = non_floor_rows(frame)
+    assert list(kept["y"]) == [-8.0, -29.0]
+
+
+def test_floor_hurdle_predicts_floor_above_threshold() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import combine_floor_hurdle
+
+    proba = np.array([0.9, 0.1])
+    recon = np.array([-12.0, -8.0])
+    pred = combine_floor_hurdle(proba, recon, 0.5)
+    np.testing.assert_allclose(pred, np.array([NEGLIGIBLE_RISK, -8.0]))
+
+
+def test_hurdle_threshold_is_chosen_on_provided_split() -> None:
+    from constants import NEGLIGIBLE_RISK
+    from floor_model import choose_hurdle_policy
+
+    y = np.array([NEGLIGIBLE_RISK, NEGLIGIBLE_RISK, -8.0, -8.0])
+    proba = np.array([0.8, 0.8, 0.2, 0.2])
+    recon = np.array([-10.0, -10.0, -8.0, -8.0])
+    risk = np.array([-10.0, -10.0, -8.0, -8.0])
+    choice = choose_hurdle_policy(y, proba, recon, risk)
+    assert 0.05 <= choice.threshold <= 0.95
+    assert choice.validation["mae"] <= 2.0
+
+
+def test_split_conformal_covers_gaussian_near_nominal() -> None:
+    from calibrate import conformal_bounds, interval_report, split_conformal_quantile
+
+    rng = np.random.default_rng(0)
+    y_cal = rng.normal(0.0, 1.0, size=800)
+    y_test = rng.normal(0.0, 1.0, size=800)
+    pred = np.zeros(800)
+    q90 = split_conformal_quantile(np.abs(y_cal - pred), 0.1)
+    lo, hi = conformal_bounds(pred, q90)
+    report = interval_report(y_test, lo, hi)
+    assert 0.86 <= report["coverage"] <= 0.94
+    q50 = split_conformal_quantile(np.abs(y_cal - pred), 0.5)
+    lo50, hi50 = conformal_bounds(pred, q50)
+    mid = interval_report(y_test, lo50, hi50)
+    assert 0.42 <= mid["coverage"] <= 0.60
+
+
+def test_dilution_gap_is_max_risk_minus_risk() -> None:
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=40, seed=3))
+    features = build_feature_table(build_event_histories(frame))
+    expected = features["max_risk_estimate"] - features["risk"]
+    np.testing.assert_allclose(features["dilution_gap"], expected, equal_nan=True)
+    assert "dilution_gap" not in numeric_columns(features)
+
+
+def test_dilution_probe_logistic_recovers_floor_signal() -> None:
+    rng = np.random.default_rng(0)
+    n = 400
+    gap = rng.normal(2.0, 1.0, size=n)
+    miss = rng.uniform(50.0, 2000.0, size=n)
+    messages = rng.integers(2, 12, size=n).astype(float)
+    floor = (gap + 0.001 * miss > 2.2).astype(float)
+    y = np.where(floor > 0.5, -30.0, -8.0)
+    risk = np.full(n, -8.0)
+    frame = pd.DataFrame(
+        {
+            "event_id": np.arange(n),
+            "y": y,
+            "risk": risk,
+            "max_risk_estimate": risk + gap,
+            "dilution_gap": gap,
+            "miss_distance": miss,
+            "n_messages": messages,
+            "F10": rng.normal(70.0, 5.0, size=n),
+            "log_t_cov_det": rng.normal(0.0, 1.0, size=n),
+        }
+    )
+    train = frame.iloc[:280].copy()
+    test = frame.iloc[280:].copy()
+    report = dilution_probe(train, test)
+    rho = float(report["spearmanAbsMove"]["dilution_gap"]["rho"])
+    assert -1.0 <= rho <= 1.0
+    assert report["logisticFloor"]["testAuc"] > 0.75
+    assert len(report["quartiles"]) >= 2
+    assert report["replacesExhibit"] is False
+
+
+def test_repeated_splits_and_loo_run_on_synthetic() -> None:
+    from constants import HIGH_RISK_THRESHOLD
+    from experiments import leave_one_high_risk_out, repeated_grouped_splits
+
+    frame = validate_cdm_frame(generate_synthetic_cdms(n_events=60, seed=5))
+    features = build_feature_table(build_event_histories(frame))
+    repeats = repeated_grouped_splits(features, seeds=(5, 6))
+    assert repeats["replacesExhibit"] is False
+    assert len(repeats["splits"]) == 2
+    assert np.isfinite(repeats["summary"]["xgboost"]["maeAdvantage"]["mean"])
+    loo = leave_one_high_risk_out(features)
+    n_high = int((features["y"].to_numpy() >= HIGH_RISK_THRESHOLD).sum())
+    assert loo["nHighRisk"] == n_high
+    assert loo["persistCloser"] + loo["residualCloser"] + loo["ties"] == n_high

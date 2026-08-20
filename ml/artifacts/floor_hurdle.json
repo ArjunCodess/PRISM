@@ -1,0 +1,6 @@
+{
+  "threshold": 0.15,
+  "usePersistGuard": false,
+  "chosenOn": "validation",
+  "replacesExhibit": true
+}

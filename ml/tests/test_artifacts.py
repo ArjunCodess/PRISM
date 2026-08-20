@@ -32,6 +32,10 @@ def test_frozen_artifacts_exist() -> None:
         "metrics.json",
         "demo_cases.json",
         "model_card.json",
+        "selected_policy.json",
+        "floor_hurdle.json",
+        "exhibit_calibrator.joblib",
+        "exhibit_conformal.json",
     ]:
         assert (ART / name).exists(), name
 
@@ -52,7 +56,7 @@ def test_demo_cases_match_exhibit() -> None:
     assert uncertain["prediction"]["abstentionReasons"]
     highs = [item for item in cases if item["story"] == "high"]
     assert all(not item["prediction"]["abstained"] for item in highs)
-    assert all(item["prediction"]["riskBand"] == "high" for item in highs)
+    assert all(item["baselineRiskLog10"] >= -6.0 for item in highs)
     for item in cases:
         assert all(msg["timeToTcaDays"] >= 2.0 for msg in item["messages"])
         if item["futureMessages"]:
@@ -66,6 +70,88 @@ def test_persistence_claim_matches_frozen_metrics() -> None:
         and metrics["ensemble"]["esa_loss"] < metrics["persistence"]["esa_loss"]
     )
     assert bool(metrics["improvement"]["beats_persistence"]) is actually_beats
+
+
+def test_honest_metrics_exist_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    honest = metrics["honestMetrics"]
+    assert honest["nTest"] == metrics["splits"]["test"]
+    for name in ("persistence", "xgboost", "ensemble"):
+        system = honest["systems"][name]
+        assert "median_ae" in system["all"]
+        assert "mae" in system["nonFloor"]
+        assert "residualMae" in system
+    xgb = honest["systems"]["xgboost"]["maeAdvantageVsPersistence"]
+    ens = honest["systems"]["ensemble"]["maeAdvantageVsPersistence"]
+    assert xgb["ci95Low"] < xgb["ci95High"]
+    assert ens["ci95Low"] < ens["ci95High"]
+    assert np.isfinite(xgb["deltaMae"])
+    assert np.isfinite(ens["deltaMae"])
+
+
+def test_residual_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    residual = metrics["residualModel"]
+    assert residual["replacesExhibit"] is False
+    assert residual["winnerSoFar"]["split"] == "validation"
+    for split_name in ("test", "validation"):
+        for system in ("persistence", "xgboost", "residual"):
+            row = residual[split_name][system]
+            assert "mae" in row
+            assert "medianAe" in row
+            assert "floorExcludedMae" in row
+            assert "esaLoss" in row
+            assert "f2" in row
+    assert "residual" in metrics["honestMetrics"]["systems"]
+    assert (ART / "residual_regressor.json").exists()
+
+
+def test_floor_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    floor = metrics["floorModel"]
+    assert floor["replacesExhibit"] is True
+    assert floor["winnerSoFar"]["split"] == "validation"
+    assert "threshold" in floor
+    confusion = floor["confusion"]["test"]
+    assert confusion["nFloor"] == metrics["honestMetrics"]["nFloor"]
+    assert confusion["tp"] + confusion["fn"] == confusion["nFloor"]
+    assert confusion["fp"] + confusion["tn"] == confusion["nNonFloor"]
+    for split_name in ("test", "validation"):
+        row = floor[split_name]["floorHurdle"]
+        assert "mae" in row
+        assert "floorExcludedMae" in row
+        assert "esaLoss" in row
+    assert "floorHurdle" in metrics["honestMetrics"]["systems"]
+    assert (ART / "floor_classifier.json").exists()
+    assert (ART / "floor_residual_regressor.json").exists()
+    assert (ART / "floor_hurdle.json").exists()
+
+
+def test_conformal_candidate_exists_on_frozen_split() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    conformal = metrics["conformal"]
+    assert conformal["replacesExhibit"] is False
+    assert conformal["fitOn"].startswith("frozen calibration")
+    test_conf = conformal["test"]["conformal"]["90"]
+    assert 0.0 <= test_conf["coverage"] <= 1.0
+    assert test_conf["meanWidth"] > 0
+    boot90 = conformal["test"]["bootstrap"]["90"]["coverage"]
+    assert abs(boot90 - metrics["uncertainty"]["interval90Coverage"]) < 1e-9
+    assert "conformal90Coverage" in metrics["uncertainty"]
+    assert conformal["abstentionCandidate"]["chosenOn"] == "validation"
+    assert conformal["abstentionCandidate"]["replacesExhibit"] is False
+    assert (ART / "conformal.json").exists()
+
+
+def test_selected_policy_is_the_floor_hurdle() -> None:
+    metrics = json.loads((ART / "metrics.json").read_text(encoding="utf-8"))
+    policy = json.loads((ART / "selected_policy.json").read_text(encoding="utf-8"))
+    assert policy["name"] == "floorHurdle"
+    assert policy["usePersistGuard"] is False
+    assert metrics["selectedPolicy"]["name"] == "floorHurdle"
+    assert metrics["selectedPolicy"]["chosenOn"] == "validation"
+    assert metrics["augustExhibitSnapshot"]["name"] == "bootstrapXgboostMedianPersistGuard"
+    assert metrics["floorModel"]["winnerSoFar"]["name"] == "floorHurdle"
 
 
 def test_reloaded_booster_matches_saved_schema() -> None:

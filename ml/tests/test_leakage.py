@@ -78,6 +78,19 @@ def test_grouped_splits_are_disjoint(
     assert union == set(int(x) for x in features["event_id"].unique())
 
 
+def test_redraw_seeds_keep_seed_42_and_change_test_ids(
+    events_and_features: tuple[list[dict[str, object]], pd.DataFrame],
+) -> None:
+    from split import REDRAW_SEEDS
+
+    _events, features = events_and_features
+    assert REDRAW_SEEDS[0] == 42
+    first = set(grouped_splits(features, seed=42).test_ids)
+    second = set(grouped_splits(features, seed=43).test_ids)
+    assert first != second
+    assert grouped_splits(features, seed=42).test_ids == grouped_splits(features, seed=42).test_ids
+
+
 def test_derived_geometry_is_checked(
     events_and_features: tuple[list[dict[str, object]], pd.DataFrame],
 ) -> None:
@@ -106,3 +119,55 @@ def test_validator_rejects_implausibly_late_messages() -> None:
     frame.loc[frame.index[0], "time_to_tca"] = -1.1
     with pytest.raises(ValueError, match="more than one day"):
         validate_cdm_frame(frame)
+
+
+def test_official_test_labels_overwrite_snapshot_y() -> None:
+    from ingest import attach_official_test_labels
+
+    features = pd.DataFrame(
+        {
+            "event_id": [1, 2],
+            "risk": [-8.0, -7.0],
+            "y": [-8.0, -7.0],
+        }
+    )
+    labels = pd.DataFrame({"event_id": [1, 2], "y": [-30.0, -4.0]})
+    merged = attach_official_test_labels(features, labels)
+    assert list(merged["y"]) == [-30.0, -4.0]
+    assert "true_risk" not in merged.columns
+
+
+def test_official_test_features_reject_true_risk() -> None:
+    from ingest import attach_official_test_labels
+
+    features = pd.DataFrame({"event_id": [1], "true_risk": [-4.0], "y": [-8.0]})
+    labels = pd.DataFrame({"event_id": [1], "y": [-4.0]})
+    with pytest.raises(ValueError, match="true_risk"):
+        attach_official_test_labels(features, labels)
+
+
+def test_official_test_identity_treats_numeric_overlap_as_numbering() -> None:
+    from ingest import official_test_identity_report
+
+    train = pd.DataFrame(
+        {
+            "event_id": [0, 0],
+            "time_to_tca": [3.0, 0.5],
+            "risk": [-8.0, -30.0],
+            "mission_id": [1, 1],
+            "miss_distance": [100.0, 80.0],
+        }
+    )
+    official = pd.DataFrame(
+        {
+            "event_id": [0],
+            "time_to_tca": [2.5],
+            "risk": [-12.0],
+            "mission_id": [9],
+            "miss_distance": [400.0],
+        }
+    )
+    report = official_test_identity_report(train, official)
+    assert report["numericIdOverlap"] == 1
+    assert report["identicalPreCutoffSnapshots"] == 0
+    assert "independently numbered" in str(report["interpretation"])

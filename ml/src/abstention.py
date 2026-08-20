@@ -13,6 +13,7 @@ from evaluate import regression_metrics
 REASON_CROSSES = "spread_crosses_threshold"
 REASON_MISSING = "missing_critical_fields"
 REASON_DISAGREEMENT = "ensemble_disagreement"
+REASON_CONFORMAL = "conformal_crosses_threshold"
 
 REASON_TEXT = {
     REASON_CROSSES: (
@@ -21,6 +22,9 @@ REASON_TEXT = {
     REASON_MISSING: "current reported risk or miss distance is missing",
     REASON_DISAGREEMENT: (
         f"bootstrap models disagree by more than {ABSTENTION_DISAGREEMENT} log-risk units"
+    ),
+    REASON_CONFORMAL: (
+        "the 90% conformal band crosses the ESA challenge class log10(Pc) ≥ −6"
     ),
 }
 
@@ -74,6 +78,23 @@ def abstain_mask(
     missing = ~np.isfinite(current_risk) | ~np.isfinite(miss_distance)
     abstained = crosses | missing | (disagreement > disagreement_threshold)
     return abstained.astype(bool), disagreement, crosses
+
+
+def interval_crosses_high_risk(lo: np.ndarray, hi: np.ndarray) -> np.ndarray:
+    low = np.asarray(lo, dtype=float)
+    high = np.asarray(hi, dtype=float)
+    return (low < HIGH_RISK_THRESHOLD) & (high >= HIGH_RISK_THRESHOLD)
+
+
+def conformal_abstain_mask(
+    lo: np.ndarray,
+    hi: np.ndarray,
+    current_risk: np.ndarray,
+    miss_distance: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    crosses = interval_crosses_high_risk(lo, hi)
+    missing = ~np.isfinite(current_risk) | ~np.isfinite(miss_distance)
+    return (crosses | missing).astype(bool), crosses
 
 
 def _safe_mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:

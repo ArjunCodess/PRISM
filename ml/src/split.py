@@ -7,6 +7,7 @@ import pandas as pd
 from constants import RANDOM_STATE
 from sklearn.model_selection import GroupShuffleSplit
 
+REDRAW_SEEDS = (42, 43, 44, 45, 46)
 
 @dataclass(frozen=True)
 class SplitManifest:

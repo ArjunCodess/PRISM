@@ -51,7 +51,7 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
       </section>
       {item.prediction.abstained ? (
         <p className="max-w-[70ch] text-sm leading-6 text-amber">
-          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% bootstrap band crosses the ESA class, a critical field is missing, or ensemble disagreement exceeds 1.25 log-risk units"}.
+          Review required: {item.prediction.abstentionReasons?.join("; ") || "the 90% conformal band crosses the ESA class, or a critical field is missing"}.
         </p>
       ) : null}
 
@@ -59,7 +59,7 @@ export function CaseWorkspace({ item }: { item: CutoffSafeCase }) {
         <Metric label="Time to TCA" value={`${(latest.timeToTcaDays * 24).toFixed(1)} h`} note="selected message" />
         <Metric label="Today's report" value={persist.toFixed(2)} note={`${chanceWords(persist)} · persistence`} />
         <Metric label="Forecast" value={forecast.toFixed(2)} note={`${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs today`} accent />
-        <Metric label="50% / 90% spread" value={`${low50.toFixed(1)}…${high50.toFixed(1)}`} note={`outer ${low90.toFixed(1)}…${high90.toFixed(1)}`} />
+        <Metric label="50% / 90% interval" value={`${low50.toFixed(1)}…${high50.toFixed(1)}`} note={`outer ${low90.toFixed(1)}…${high90.toFixed(1)} · conformal`} />
         <Metric label="High-risk estimate" value={`${(item.prediction.configuredHighRiskProbability * 100).toFixed(0)}%`} note="ESA class ≥ −6 · 9 test positives" />
       </dl>
 

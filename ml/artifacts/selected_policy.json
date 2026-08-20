@@ -1,0 +1,17 @@
+{
+  "name": "floorHurdle",
+  "chosenOn": "validation",
+  "criterion": "mae, then floor-excluded mae, then esa-style loss",
+  "usePersistGuard": false,
+  "threshold": 0.15,
+  "interval": "split conformal around the floor-hurdle point",
+  "abstention": "conformal",
+  "abstentionRule": "PRISM abstains when the 90% conformal band around the floor-hurdle forecast crosses the ESA challenge class log10(Pc) \u2265 \u22126, or when current risk or miss distance is missing. The \u22126 class follows the ESA challenge definition. The floor threshold and the decision not to copy today's report were frozen on validation before the test split.",
+  "artifacts": {
+    "classifier": "ml/artifacts/floor_classifier.json",
+    "residualRegressor": "ml/artifacts/floor_residual_regressor.json",
+    "policy": "ml/artifacts/floor_hurdle.json",
+    "calibrator": "ml/artifacts/exhibit_calibrator.joblib",
+    "conformal": "ml/artifacts/exhibit_conformal.json"
+  }
+}

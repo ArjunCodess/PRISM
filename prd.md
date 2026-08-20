@@ -17,18 +17,18 @@ An explainable AI copilot for T-48-hour space-debris conjunction risk forecastin
 | Owner | Arjun Vijay Prakash |
 | Safety | Educational research only. Never present as flight-certified collision-avoidance software. |
 
-### Addendum — 18 August 2026 (exhibit as built)
+### Addendum — 18 August 2026, updated for the validation-selected policy
 
-Version 1.0 below remains the original contract. The frozen exhibit is:
+Version 1.0 below remains the original contract. The exhibit is still a CDM forecasting prototype (forecast, interval or review, SHAP), not a journal paper with a website.
 
-1. **Selected model** is a T−48 bootstrap XGBoost median of the later reported `log10(Pc)`, with a persistence guard at `log10(Pc) ≥ −6`.
-2. **Held-out numbers:** persistence MAE 5.080 → ensemble MAE 3.059; ESA-style loss and F2 still tie at 0.167 / 0.361. Unguarded XGBoost is 2.808 with F2 = 0. Nominal 90% bootstrap coverage is 47.7%.
+1. **Selected model** is the validation-chosen floor hurdle: `P(y = −30)` plus residual XGBoost on non-floor training events, threshold `0.15`, no persistence guard. Live intervals are split conformal around that point.
+2. **Held-out numbers (research):** persistence MAE 5.080; live floor hurdle MAE 2.109, median AE 0, F2 = 0, floor-excluded MAE 9.311. The 18 August bootstrap ensemble (MAE 3.059, ESA-style loss 0.167 / F2 0.361) is a baseline snapshot, not a live mode.
 3. **G6 / A8 / N7 superseded.** The website requires FastAPI (`NEXT_PUBLIC_API_URL`). There is no JSON fallback when the API is stopped. The laptop exhibit still runs with Wi-Fi off if both processes are local.
-4. **False reassurance is 1** on the frozen test split (1 of 9 high-risk events).
+4. **False reassurance** on the August snapshot was 1 of 9. The live floor hurdle does not copy today’s `−6` reports; treat high-risk recall as a research number, not an operational warning.
 5. **Snapshot features** include encounter-plane geometry and object-type dummies.
-6. **M3 remains unmet:** MAE improves; ESA-style loss does not.
+6. **M3 remains unmet** for ESA-style loss: the live policy does not beat persistence on F2.
 
-Do not quote 3.052. That was an earlier freeze of the same T−48 policy before this retrain.
+Do not quote 3.052. That was an earlier freeze of the August ensemble.
 
 Numbers and scripts: `README.md`, `docs/model-card.md`, `docs/presentation.md`, `ml/artifacts/metrics.json`.
 
@@ -333,7 +333,7 @@ Required designs:
 - Development: grouped splits on `event_id`.
 - Final local test: hold out 20% of events before feature or model selection.
 - Mission caution: `mission_id` clusters in PCA; attributes are not i.i.d. across missions. Train one model with it and one without. Keep it only if grouped mission tests show real generalization.
-- Do not score local quality on the official Kelvins `test_data.csv`. Labels are absent. Use training events for honest partitions. The official test file may be run only as a pipeline-compatibility check.
+- Do not use official-test labels for training, validation, or hyperparameter choice. Local quality uses event-disjoint splits of the training archive. Official-test `true_risk` (Zenodo 4463683) is scored once after freeze (`metrics.json → officialTest`, `frozenBeforeLook: true`). Features come only from `test_data.csv` (`time_to_tca >= 2`). Do not retune after seeing that score.
 
 ### 10.3 Official test-set filters, reused locally
 
@@ -873,7 +873,7 @@ Venue internet is not promised. Offline is mandatory.
 
 - Public portfolio deployment
 - Interactive what-if panel
-- Formal conformal intervals
+- Formal conformal intervals (research surface measured; exhibit still shows bootstrap spread)
 - Mission-holdout experiment
 - Physical LED risk indicator driven by the API
 

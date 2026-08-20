@@ -8,16 +8,21 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from xgboost import XGBRegressor
+from xgboost import XGBClassifier, XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = Path(__file__).resolve().parent
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from abstention import abstain_mask  # noqa: E402
+from abstention import abstain_mask, conformal_abstain_mask, selective_metrics  # noqa: E402
 from build_events import build_event_histories  # noqa: E402
-from calibrate import fit_isotonic  # noqa: E402
+from calibrate import (  # noqa: E402
+    conformal_bounds,
+    fit_absolute_conformal,
+    fit_isotonic,
+    interval_report,
+)
 from constants import (  # noqa: E402
     ABSTENTION_RULE,
     DEMO_SLOTS,
@@ -30,36 +35,142 @@ from constants import (  # noqa: E402
 from evaluate import (  # noqa: E402
     classification_metrics,
     error_gallery,
+    honest_metrics_bundle,
+    level_scoreboard_row,
     persistence_improvement,
+    pick_validation_winner,
     regression_metrics,
     reliability_bins,
 )
 from experiments import (  # noqa: E402
     abstention_study,
     cluster_test_failures,
+    dilution_probe,
     forecast_horizon_table,
     historical_ablation,
+    leave_one_high_risk_out,
+    repeated_grouped_splits,
     shap_outcome_contrast,
+    threshold_sweep,
+    error_anatomy,
 )
 from explain import grouped_importance, shap_explainer  # noqa: E402
 from export_demo_cases import assemble_demo_cases, write_json  # noqa: E402
 from features import build_feature_table  # noqa: E402
+from floor_model import (  # noqa: E402
+    combine_floor_hurdle,
+    floor_confusion,
+    predict_floor_proba,
+)
 from generate_synthetic import generate_synthetic_cdms  # noqa: E402
 from ingest import (  # noqa: E402
     load_esa_training,
     realistic_training_events,
     validate_official_test_compatibility,
 )
+from official_test import score_official_test  # noqa: E402
 from split import grouped_splits, subset  # noqa: E402
-from train_classifier import fit_warning_classifier  # noqa: E402
+from train_classifier import TrainedClassifier, fit_warning_classifier  # noqa: E402
 from train_regressor import (  # noqa: E402
+    TrainedRegressor,
+    fit_residual_xgboost,
     fit_ridge,
     fit_xgboost,
     median_predict,
     persistence_predict,
     predict_model,
+    predict_reconstructed,
 )
 from validate import validate_cdm_frame  # noqa: E402
+
+HONEST_DEFINITIONS = {
+    "floorExcludedMae": (
+        "MAE on events whose final reported log10(Pc) is above the dataset floor of -30."
+    ),
+    "residualMaeActual": (
+        "Mean |y - risk|: how far the later report moved from the T-48 snapshot."
+    ),
+    "residualMaePredicted": "Mean |pred - risk|: how far the model moves the snapshot.",
+    "residualMae": "Mean |(y - risk) - (pred - risk)|, equal to MAE(y, pred).",
+    "maeAdvantageCi": (
+        "95% bootstrap interval on MAE(persistence) - MAE(model) from 1000 event resamples."
+    ),
+}
+
+
+def _guarded_ensemble(
+    frame: pd.DataFrame, ensemble: list[object], feature_names: list[str]
+) -> tuple[np.ndarray, np.ndarray]:
+    x = frame[feature_names].apply(pd.to_numeric, errors="coerce")
+    raw = np.column_stack([model.predict(x) for model in ensemble])
+    risk = frame["risk"].to_numpy(dtype=float)
+    guard = risk >= HIGH_RISK_THRESHOLD
+    matrix = np.where(guard[:, None], risk[:, None], raw)
+    return np.median(matrix, axis=1), matrix
+
+
+def _booster_feature_names(model: XGBRegressor | XGBClassifier, fallback: list[str]) -> list[str]:
+    stored = model.get_booster().feature_names
+    if stored:
+        return list(stored)
+    return list(fallback)
+
+
+def _load_frozen_candidates(
+    test: pd.DataFrame,
+    validation: pd.DataFrame,
+    artifacts: Path,
+    schema: list[str],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
+    residual_model = XGBRegressor()
+    residual_model.load_model(str(artifacts / "residual_regressor.json"))
+    residual = TrainedRegressor(
+        model=residual_model,
+        feature_names=_booster_feature_names(residual_model, schema),
+        kind="residual_xgboost",
+    )
+    residual_test = predict_reconstructed(residual, test)
+    residual_val = predict_reconstructed(residual, validation)
+
+    floor_clf_model = XGBClassifier()
+    floor_clf_model.load_model(str(artifacts / "floor_classifier.json"))
+    floor_clf = TrainedClassifier(
+        model=floor_clf_model,
+        feature_names=_booster_feature_names(floor_clf_model, schema),
+    )
+    floor_residual_model = XGBRegressor()
+    floor_residual_model.load_model(str(artifacts / "floor_residual_regressor.json"))
+    floor_residual = TrainedRegressor(
+        model=floor_residual_model,
+        feature_names=_booster_feature_names(floor_residual_model, schema),
+        kind="residual_xgboost",
+    )
+    policy = json.loads((artifacts / "floor_hurdle.json").read_text(encoding="utf-8"))
+    floor_proba_test = predict_floor_proba(floor_clf, test)
+    floor_proba_val = predict_floor_proba(floor_clf, validation)
+    floor_test = combine_floor_hurdle(
+        floor_proba_test,
+        predict_reconstructed(floor_residual, test),
+        float(policy["threshold"]),
+        risk=test["risk"].to_numpy(dtype=float),
+        use_persist_guard=bool(policy["usePersistGuard"]),
+    )
+    floor_val = combine_floor_hurdle(
+        floor_proba_val,
+        predict_reconstructed(floor_residual, validation),
+        float(policy["threshold"]),
+        risk=validation["risk"].to_numpy(dtype=float),
+        use_persist_guard=bool(policy["usePersistGuard"]),
+    )
+    return (
+        residual_test,
+        residual_val,
+        floor_test,
+        floor_val,
+        floor_proba_test,
+        floor_proba_val,
+        policy,
+    )
 
 
 def _bootstrap_models(train: pd.DataFrame, n_models: int = 10) -> list[XGBRegressor]:
@@ -127,6 +238,336 @@ def _robustness_slices(test: pd.DataFrame, predictions: np.ndarray) -> dict[str,
             "24hOrMore": _slice_metrics(test, predictions, test["hours_before_cutoff"] >= 24),
         },
     }
+
+
+def _write_honest_metrics(
+    metrics: dict[str, object],
+    y_true: np.ndarray,
+    risk: np.ndarray,
+    persist: np.ndarray,
+    xgb_pred: np.ndarray,
+    ens_pred: np.ndarray,
+    residual_pred: np.ndarray | None = None,
+    floor_pred: np.ndarray | None = None,
+) -> dict[str, object]:
+    definitions = dict(metrics.get("definitions") or {})  # type: ignore[arg-type]
+    definitions.update(HONEST_DEFINITIONS)
+    metrics["definitions"] = definitions
+    honest = honest_metrics_bundle(
+        y_true,
+        risk,
+        persist,
+        xgb_pred,
+        ens_pred,
+        residual_pred=residual_pred,
+        floor_pred=floor_pred,
+    )
+    metrics["honestMetrics"] = honest
+    return honest
+
+
+def score_frozen_honest_metrics() -> dict[str, object]:
+    artifacts = ROOT / "ml" / "artifacts"
+    manifest_path = artifacts / "split_manifest.json"
+    metrics_path = artifacts / "metrics.json"
+    if not manifest_path.exists() or not metrics_path.exists():
+        raise FileNotFoundError("frozen split_manifest.json and metrics.json are required")
+
+    raw = realistic_training_events(load_esa_training(ROOT / "data" / "raw"))
+    events = build_event_histories(validate_cdm_frame(raw))
+    features = build_feature_table(events)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    test = subset(features, manifest["test"])
+    if test.empty:
+        raise RuntimeError("frozen test ids did not match the rebuilt feature table")
+
+    train = subset(features, manifest["train"])
+    validation = subset(features, manifest["validation"])
+    if train.empty or validation.empty:
+        raise RuntimeError("frozen train or validation ids did not match the rebuilt feature table")
+
+    persist_test = persistence_predict(test)
+    persist_val = persistence_predict(validation)
+    schema = json.loads((artifacts / "feature_schema.json").read_text(encoding="utf-8"))["features"]
+    booster_model = XGBRegressor()
+    booster_model.load_model(str(artifacts / "risk_regressor.json"))
+    x_test = test[schema].apply(pd.to_numeric, errors="coerce")
+    model_pred = np.asarray(booster_model.predict(x_test), dtype=float)
+    xgb_val = np.asarray(
+        booster_model.predict(validation[schema].apply(pd.to_numeric, errors="coerce")),
+        dtype=float,
+    )
+
+    bundle = joblib.load(artifacts / "warning_calibrator.joblib")
+    ensemble = bundle["ensemble"]
+    feature_names = list(bundle.get("feature_names") or schema)
+    ens_pred, ens_matrix = _guarded_ensemble(test, ensemble, feature_names)
+    ens_val, ens_val_matrix = _guarded_ensemble(validation, ensemble, feature_names)
+
+    calibration = subset(features, manifest["calibration"])
+    if calibration.empty:
+        raise RuntimeError("frozen calibration ids did not match the rebuilt feature table")
+    ens_cal, _ = _guarded_ensemble(calibration, ensemble, feature_names)
+
+    (
+        residual_test,
+        residual_val,
+        floor_test,
+        floor_val,
+        floor_proba_test,
+        floor_proba_val,
+        policy,
+    ) = _load_frozen_candidates(test, validation, artifacts, schema)
+
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    honest = _write_honest_metrics(
+        metrics,
+        test["y"].to_numpy(),
+        test["risk"].to_numpy(dtype=float),
+        persist_test,
+        model_pred,
+        ens_pred,
+        residual_pred=residual_test,
+        floor_pred=floor_test,
+    )
+    test_y = test["y"].to_numpy()
+    val_y = validation["y"].to_numpy()
+    test_board = {
+        "persistence": level_scoreboard_row(test_y, persist_test),
+        "xgboost": level_scoreboard_row(test_y, model_pred),
+        "residual": level_scoreboard_row(test_y, residual_test),
+        "floorHurdle": level_scoreboard_row(test_y, floor_test),
+    }
+    val_board = {
+        "persistence": level_scoreboard_row(val_y, persist_val),
+        "xgboost": level_scoreboard_row(val_y, xgb_val),
+        "residual": level_scoreboard_row(val_y, residual_val),
+        "floorHurdle": level_scoreboard_row(val_y, floor_val),
+    }
+    residual_boards_test = {k: v for k, v in test_board.items() if k != "floorHurdle"}
+    residual_boards_val = {k: v for k, v in val_board.items() if k != "floorHurdle"}
+    metrics["residualModel"] = {
+        "target": "y - risk on cutoff-safe rows; reconstruct pred = risk + residual_hat",
+        "fitOn": "frozen train event ids only",
+        "artifact": "ml/artifacts/residual_regressor.json",
+        "replacesExhibit": False,
+        "test": residual_boards_test,
+        "validation": residual_boards_val,
+        "winnerSoFar": {
+            "split": "validation",
+            "criterion": "mae, then floor-excluded mae, then esa-style loss",
+            "name": pick_validation_winner(residual_boards_val),
+        },
+    }
+    metrics["floorModel"] = {
+        "target": "P(y == -30) from final reported risk; residual regressor on non-floor train",
+        "fitOn": "frozen train event ids only; threshold and persist guard on validation only",
+        "artifacts": {
+            "classifier": "ml/artifacts/floor_classifier.json",
+            "residualRegressor": "ml/artifacts/floor_residual_regressor.json",
+            "policy": "ml/artifacts/floor_hurdle.json",
+        },
+        "replacesExhibit": False,
+        "threshold": float(policy["threshold"]),
+        "usePersistGuard": bool(policy["usePersistGuard"]),
+        "confusion": {
+            "test": floor_confusion(test_y, floor_proba_test, float(policy["threshold"])),
+            "validation": floor_confusion(val_y, floor_proba_val, float(policy["threshold"])),
+        },
+        "test": test_board,
+        "validation": val_board,
+        "winnerSoFar": {
+            "split": "validation",
+            "criterion": "mae, then floor-excluded mae, then esa-style loss",
+            "name": pick_validation_winner(val_board),
+        },
+    }
+
+    quantiles = fit_absolute_conformal(calibration["y"].to_numpy(), ens_cal, alphas=(0.5, 0.1))
+    q50 = float(quantiles[0.5])
+    q90 = float(quantiles[0.1])
+    boot50_test = np.quantile(ens_matrix, [0.25, 0.75], axis=1)
+    boot90_test = np.quantile(ens_matrix, [0.05, 0.95], axis=1)
+    boot50_val = np.quantile(ens_val_matrix, [0.25, 0.75], axis=1)
+    boot90_val = np.quantile(ens_val_matrix, [0.05, 0.95], axis=1)
+    conf50_test = conformal_bounds(ens_pred, q50)
+    conf90_test = conformal_bounds(ens_pred, q90)
+    conf50_val = conformal_bounds(ens_val, q50)
+    conf90_val = conformal_bounds(ens_val, q90)
+    bootstrap_test = {
+        "50": interval_report(test_y, boot50_test[0], boot50_test[1]),
+        "90": interval_report(test_y, boot90_test[0], boot90_test[1]),
+    }
+    conformal_test = {
+        "50": interval_report(test_y, conf50_test[0], conf50_test[1]),
+        "90": interval_report(test_y, conf90_test[0], conf90_test[1]),
+    }
+    conformal_val = {
+        "50": interval_report(val_y, conf50_val[0], conf50_val[1]),
+        "90": interval_report(val_y, conf90_val[0], conf90_val[1]),
+    }
+    persist_mask_val = validation["risk"].to_numpy(dtype=float)
+    miss_val = validation["miss_distance"].to_numpy(dtype=float)
+    boot_abs_val, _, _ = abstain_mask(ens_val_matrix, persist_mask_val, miss_val)
+    conf_abs_val, _ = conformal_abstain_mask(
+        conf90_val[0], conf90_val[1], persist_mask_val, miss_val
+    )
+    boot_sel_val = selective_metrics(val_y, ens_val, persist_val, boot_abs_val)
+    conf_sel_val = selective_metrics(val_y, ens_val, persist_val, conf_abs_val)
+    boot_key = (
+        int(boot_sel_val["falseReassurance"]),
+        -float(boot_sel_val["coverage"]),
+    )
+    conf_key = (
+        int(conf_sel_val["falseReassurance"]),
+        -float(conf_sel_val["coverage"]),
+    )
+    chosen_abs = "conformal" if conf_key < boot_key else "bootstrap"
+    persist_mask_test = test["risk"].to_numpy(dtype=float)
+    miss_test = test["miss_distance"].to_numpy(dtype=float)
+    boot_abs_test, _, _ = abstain_mask(ens_matrix, persist_mask_test, miss_test)
+    conf_abs_test, _ = conformal_abstain_mask(
+        conf90_test[0], conf90_test[1], persist_mask_test, miss_test
+    )
+    conformal_payload = {
+        "method": "split conformal absolute residual around exhibit ensemble median",
+        "fitOn": "frozen calibration event ids only",
+        "pointPredictor": "T-48 bootstrap xgboost median with -6 persist guard",
+        "replacesExhibit": False,
+        "q50": q50,
+        "q90": q90,
+        "nCalibration": int(len(calibration)),
+        "test": {"bootstrap": bootstrap_test, "conformal": conformal_test},
+        "validation": {
+            "bootstrap": {
+                "50": interval_report(val_y, boot50_val[0], boot50_val[1]),
+                "90": interval_report(val_y, boot90_val[0], boot90_val[1]),
+            },
+            "conformal": conformal_val,
+        },
+        "abstentionCandidate": {
+            "chosenOn": "validation",
+            "criterion": "false reassurance, then higher coverage",
+            "name": chosen_abs,
+            "replacesExhibit": False,
+            "validation": {"bootstrap": boot_sel_val, "conformal": conf_sel_val},
+            "test": {
+                "bootstrap": selective_metrics(test_y, ens_pred, persist_test, boot_abs_test),
+                "conformal": selective_metrics(test_y, ens_pred, persist_test, conf_abs_test),
+            },
+        },
+    }
+    write_json(artifacts / "conformal.json", {"q50": q50, "q90": q90, "replacesExhibit": False})
+    metrics["conformal"] = conformal_payload
+    uncertainty = dict(metrics.get("uncertainty") or {})
+    uncertainty.update(
+        {
+            "method": "spread across 10 bootstrap xgboost models",
+            "interpretation": (
+                "Bootstrap bands are model spread. Split-conformal bands around the "
+                "same exhibit point are 50% and 90% predictive intervals."
+            ),
+            "interval50Coverage": bootstrap_test["50"]["coverage"],
+            "interval90Coverage": bootstrap_test["90"]["coverage"],
+            "meanInterval50Width": bootstrap_test["50"]["meanWidth"],
+            "meanInterval90Width": bootstrap_test["90"]["meanWidth"],
+            "nModels": len(ensemble),
+            "conformal50Coverage": conformal_test["50"]["coverage"],
+            "conformal90Coverage": conformal_test["90"]["coverage"],
+            "conformal50Width": conformal_test["50"]["meanWidth"],
+            "conformal90Width": conformal_test["90"]["meanWidth"],
+        }
+    )
+    metrics["uncertainty"] = uncertainty
+    metrics["thresholdSweep"] = threshold_sweep(
+        test_y,
+        {
+            "persistence": persist_test,
+            "xgboost": model_pred,
+            "ensemble": ens_pred,
+            "residual": residual_test,
+            "floorHurdle": floor_test,
+        },
+        abstained=boot_abs_test,
+    )
+    metrics["errorAnatomy"] = error_anatomy(test_y, test["risk"].to_numpy(dtype=float), model_pred)
+    if "dilutionProbe" not in metrics:
+        metrics["dilutionProbe"] = dilution_probe(train, test, persist_test, model_pred)
+    if "repeatedSplits" not in metrics:
+        metrics["repeatedSplits"] = repeated_grouped_splits(features)
+    if "leaveOneHighRiskOut" not in metrics:
+        metrics["leaveOneHighRiskOut"] = leave_one_high_risk_out(features)
+    official_existing = metrics.get("officialTest")
+    if isinstance(official_existing, dict) and official_existing.get("frozenBeforeLook"):
+        metrics["officialTest"] = official_existing
+    else:
+        metrics["officialTest"] = score_official_test(ROOT, artifacts)
+    write_json(metrics_path, metrics)
+    card_path = artifacts / "model_card.json"
+    if card_path.exists():
+        card = json.loads(card_path.read_text(encoding="utf-8"))
+        card["honestMetrics"] = honest
+        card["residualModel"] = metrics["residualModel"]
+        card["floorModel"] = metrics["floorModel"]
+        card["conformal"] = metrics["conformal"]
+        card["uncertainty"] = metrics["uncertainty"]
+        card["dilutionProbe"] = {
+            "replacesExhibit": False,
+            "h4Supported": metrics["dilutionProbe"]["h4Supported"],
+            "logisticFloor": metrics["dilutionProbe"]["logisticFloor"],
+            "spearmanAbsMove": metrics["dilutionProbe"]["spearmanAbsMove"],
+            "quartiles": metrics["dilutionProbe"]["quartiles"],
+        }
+        official = metrics["officialTest"]
+        card["officialTest"] = {
+            "frozenBeforeLook": official["frozenBeforeLook"],
+            "nEvents": official["nEvents"],
+            "nHighRisk": official["nHighRisk"],
+            "nFloor": official["nFloor"],
+            "board": official["board"],
+            "esa": official["esa"],
+            "replacesExhibit": False,
+        }
+        card["repeatedSplits"] = {
+            "replacesExhibit": False,
+            "summary": metrics["repeatedSplits"]["summary"],
+            "reportedSeed": metrics["repeatedSplits"]["reportedSeed"],
+        }
+        loo = metrics["leaveOneHighRiskOut"]
+        card["leaveOneHighRiskOut"] = {
+            "replacesExhibit": False,
+            "nHighRisk": loo["nHighRisk"],
+            "persistCloser": loo["persistCloser"],
+            "residualCloser": loo["residualCloser"],
+            "ties": loo["ties"],
+            "residualCloserShare": loo["residualCloserShare"],
+        }
+        sweep = metrics["thresholdSweep"]
+        card["thresholdSweep"] = {
+            "replacesExhibit": False,
+            "retuned": sweep["retuned"],
+            "thresholds": sweep["thresholds"],
+            "rows": [
+                {
+                    "threshold": row["threshold"],
+                    "nPositives": row["nPositives"],
+                    "persistence": row["systems"]["persistence"],
+                    "ensemble": row["systems"]["ensemble"],
+                }
+                for row in sweep["rows"]
+            ],
+        }
+        write_json(card_path, card)
+    from selected_policy import ship_selected_policy
+
+    ship_selected_policy(
+        features=features,
+        events=events,
+        manifest=manifest,
+        artifacts=artifacts,
+        metrics=metrics,
+    )
+    return honest
 
 
 def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]:
@@ -366,6 +807,14 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
         ),
         "abstentionRule": ABSTENTION_RULE,
     }
+    _write_honest_metrics(
+        metrics,
+        test["y"].to_numpy(),
+        test["risk"].to_numpy(dtype=float),
+        persist_test,
+        model_pred,
+        ens_pred,
+    )
 
     event_by_id = {int(event["event_id"]): event for event in events}
     aligned_all = features[booster.feature_names].apply(pd.to_numeric, errors="coerce")
@@ -457,6 +906,7 @@ def run_pipeline(source: str = "real", n_events: int = 420) -> dict[str, object]
             "horizons": metrics["horizons"],
             "abstention": metrics["abstention"]["operatingPoint"],
             "beatsPersistence": bool(metrics["improvement"]["beats_persistence"]),
+            "honestMetrics": metrics["honestMetrics"],
         },
     )
     return metrics
@@ -466,7 +916,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and export PRISM artifacts")
     parser.add_argument("--source", choices=("real", "synthetic"), default="real")
     parser.add_argument("--synthetic-events", type=int, default=420)
+    parser.add_argument(
+        "--frozen",
+        action="store_true",
+        help="score frozen artifacts, then ship the validation-selected CDM policy",
+    )
     args = parser.parse_args()
-    result = run_pipeline(source=args.source, n_events=args.synthetic_events)
-    print(json.dumps(result["improvement"], indent=2))
-    print(json.dumps(result["ensemble"], indent=2))
+    if args.frozen:
+        honest = score_frozen_honest_metrics()
+        print(json.dumps(honest, indent=2, default=str))
+    else:
+        result = run_pipeline(source=args.source, n_events=args.synthetic_events)
+        print(json.dumps(result["improvement"], indent=2))
+        print(json.dumps(result["ensemble"], indent=2))

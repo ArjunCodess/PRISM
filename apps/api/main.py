@@ -59,6 +59,7 @@ class PredictResponse(BaseModel):
     predictedFinalPc: float
     interval90Log10: list[float]
     interval50Log10: list[float]
+    intervalKind: str | None = None
     configuredHighRiskProbability: float
     highRiskThresholdLog10: float
     riskBand: str

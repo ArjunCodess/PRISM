@@ -8,12 +8,11 @@ import joblib
 import numpy as np
 import pandas as pd
 from build_events import build_event_histories
-from constants import HIGH_RISK_THRESHOLD
+from calibrate import conformal_bounds
 from explain import shap_explainer
 from export_demo_cases import predict_event
-from features import build_feature_table
+from selected_policy import decide_policy_abstention, load_floor_hurdle, predict_floor_hurdle
 from train_regressor import TrainedRegressor
-from xgboost import XGBRegressor
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "ml" / "artifacts"
@@ -21,20 +20,37 @@ ARTIFACTS = ROOT / "ml" / "artifacts"
 
 class PrismModel:
     def __init__(self) -> None:
-        payload = json.loads((ARTIFACTS / "feature_schema.json").read_text(encoding="utf-8"))
-        self.feature_names: list[str] = list(payload["features"])
-        model = XGBRegressor()
-        model.load_model(ARTIFACTS / "risk_regressor.json")
-        bundle = joblib.load(ARTIFACTS / "warning_calibrator.joblib")
-        self.calibrator = bundle["calibrator"]
-        self.ensemble: list[XGBRegressor] = bundle["ensemble"]
-        self.trained = TrainedRegressor(
-            model=model, feature_names=self.feature_names, kind="xgboost"
-        )
+        policy = json.loads((ARTIFACTS / "selected_policy.json").read_text(encoding="utf-8"))
+        if policy["name"] != "floorHurdle":
+            raise RuntimeError(f"unsupported selected policy {policy['name']}")
+        schema = json.loads((ARTIFACTS / "feature_schema.json").read_text(encoding="utf-8"))
+        self.feature_names: list[str] = list(schema["features"])
+        self.policy = policy
+        self.bundle = load_floor_hurdle(ARTIFACTS, self.feature_names)
+        self.trained: TrainedRegressor = self.bundle["residual"]
+        self.calibrator = joblib.load(ARTIFACTS / "exhibit_calibrator.joblib")["calibrator"]
+        conformal = json.loads((ARTIFACTS / "exhibit_conformal.json").read_text(encoding="utf-8"))
+        self.q50 = float(conformal["q50"])
+        self.q90 = float(conformal["q90"])
+        self.abstention_rule = str(policy["abstention"])
         background = pd.DataFrame(
-            np.zeros((20, len(self.feature_names))), columns=self.feature_names
+            np.zeros((20, len(self.trained.feature_names))),
+            columns=self.trained.feature_names,
         )
         self.explainer = shap_explainer(self.trained, background)
+
+    def predict_frame(self, frame: pd.DataFrame) -> dict[str, np.ndarray]:
+        point, floor_proba = predict_floor_hurdle(self.bundle, frame)
+        lo90, hi90 = conformal_bounds(point, self.q90)
+        lo50, hi50 = conformal_bounds(point, self.q50)
+        return {
+            "point": point,
+            "floorProba": floor_proba,
+            "lo90": lo90,
+            "hi90": hi90,
+            "lo50": lo50,
+            "hi50": hi50,
+        }
 
     def predict_messages(
         self, event_id: str, messages: list[dict[str, Any]], cutoff_hours: int = 48
@@ -49,28 +65,42 @@ class PrismModel:
         if not events:
             raise ValueError("no eligible pre-cutoff messages")
         features = build_feature_table(events)
-        row = features.iloc[0]
-        aligned = pd.DataFrame(
-            [
-                {
-                    name: float(row[name]) if name in row and pd.notna(row[name]) else np.nan
-                    for name in self.feature_names
-                }
-            ]
+        row_frame = features.iloc[[0]]
+        series = row_frame.iloc[0]
+        scored = self.predict_frame(row_frame)
+        point = float(scored["point"][0])
+        floor_called = float(scored["floorProba"][0]) >= self.bundle["threshold"]
+        current_risk = float(series["risk"]) if pd.notna(series.get("risk")) else float("nan")
+        miss_distance = (
+            float(series["miss_distance"]) if pd.notna(series.get("miss_distance")) else float("nan")
         )
-        series = aligned.iloc[0]
-        ens = np.array([model.predict(aligned)[0] for model in self.ensemble])
-        if float(series["risk"]) >= HIGH_RISK_THRESHOLD:
-            ens.fill(float(series["risk"]))
+        decision = decide_policy_abstention(
+            rule=self.abstention_rule,
+            current_risk=current_risk,
+            miss_distance=miss_distance,
+            lo90=float(scored["lo90"][0]),
+            hi90=float(scored["hi90"][0]),
+        )
         return predict_event(
             trained=self.trained,
-            ensemble_preds=ens,
             calibrator=self.calibrator,
             explainer=self.explainer,
             row=series,
             messages=messages,
             event_id=event_id,
+            point=point,
+            interval90=(float(scored["lo90"][0]), float(scored["hi90"][0])),
+            interval50=(float(scored["lo50"][0]), float(scored["hi50"][0])),
+            decision=decision,
+            floor_called=floor_called,
+            interval_kind="conformal",
         )
+
+
+def build_feature_table(events: list) -> pd.DataFrame:
+    from features import build_feature_table as _build
+
+    return _build(events)
 
 
 def _num(item: dict[str, Any], key: str, default: float) -> float:

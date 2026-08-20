@@ -33,7 +33,15 @@ data/interim/*
 *.ubj
 *.joblib
 !ml/artifacts/warning_calibrator.joblib
+!ml/artifacts/exhibit_calibrator.joblib
 !ml/artifacts/risk_regressor.json
+!ml/artifacts/residual_regressor.json
+!ml/artifacts/floor_classifier.json
+!ml/artifacts/floor_residual_regressor.json
+!ml/artifacts/floor_hurdle.json
+!ml/artifacts/conformal.json
+!ml/artifacts/exhibit_conformal.json
+!ml/artifacts/selected_policy.json
 
 # env / os
 .env
@@ -45,3 +53,16 @@ Thumbs.db
 # ide
 .idea/
 .vscode/
+
+# latex aux (keep paper/main.pdf)
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/*.synctex(busy)
+
