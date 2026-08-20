@@ -5945,7 +5945,15 @@
       },
       "xgboostHighRiskMae": 11.90970138691652,
       "persistenceHighRiskMae": 1.4988840658090707,
-      "note": "The public archive has no NORAD or object-pair identifiers and no calendar dates. Mission grouping is the available entity split. Official-test scoring is the frozen distribution-shift check."
+      "note": "The public archive has no NORAD or object-pair identifiers and no calendar dates. Mission grouping is the available entity split. Official-test scoring is the frozen distribution-shift check.",
+      "splitMethod": "sklearn.model_selection.GroupShuffleSplit",
+      "groupKey": "mission_id",
+      "testFractionOfGroups": 0.2,
+      "randomState": 42,
+      "eventSplitUnbalanced": true,
+      "hyperparamsFrozen": true,
+      "floorHurdleNotRetuned": true,
+      "refit": "Unguarded XGBoost only, same trees/depth/lr as the shipped regressor. The live floor-hurdle threshold 0.15 is not retuned on this split."
     },
     "floorClassifier": {
       "threshold": 0.15,
@@ -6144,7 +6152,8 @@
           "nNonFloor": 307,
           "floorRate": 0.814948764315853
         }
-      }
+      },
+      "trendShareExactZeroDelta": 0.5491259795057264
     },
     "simpleFloorBaselines": {
       "note": "Simple floor detectors trained on the frozen train split only. If logistic on two fields approaches the XGBoost floor classifier, the finding is the data structure, not the booster.",
@@ -6267,26 +6276,6 @@
           "meanWidth": 0.0
         },
         {
-          "nominalCoverage": 0.6,
-          "qHat": 0.0,
-          "nAbstained": 0,
-          "coverage": 1.0,
-          "maeAccepted": 2.1088681921122756,
-          "highRiskCapture": 0.0,
-          "falseReassurance": 9,
-          "meanWidth": 0.0
-        },
-        {
-          "nominalCoverage": 0.7,
-          "qHat": 0.0,
-          "nAbstained": 0,
-          "coverage": 1.0,
-          "maeAccepted": 2.1088681921122756,
-          "highRiskCapture": 0.0,
-          "falseReassurance": 9,
-          "meanWidth": 0.0
-        },
-        {
           "nominalCoverage": 0.8,
           "qHat": 0.0,
           "nAbstained": 0,
@@ -6295,6 +6284,16 @@
           "highRiskCapture": 0.0,
           "falseReassurance": 9,
           "meanWidth": 0.0
+        },
+        {
+          "nominalCoverage": 0.88,
+          "qHat": 5.760045327965809,
+          "nAbstained": 80,
+          "coverage": 0.9517781796262809,
+          "maeAccepted": 1.811987548813499,
+          "highRiskCapture": 0.4444444444444444,
+          "falseReassurance": 5,
+          "meanWidth": 11.520090655931623
         },
         {
           "nominalCoverage": 0.9,
@@ -6307,6 +6306,16 @@
           "meanWidth": 21.029626589998568
         },
         {
+          "nominalCoverage": 0.92,
+          "qHat": 15.118925752825776,
+          "nAbstained": 165,
+          "coverage": 0.9005424954792043,
+          "maeAccepted": 1.6930780033532753,
+          "highRiskCapture": 0.7777777777777778,
+          "falseReassurance": 2,
+          "meanWidth": 30.237851505651538
+        },
+        {
           "nominalCoverage": 0.95,
           "qHat": 18.198305469306522,
           "nAbstained": 166,
@@ -6315,6 +6324,16 @@
           "highRiskCapture": 0.7777777777777778,
           "falseReassurance": 2,
           "meanWidth": 36.39661093861304
+        },
+        {
+          "nominalCoverage": 0.99,
+          "qHat": 22.70774045427377,
+          "nAbstained": 166,
+          "coverage": 0.8999397227245328,
+          "maeAccepted": 1.68946700409972,
+          "highRiskCapture": 0.7777777777777778,
+          "falseReassurance": 2,
+          "meanWidth": 45.41548090854756
         }
       ]
     },
