@@ -28,10 +28,26 @@ def interval_report(y_true: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> dict[
     low = np.asarray(lo, dtype=float)
     high = np.asarray(hi, dtype=float)
     covered = (y >= low) & (y <= high)
+    widths = high - low
+    if y.size == 0:
+        return {
+            "n": 0,
+            "nCovered": 0,
+            "coverage": 0.0,
+            "meanWidth": 0.0,
+            "medianWidth": 0.0,
+            "q25Width": 0.0,
+            "q75Width": 0.0,
+        }
+    q25, median, q75 = np.quantile(widths, [0.25, 0.5, 0.75])
     return {
         "n": int(y.size),
-        "coverage": float(np.mean(covered)) if y.size else 0.0,
-        "meanWidth": float(np.mean(high - low)) if y.size else 0.0,
+        "nCovered": int(np.sum(covered)),
+        "coverage": float(np.mean(covered)),
+        "meanWidth": float(np.mean(widths)),
+        "medianWidth": float(median),
+        "q25Width": float(q25),
+        "q75Width": float(q75),
     }
 
 
