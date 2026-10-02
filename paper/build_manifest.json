@@ -4,17 +4,17 @@
   "exit_status": 0,
   "artifacts": {
     "main.tex": {
-      "sha256": "4ff4bf13149fcad64097d1dc58e78301e8061d59f0f7fca58ab4676c346d7907"
+      "sha256": "3554ebfcb96995ef74a5255566baf387a5d83a75124866e5b8b17e46f3270d85"
     },
     "main.pdf": {
-      "sha256": "61ea76e26f44152eb192428f1dd327115076aaebef2518cf1b7a7728bddacef9",
+      "sha256": "2224eee082668ccf4624d17be93af978474cf2d042217d9290f278de55a9d449",
       "pages": 5
     },
     "supplement.tex": {
-      "sha256": "926279edf2a2ac4bae126245473586f2cf584964cc9fb3f378329417d9c4cbeb"
+      "sha256": "7c6cc6f2acc69184ac3ad09df50fdce9dd57cf9ed9f8b9f125a9e23f80d32725"
     },
     "supplement.pdf": {
-      "sha256": "f0bc18a33a8aba683314c2c9e95e98c9b32da9b4cf9adac3d92c1e48ff5573f0",
+      "sha256": "d824e638d2801720462c31f16ce31b3aa8ded17500bf3b9a6f02d8add6a756e6",
       "pages": 1
     },
     "fmts_review_numbers.tex": {

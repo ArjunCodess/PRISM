@@ -1,14 +1,15 @@
 \documentclass{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
+\setlength{\emergencystretch}{1em}
 \title{PRISM revision artifact guide}
 \author{Arjun Vijay Prakash}
 \date{2 October 2026}
 \begin{document}
 \maketitle
-The original submission remains under submissions/fmts\_2026; pre-revision manuscripts remain under paper/pre-review-*.
+The original submission remains under submissions/fmts\_2026 and at the fmts-2026-submitted tag.
 
-The new protocol is docs/FMTS\_REVIEW\_PROTOCOL.md. Review responses, source audit, archive semantics, claim audit, and validation commands are in the corresponding FMTS documents. The configuration is experiments/fmts\_review.json.
+Methods, related work, archive semantics, and negative results are in the main paper. Review responses and the claim audit are in docs/FMTS\_REVIEW\_RESPONSE\_MATRIX.md; reproduction commands and verification results are in docs/FMTS\_VALIDATION.md. The configuration is experiments/fmts\_review.json.
 
 The directory ml/artifacts/fmts\_review contains five ESA redraw reports, official-transfer evaluation, 60 simulation reports, compressed per-event predictions and sets, paired intervals, simulation summaries, metadata, DOI verification, archive diagnostics, runtime versions, and hashes. Undefined or infinite metrics use null plus reasons. In category quantiles a null radius denotes infinity for an absent or undersized category; the count and corrected rank explain it.
 
