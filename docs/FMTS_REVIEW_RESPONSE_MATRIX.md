@@ -1,0 +1,21 @@
+# FMTS review response matrix
+
+This matrix covers every chair and reviewer concern in the user's rejection summary. Individual review text and reviewer IDs were not supplied; we do not invent quotations or assign concerns to a named reviewer. The original submission remains at `091d7c49fa74d28405c4cb1c9cfff4b9ab793712`, annotated tag `fmts-2026-submitted`.
+
+| Concern | Revision action | Evidence | Remaining boundary |
+|---|---|---|---|
+| Empirical diagnosis was careful and internally consistent | Preserve the submitted package and frozen model bundle. Rebuild the same event cohort from raw inputs for remedy comparisons. | Tag, split assertions, input hashes, per-event prediction artifacts. | New revision has already seen historical test results; it is not a fresh confirmatory test. |
+| Reporting floors and censoring are known | Add a focused matrix spanning detection, censoring, hurdles, zero inflation, tail metrics, decisions, and conditional prediction. | `FMTS_RELATED_WORK.md`, DOI and publisher verification artifacts. | No claim of a new estimator or general evaluation framework. |
+| One dataset is insufficient for an ML contribution | Choose aerospace positioning and add controlled known-mechanism experiments. | 60 fixed-seed simulation runs with ordered event splits. | No second empirical domain; cross-domain generality is not established. |
+| No effective remedy | Compare calibrated mixture means, a decision-selected guarded hurdle, and outcome-category conformal sets against persistence, direct, residual, and the prior hurdle. | `experiments/fmts_review.json`, `fmts_review.py`, machine-readable results and negative-remedy ledger. | Point remedies may fail; the manuscript must report this rather than claim success from MAE. |
+| Overstated temporal foundation-model connection | Remove active manuscript foundation-model motivation and all scaling claims. | Claim audit and revised paper. | No pretrained TSFM evidence and no foundation-model conclusion. |
+| −30 lacks operational meaning | Inspect official documentation, complete release, raw values, metadata and absence of processing code. | `FMTS_ARCHIVE_SEMANTICS.md`, `archive_audit.json`. | Generation rule is unresolved. Model the observed atom, not proven latent censoring. |
+| Need credible standard comparators | Attribute mixture, hurdle, decision selection and Mondrian calibration; test Gaussian Tobit only under known clipping. | Related-work matrix and known-clipping simulation results. | ESA Tobit omitted because censoring semantics are unverified. |
+| Metrics should reflect the decision problem | Lead with exact ESA loss; report strata, recall, precision, Brier score, explicit cost proxy, coverage and review rate. | Per-model evaluation JSON and generated tables. | Cost proxy is analyst-defined and does not model manoeuvre decisions or reviewer errors. |
+| Uncertainty and grouping | Add paired event bootstrap intervals, exact binomial coverage intervals, strict split checks, and time-ordered simulation groups. | Tests and split manifests. | ESA calendar and repeated object-pair validation remain impossible with released identifiers. |
+| Main figure hides composition and tail | Generate an additive floor/non-floor total-error decomposition with a separate high-risk MSE panel. | `docs/figures/fmts-remedy-decomposition.png`, table manifest. | Tail counts remain small in local ESA validation. |
+| Scaling cannot solve the issue is unsupported | Remove the assertion instead of drawing a scaling conclusion from a fixed tree model. | `FMTS_CLAIM_AUDIT.md`. | No scaling study is claimed. |
+| Abstract must state prior background, specific issue, remedy, measured outcome | Rewrite from generated remedy and uncertainty artifacts. | Revised `paper/main.tex`. | Any unsuccessful remedy is stated in the abstract or results. |
+| Declarations and reproducibility | Add limitations, CC BY data availability, ethics, confirmed author/funding/conflicts, explicit AI assistance, seeds and command ledger. | Paper declarations, source hashes, validation document. | Author verification and prior AI-use history cannot be asserted by the assistant. |
+
+These actions strengthen the benchmark and calibration evidence. They do not make the paper a cross-domain ML method paper or establish a manoeuvre-ready forecasting system.
