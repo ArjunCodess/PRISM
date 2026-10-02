@@ -1,0 +1,1278 @@
+{
+  "clipping/mass=0.2/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 12.390055880568136,
+        "mae_seed_sd": 0.24747499231969716,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.1595,
+        "marginal_coverage_mean": 0.9059999999999999,
+        "mondrian_coverage_mean": 0.9055,
+        "mean_review_fraction": 1.0
+      },
+      "direct": {
+        "mae_mean": 1.374844919966905,
+        "mae_seed_sd": 0.019615127733305867,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9008333333333333,
+        "mondrian_coverage_mean": 0.8985,
+        "mean_review_fraction": 1.0
+      },
+      "residual": {
+        "mae_mean": 1.426695464111742,
+        "mae_seed_sd": 0.018891354213986893,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.899,
+        "mondrian_coverage_mean": 0.8983333333333332,
+        "mean_review_fraction": 1.0
+      },
+      "mixture_mean": {
+        "mae_mean": 1.3948294308844975,
+        "mae_seed_sd": 0.01596664025270919,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8963333333333333,
+        "mondrian_coverage_mean": 0.9019999999999999,
+        "mean_review_fraction": 1.0
+      },
+      "old_hurdle": {
+        "mae_mean": 1.3902223686882227,
+        "mae_seed_sd": 0.025641783248776615,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8978333333333334,
+        "mondrian_coverage_mean": 0.9033333333333333,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.82487171027951,
+        "mae_seed_sd": 3.2813447495047563,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.012333333333333335,
+        "marginal_coverage_mean": 0.8998333333333333,
+        "mondrian_coverage_mean": 0.9025000000000001,
+        "mean_review_fraction": 1.0
+      },
+      "known_clipping_tobit": {
+        "mae_mean": 1.3085385219552896,
+        "mae_seed_sd": 0.016575714220821814,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8965,
+        "mondrian_coverage_mean": 0.8956666666666667,
+        "mean_review_fraction": 1.0
+      }
+    }
+  },
+  "clipping/mass=0.2/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 10.614068568583885,
+        "mae_seed_sd": 0.2490338464856154,
+        "esa_defined_runs": 4,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.15783333333333333,
+        "marginal_coverage_mean": 0.9068333333333334,
+        "mondrian_coverage_mean": 0.908,
+        "mean_review_fraction": 1.0
+      },
+      "direct": {
+        "mae_mean": 2.686896432042821,
+        "mae_seed_sd": 0.11524782322784358,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.03333333333333333,
+        "marginal_coverage_mean": 0.8933333333333333,
+        "mondrian_coverage_mean": 0.8960000000000001,
+        "mean_review_fraction": 1.0
+      },
+      "residual": {
+        "mae_mean": 2.727821060762726,
+        "mae_seed_sd": 0.11915318190858468,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.03333333333333333,
+        "marginal_coverage_mean": 0.8931666666666667,
+        "mondrian_coverage_mean": 0.8983333333333332,
+        "mean_review_fraction": 1.0
+      },
+      "mixture_mean": {
+        "mae_mean": 2.708094518479143,
+        "mae_seed_sd": 0.12230644215822137,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.03333333333333333,
+        "marginal_coverage_mean": 0.8943333333333333,
+        "mondrian_coverage_mean": 0.9023333333333333,
+        "mean_review_fraction": 1.0
+      },
+      "old_hurdle": {
+        "mae_mean": 2.7249149301027673,
+        "mae_seed_sd": 0.10123542866068701,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.03333333333333333,
+        "marginal_coverage_mean": 0.8933333333333333,
+        "mondrian_coverage_mean": 0.9071666666666667,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.080916368853006,
+        "mae_seed_sd": 1.885123388987955,
+        "esa_defined_runs": 2,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.026999999999999996,
+        "marginal_coverage_mean": 0.9033333333333333,
+        "mondrian_coverage_mean": 0.9036666666666665,
+        "mean_review_fraction": 1.0
+      },
+      "known_clipping_tobit": {
+        "mae_mean": 2.6371138415540405,
+        "mae_seed_sd": 0.09841331612171805,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          1,
+          2,
+          0,
+          5,
+          2
+        ],
+        "mean_decision_cost": 0.03333333333333333,
+        "marginal_coverage_mean": 0.8955,
+        "mondrian_coverage_mean": 0.9023333333333333,
+        "mean_review_fraction": 1.0
+      }
+    }
+  },
+  "clipping/mass=0.8/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 17.253925614352312,
+        "mae_seed_sd": 0.21151656262051186,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.1595,
+        "marginal_coverage_mean": 0.9051666666666668,
+        "mondrian_coverage_mean": 0.9091666666666667,
+        "mean_review_fraction": 1.0
+      },
+      "direct": {
+        "mae_mean": 0.3741724067871699,
+        "mae_seed_sd": 0.023260464154428163,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9018333333333333,
+        "mondrian_coverage_mean": 0.9091666666666665,
+        "mean_review_fraction": 1.0
+      },
+      "residual": {
+        "mae_mean": 0.4700103888296033,
+        "mae_seed_sd": 0.03102118777339195,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9076666666666666,
+        "mondrian_coverage_mean": 0.9046666666666667,
+        "mean_review_fraction": 1.0
+      },
+      "mixture_mean": {
+        "mae_mean": 0.36937388873400046,
+        "mae_seed_sd": 0.021470790412542757,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9056666666666666,
+        "mondrian_coverage_mean": 0.9116666666666667,
+        "mean_review_fraction": 1.0
+      },
+      "old_hurdle": {
+        "mae_mean": 0.35654038455026116,
+        "mae_seed_sd": 0.02175838522036139,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9004999999999999,
+        "mondrian_coverage_mean": 0.9676666666666666,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 0.4819259994767737,
+        "mae_seed_sd": 0.0653356728854304,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9101666666666667,
+        "mondrian_coverage_mean": 0.9203333333333333,
+        "mean_review_fraction": 1.0
+      },
+      "known_clipping_tobit": {
+        "mae_mean": 0.3384446876296773,
+        "mae_seed_sd": 0.019956647022044728,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9028333333333334,
+        "mondrian_coverage_mean": 0.9086666666666666,
+        "mean_review_fraction": 1.0
+      }
+    }
+  },
+  "clipping/mass=0.8/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 16.802861121934,
+        "mae_seed_sd": 0.2175778686206175,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.1595,
+        "marginal_coverage_mean": 0.9048333333333334,
+        "mondrian_coverage_mean": 0.9046666666666667,
+        "mean_review_fraction": 1.0
+      },
+      "direct": {
+        "mae_mean": 0.7327642630938034,
+        "mae_seed_sd": 0.05476487210314091,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8951666666666668,
+        "mondrian_coverage_mean": 0.9041666666666666,
+        "mean_review_fraction": 1.0
+      },
+      "residual": {
+        "mae_mean": 0.8227419496191135,
+        "mae_seed_sd": 0.06041900842764764,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8956666666666667,
+        "mondrian_coverage_mean": 0.8995000000000001,
+        "mean_review_fraction": 1.0
+      },
+      "mixture_mean": {
+        "mae_mean": 0.7308757124057267,
+        "mae_seed_sd": 0.052955921687334394,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8963333333333333,
+        "mondrian_coverage_mean": 0.9105000000000001,
+        "mean_review_fraction": 1.0
+      },
+      "old_hurdle": {
+        "mae_mean": 0.755559620825262,
+        "mae_seed_sd": 0.06169385857924411,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.9003333333333334,
+        "mondrian_coverage_mean": 0.9748333333333333,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 0.6616915887480809,
+        "mae_seed_sd": 0.051627795475088646,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8978333333333334,
+        "mondrian_coverage_mean": 0.9285,
+        "mean_review_fraction": 1.0
+      },
+      "known_clipping_tobit": {
+        "mae_mean": 0.7171617713943571,
+        "mae_seed_sd": 0.04779822797686961,
+        "esa_defined_runs": 0,
+        "high_counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mean_decision_cost": 0.0,
+        "marginal_coverage_mean": 0.8963333333333334,
+        "mondrian_coverage_mean": 0.9055,
+        "mean_review_fraction": 1.0
+      }
+    }
+  },
+  "structural_atom/mass=0.2/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 4.996648397517081,
+        "mae_seed_sd": 0.16997243474129045,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.0574999999999999,
+        "marginal_coverage_mean": 0.8856666666666667,
+        "mondrian_coverage_mean": 0.9051666666666666,
+        "mean_review_fraction": 0.4646666666666667
+      },
+      "direct": {
+        "mae_mean": 4.207251305255599,
+        "mae_seed_sd": 0.18066824686724706,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.0861666666666667,
+        "marginal_coverage_mean": 0.8971666666666668,
+        "mondrian_coverage_mean": 0.9071666666666667,
+        "mean_review_fraction": 0.32266666666666666
+      },
+      "residual": {
+        "mae_mean": 4.235264217687797,
+        "mae_seed_sd": 0.17021998978336966,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.1375,
+        "marginal_coverage_mean": 0.8985000000000001,
+        "mondrian_coverage_mean": 0.9083333333333334,
+        "mean_review_fraction": 0.31833333333333336
+      },
+      "mixture_mean": {
+        "mae_mean": 4.203943997214108,
+        "mae_seed_sd": 0.19170617068944018,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.1593333333333333,
+        "marginal_coverage_mean": 0.8965,
+        "mondrian_coverage_mean": 0.9033333333333335,
+        "mean_review_fraction": 0.3045
+      },
+      "old_hurdle": {
+        "mae_mean": 3.799118137964407,
+        "mae_seed_sd": 0.25076354985402305,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 0.8701666666666668,
+        "marginal_coverage_mean": 0.8956666666666667,
+        "mondrian_coverage_mean": 0.9001666666666667,
+        "mean_review_fraction": 0.3011666666666667
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.544410753248541,
+        "mae_seed_sd": 0.8306879800229628,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 0.8701666666666668,
+        "marginal_coverage_mean": 0.8938333333333333,
+        "mondrian_coverage_mean": 0.9023333333333333,
+        "mean_review_fraction": 0.2946666666666667
+      }
+    }
+  },
+  "structural_atom/mass=0.2/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 4.331510254769438,
+        "mae_seed_sd": 0.03411196201637234,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.243666666666667,
+        "marginal_coverage_mean": 0.8905000000000001,
+        "mondrian_coverage_mean": 0.8950000000000001,
+        "mean_review_fraction": 0.6386666666666666
+      },
+      "direct": {
+        "mae_mean": 5.674144576813682,
+        "mae_seed_sd": 0.11631899902207402,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.786833333333333,
+        "marginal_coverage_mean": 0.9019999999999999,
+        "mondrian_coverage_mean": 0.9075,
+        "mean_review_fraction": 0.47833333333333333
+      },
+      "residual": {
+        "mae_mean": 5.697555483992849,
+        "mae_seed_sd": 0.10085759996164761,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.887166666666667,
+        "marginal_coverage_mean": 0.9,
+        "mondrian_coverage_mean": 0.9033333333333333,
+        "mean_review_fraction": 0.47383333333333333
+      },
+      "mixture_mean": {
+        "mae_mean": 5.667586409163697,
+        "mae_seed_sd": 0.13039142628815067,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.9230000000000005,
+        "marginal_coverage_mean": 0.9,
+        "mondrian_coverage_mean": 0.9006666666666666,
+        "mean_review_fraction": 0.4651666666666666
+      },
+      "old_hurdle": {
+        "mae_mean": 4.272140927102489,
+        "mae_seed_sd": 0.2257117265480458,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.4413333333333336,
+        "marginal_coverage_mean": 0.8949999999999999,
+        "mondrian_coverage_mean": 0.8965,
+        "mean_review_fraction": 0.5098333333333332
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.7243706118703415,
+        "mae_seed_sd": 2.1324076886904217,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.4413333333333336,
+        "marginal_coverage_mean": 0.8905,
+        "mondrian_coverage_mean": 0.8966666666666667,
+        "mean_review_fraction": 0.4966666666666667
+      }
+    }
+  },
+  "structural_atom/mass=0.8/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 13.87521624677112,
+        "mae_seed_sd": 0.2787951035332912,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.5504999999999999,
+        "marginal_coverage_mean": 0.9076666666666666,
+        "mondrian_coverage_mean": 0.9085000000000001,
+        "mean_review_fraction": 0.442
+      },
+      "direct": {
+        "mae_mean": 5.207341902227315,
+        "mae_seed_sd": 0.13416073771393677,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.401166666666667,
+        "marginal_coverage_mean": 0.8936666666666667,
+        "mondrian_coverage_mean": 0.8958333333333334,
+        "mean_review_fraction": 0.344
+      },
+      "residual": {
+        "mae_mean": 5.2573389383744695,
+        "mae_seed_sd": 0.12396752755164851,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.4001666666666668,
+        "marginal_coverage_mean": 0.8996666666666666,
+        "mondrian_coverage_mean": 0.9013333333333333,
+        "mean_review_fraction": 0.35916666666666663
+      },
+      "mixture_mean": {
+        "mae_mean": 5.2356101784901306,
+        "mae_seed_sd": 0.24871841573047562,
+        "esa_defined_runs": 3,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.5935000000000001,
+        "marginal_coverage_mean": 0.8978333333333334,
+        "mondrian_coverage_mean": 0.8998333333333335,
+        "mean_review_fraction": 0.28900000000000003
+      },
+      "old_hurdle": {
+        "mae_mean": 3.968891036627883,
+        "mae_seed_sd": 0.1670365003815925,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.8850000000000001,
+        "marginal_coverage_mean": 0.8954999999999999,
+        "mondrian_coverage_mean": 0.9523333333333334,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 10.177179823143963,
+        "mae_seed_sd": 1.4249213561968594,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.38516666666666666,
+        "marginal_coverage_mean": 0.9046666666666667,
+        "mondrian_coverage_mean": 0.9056666666666666,
+        "mean_review_fraction": 0.3145
+      }
+    }
+  },
+  "structural_atom/mass=0.8/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 10.5141225602131,
+        "mae_seed_sd": 0.2346875119574985,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 2.120333333333333,
+        "marginal_coverage_mean": 0.9035,
+        "mondrian_coverage_mean": 0.9073333333333332,
+        "mean_review_fraction": 0.6241666666666666
+      },
+      "direct": {
+        "mae_mean": 8.371820502806946,
+        "mae_seed_sd": 0.2372518143434001,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.9579999999999997,
+        "marginal_coverage_mean": 0.8983333333333334,
+        "mondrian_coverage_mean": 0.898,
+        "mean_review_fraction": 0.6768333333333333
+      },
+      "residual": {
+        "mae_mean": 8.424348931387566,
+        "mae_seed_sd": 0.24044424092379255,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.9675,
+        "marginal_coverage_mean": 0.8991666666666667,
+        "mondrian_coverage_mean": 0.9035,
+        "mean_review_fraction": 0.7735
+      },
+      "mixture_mean": {
+        "mae_mean": 8.446579746671876,
+        "mae_seed_sd": 0.23070882049677058,
+        "esa_defined_runs": 3,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 4.216833333333333,
+        "marginal_coverage_mean": 0.8961666666666666,
+        "mondrian_coverage_mean": 0.8996666666666666,
+        "mean_review_fraction": 0.5655
+      },
+      "old_hurdle": {
+        "mae_mean": 8.627043966511017,
+        "mae_seed_sd": 0.7106440667665483,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.200333333333333,
+        "marginal_coverage_mean": 0.8946666666666665,
+        "mondrian_coverage_mean": 0.954,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 7.805953753159516,
+        "mae_seed_sd": 0.7491356402235693,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 2.1615,
+        "marginal_coverage_mean": 0.9018333333333333,
+        "mondrian_coverage_mean": 0.907,
+        "mean_review_fraction": 0.48166666666666663
+      }
+    }
+  },
+  "missing_update/mass=0.2/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 4.996648397517081,
+        "mae_seed_sd": 0.16997243474129045,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.0574999999999999,
+        "marginal_coverage_mean": 0.8856666666666667,
+        "mondrian_coverage_mean": 0.9051666666666666,
+        "mean_review_fraction": 0.4646666666666667
+      },
+      "direct": {
+        "mae_mean": 4.207251305255599,
+        "mae_seed_sd": 0.18066824686724706,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.0861666666666667,
+        "marginal_coverage_mean": 0.8971666666666668,
+        "mondrian_coverage_mean": 0.9071666666666667,
+        "mean_review_fraction": 0.32266666666666666
+      },
+      "residual": {
+        "mae_mean": 4.235264217687797,
+        "mae_seed_sd": 0.17021998978336966,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.1375,
+        "marginal_coverage_mean": 0.8985000000000001,
+        "mondrian_coverage_mean": 0.9083333333333334,
+        "mean_review_fraction": 0.31833333333333336
+      },
+      "mixture_mean": {
+        "mae_mean": 4.203943997214108,
+        "mae_seed_sd": 0.19170617068944018,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 1.1593333333333333,
+        "marginal_coverage_mean": 0.8965,
+        "mondrian_coverage_mean": 0.9033333333333335,
+        "mean_review_fraction": 0.3045
+      },
+      "old_hurdle": {
+        "mae_mean": 3.799118137964407,
+        "mae_seed_sd": 0.25076354985402305,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 0.8701666666666668,
+        "marginal_coverage_mean": 0.8956666666666667,
+        "mondrian_coverage_mean": 0.9001666666666667,
+        "mean_review_fraction": 0.3011666666666667
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.544410753248541,
+        "mae_seed_sd": 0.8306879800229628,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          183,
+          169,
+          174,
+          184,
+          172
+        ],
+        "mean_decision_cost": 0.8701666666666668,
+        "marginal_coverage_mean": 0.8938333333333333,
+        "mondrian_coverage_mean": 0.9023333333333333,
+        "mean_review_fraction": 0.2946666666666667
+      }
+    }
+  },
+  "missing_update/mass=0.2/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 4.331510254769438,
+        "mae_seed_sd": 0.03411196201637234,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.243666666666667,
+        "marginal_coverage_mean": 0.8905000000000001,
+        "mondrian_coverage_mean": 0.8950000000000001,
+        "mean_review_fraction": 0.6386666666666666
+      },
+      "direct": {
+        "mae_mean": 5.674144576813682,
+        "mae_seed_sd": 0.11631899902207402,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.786833333333333,
+        "marginal_coverage_mean": 0.9019999999999999,
+        "mondrian_coverage_mean": 0.9075,
+        "mean_review_fraction": 0.47833333333333333
+      },
+      "residual": {
+        "mae_mean": 5.697555483992849,
+        "mae_seed_sd": 0.10085759996164761,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.887166666666667,
+        "marginal_coverage_mean": 0.9,
+        "mondrian_coverage_mean": 0.9033333333333333,
+        "mean_review_fraction": 0.47383333333333333
+      },
+      "mixture_mean": {
+        "mae_mean": 5.667586409163697,
+        "mae_seed_sd": 0.13039142628815067,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.9230000000000005,
+        "marginal_coverage_mean": 0.9,
+        "mondrian_coverage_mean": 0.9006666666666666,
+        "mean_review_fraction": 0.4651666666666666
+      },
+      "old_hurdle": {
+        "mae_mean": 4.272140927102489,
+        "mae_seed_sd": 0.2257117265480458,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.4413333333333336,
+        "marginal_coverage_mean": 0.8949999999999999,
+        "mondrian_coverage_mean": 0.8965,
+        "mean_review_fraction": 0.5098333333333332
+      },
+      "decision_hurdle": {
+        "mae_mean": 4.7243706118703415,
+        "mae_seed_sd": 2.1324076886904217,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          394,
+          335,
+          351,
+          361,
+          352
+        ],
+        "mean_decision_cost": 3.4413333333333336,
+        "marginal_coverage_mean": 0.8905,
+        "mondrian_coverage_mean": 0.8966666666666667,
+        "mean_review_fraction": 0.4966666666666667
+      }
+    }
+  },
+  "missing_update/mass=0.8/drift=False": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 13.87521624677112,
+        "mae_seed_sd": 0.2787951035332912,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.5504999999999999,
+        "marginal_coverage_mean": 0.9076666666666666,
+        "mondrian_coverage_mean": 0.9085000000000001,
+        "mean_review_fraction": 0.442
+      },
+      "direct": {
+        "mae_mean": 5.207341902227315,
+        "mae_seed_sd": 0.13416073771393677,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.401166666666667,
+        "marginal_coverage_mean": 0.8936666666666667,
+        "mondrian_coverage_mean": 0.8958333333333334,
+        "mean_review_fraction": 0.344
+      },
+      "residual": {
+        "mae_mean": 5.2573389383744695,
+        "mae_seed_sd": 0.12396752755164851,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.4001666666666668,
+        "marginal_coverage_mean": 0.8996666666666666,
+        "mondrian_coverage_mean": 0.9013333333333333,
+        "mean_review_fraction": 0.35916666666666663
+      },
+      "mixture_mean": {
+        "mae_mean": 5.2356101784901306,
+        "mae_seed_sd": 0.24871841573047562,
+        "esa_defined_runs": 3,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 1.5935000000000001,
+        "marginal_coverage_mean": 0.8978333333333334,
+        "mondrian_coverage_mean": 0.8998333333333335,
+        "mean_review_fraction": 0.28900000000000003
+      },
+      "old_hurdle": {
+        "mae_mean": 3.968891036627883,
+        "mae_seed_sd": 0.1670365003815925,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.8850000000000001,
+        "marginal_coverage_mean": 0.8954999999999999,
+        "mondrian_coverage_mean": 0.9523333333333334,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 10.177179823143963,
+        "mae_seed_sd": 1.4249213561968594,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          100,
+          96,
+          85,
+          119,
+          101
+        ],
+        "mean_decision_cost": 0.38516666666666666,
+        "marginal_coverage_mean": 0.9046666666666667,
+        "mondrian_coverage_mean": 0.9056666666666666,
+        "mean_review_fraction": 0.3145
+      }
+    }
+  },
+  "missing_update/mass=0.8/drift=True": {
+    "runs": 5,
+    "models": {
+      "persistence": {
+        "mae_mean": 10.5141225602131,
+        "mae_seed_sd": 0.2346875119574985,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 2.120333333333333,
+        "marginal_coverage_mean": 0.9035,
+        "mondrian_coverage_mean": 0.9073333333333332,
+        "mean_review_fraction": 0.6241666666666666
+      },
+      "direct": {
+        "mae_mean": 8.371820502806946,
+        "mae_seed_sd": 0.2372518143434001,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.9579999999999997,
+        "marginal_coverage_mean": 0.8983333333333334,
+        "mondrian_coverage_mean": 0.898,
+        "mean_review_fraction": 0.6768333333333333
+      },
+      "residual": {
+        "mae_mean": 8.424348931387566,
+        "mae_seed_sd": 0.24044424092379255,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.9675,
+        "marginal_coverage_mean": 0.8991666666666667,
+        "mondrian_coverage_mean": 0.9035,
+        "mean_review_fraction": 0.7735
+      },
+      "mixture_mean": {
+        "mae_mean": 8.446579746671876,
+        "mae_seed_sd": 0.23070882049677058,
+        "esa_defined_runs": 3,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 4.216833333333333,
+        "marginal_coverage_mean": 0.8961666666666666,
+        "mondrian_coverage_mean": 0.8996666666666666,
+        "mean_review_fraction": 0.5655
+      },
+      "old_hurdle": {
+        "mae_mean": 8.627043966511017,
+        "mae_seed_sd": 0.7106440667665483,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 3.200333333333333,
+        "marginal_coverage_mean": 0.8946666666666665,
+        "mondrian_coverage_mean": 0.954,
+        "mean_review_fraction": 1.0
+      },
+      "decision_hurdle": {
+        "mae_mean": 7.805953753159516,
+        "mae_seed_sd": 0.7491356402235693,
+        "esa_defined_runs": 5,
+        "high_counts": [
+          267,
+          242,
+          251,
+          267,
+          261
+        ],
+        "mean_decision_cost": 2.1615,
+        "marginal_coverage_mean": 0.9018333333333333,
+        "mondrian_coverage_mean": 0.907,
+        "mean_review_fraction": 0.48166666666666663
+      }
+    }
+  }
+}
