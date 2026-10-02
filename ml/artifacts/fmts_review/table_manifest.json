@@ -1,0 +1,6 @@
+{
+  "source": "esa_seed42.json#/evaluations/test/models",
+  "source_sha256": "b33e5c4d0d0665adb8de6da31804e1cbc904394a82634f7a63f74fc280458d00",
+  "table_sha256": "9dc6f37ed947df12651cdd20b980aad9d253a11412b53dcb4cc99561056bc174",
+  "figure_sha256": "42e6041421a1bb0a121be7868adbbf165855c188d407b13495a5933ee5a9d676"
+}

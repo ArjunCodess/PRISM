@@ -1,0 +1,64 @@
+{
+  "title": "Collision Avoidance Challenge dataset",
+  "doi": "10.5281/zenodo.4463683",
+  "publication_date": "2021-01-25",
+  "description": "<p>The Collision Avoidance Challenge dataset is the official dataset used during the <strong>ESA&#39;s Kelvins</strong> <strong>competition for &quot;Collision Avoidance Challenge&quot;</strong>. The dataset is a collection of Conjunction Data Messages (CDMs) received by ESA from 2015 to 2019. The CDMs have been anonymised for distribution. The initial raw data, as well as the labels that were kept private during the competition, are also released.<br>\nESA thanks the US Space Surveillance Network for the provision of surveillance data supporting safe operations of ESA&rsquo;s spacecraft. In addition, we are grateful to the agreement which allows to publicly release the current dataset.</p>\n\n<p>The dataset is represented as a table, where each row corresponds to a single CDM, and each CDM contains 103 recorded characteristics/features. There are thus 103 columns, which are described in the competition pages. The dataset is made of several unique collision/close approach events, which are identified in the <code>event_id</code> column. In turn, each collision event is made of several CDMs recorded over time. Therefore, a single collision event can be thought of as a times series of CDMs. From these CDMs, for every collision event, we are interested in predicting the final risk which is computed in the last CDM of the time series (i.e. the risk value in the last row of each collision event).</p>\n\n<p>For a detailed description on the challenge and this dataset, visit <a href=\"https://kelvins.esa.int/collision-avoidance-challenge/data/\">kelvins.esa.int/collision-avoidance-challenge/data/</a>.</p>\n\n<p>The paper describing the competition setup and result can be found at <a href=\"http://arxiv.org/pdf/2008.03069.pdf\">arxiv.org/pdf/2008.03069.pdf</a>.</p>",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Thomas Uriot",
+      "affiliation": "ESA - Advanced Concepts Team"
+    },
+    {
+      "name": "Dario Izzo",
+      "affiliation": "ESA - Advanced Concepts Team",
+      "orcid": "0000-0002-9846-8423"
+    },
+    {
+      "name": "Jose Martinez-Heras",
+      "affiliation": "ESA - Space Debris Office"
+    },
+    {
+      "name": "Francesca Letizia",
+      "affiliation": "ESA - Space Debris Office"
+    },
+    {
+      "name": "Jan Siminski",
+      "affiliation": "ESA - Space Debris Office"
+    },
+    {
+      "name": "Klaus Merz",
+      "affiliation": "ESA - Space Debris Office"
+    }
+  ],
+  "resource_type": {
+    "title": "Dataset",
+    "type": "dataset"
+  },
+  "license": {
+    "id": "cc-by-4.0"
+  },
+  "communities": [
+    {
+      "id": "kelvins"
+    },
+    {
+      "id": "esa-act"
+    },
+    {
+      "id": "esa"
+    }
+  ],
+  "relations": {
+    "version": [
+      {
+        "index": 0,
+        "is_last": true,
+        "parent": {
+          "pid_type": "recid",
+          "pid_value": "4463682"
+        }
+      }
+    ]
+  }
+}

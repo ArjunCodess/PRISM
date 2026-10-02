@@ -1,0 +1,31 @@
+{
+  "compiler": "pdfTeX 3.141592653-2.6-1.40.28 (MiKTeX 25.12)",
+  "command": "./scripts/compile-paper.ps1",
+  "exit_status": 0,
+  "artifacts": {
+    "main.tex": {
+      "sha256": "3554ebfcb96995ef74a5255566baf387a5d83a75124866e5b8b17e46f3270d85"
+    },
+    "main.pdf": {
+      "sha256": "2224eee082668ccf4624d17be93af978474cf2d042217d9290f278de55a9d449",
+      "pages": 5
+    },
+    "supplement.tex": {
+      "sha256": "7c6cc6f2acc69184ac3ad09df50fdce9dd57cf9ed9f8b9f125a9e23f80d32725"
+    },
+    "supplement.pdf": {
+      "sha256": "d824e638d2801720462c31f16ce31b3aa8ded17500bf3b9a6f02d8add6a756e6",
+      "pages": 1
+    },
+    "fmts_review_numbers.tex": {
+      "sha256": "e4cd60b19937482e8b395c8ec3b6a01591ceb32d24ec18593d7c01d537d645c8"
+    },
+    "fmts_review_table.tex": {
+      "sha256": "9dc6f37ed947df12651cdd20b980aad9d253a11412b53dcb4cc99561056bc174"
+    }
+  },
+  "layout_and_reference_warnings": {
+    "main.log": [],
+    "supplement.log": []
+  }
+}

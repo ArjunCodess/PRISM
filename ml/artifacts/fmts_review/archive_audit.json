@@ -1,0 +1,47 @@
+{
+  "zip_sha256": "df1500146705305006ea506eeccc97f5c2e9593928d6650c503c4f5b5529d0bb",
+  "members": [
+    "Collision Avoidance Challenge - Dataset/",
+    "Collision Avoidance Challenge - Dataset/kelvins_competition_data/",
+    "Collision Avoidance Challenge - Dataset/kelvins_competition_data/test_data.csv",
+    "Collision Avoidance Challenge - Dataset/kelvins_competition_data/test_data_private.csv",
+    "Collision Avoidance Challenge - Dataset/kelvins_competition_data/train_data.zip",
+    "Collision Avoidance Challenge - Dataset/raw_data/",
+    "Collision Avoidance Challenge - Dataset/raw_data/raw_data_2015-2019.gz",
+    "Collision Avoidance Challenge - Dataset/raw_data/raw_data_2015-2019.txt"
+  ],
+  "documentation_mentions_minus30": false,
+  "documentation_mentions_clipping": false,
+  "documentation_mentions_floor": false,
+  "released_processing_code": [],
+  "calendar_columns": [],
+  "raw": {
+    "rows": 199082,
+    "events": 15321,
+    "minimum_risk": -30.0,
+    "minus30_rows": 82484,
+    "below_minus30_rows": 0,
+    "missing_risk_rows": 0
+  },
+  "competition_train": {
+    "rows": 162634,
+    "events": 13154,
+    "minimum_risk": -30.0,
+    "minus30_rows": 67240,
+    "below_minus30_rows": 0,
+    "missing_risk_rows": 0
+  },
+  "unique_feature_match": {
+    "keys": [
+      "time_to_tca",
+      "mission_id",
+      "miss_distance",
+      "relative_speed"
+    ],
+    "matched_rows": 126235,
+    "matched_floor_rows": 57439,
+    "floor_raw_same": 57439,
+    "floor_raw_below": 0,
+    "risk_mismatch_rows": 0
+  }
+}

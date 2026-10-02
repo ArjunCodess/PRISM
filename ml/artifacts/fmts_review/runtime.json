@@ -1,0 +1,12 @@
+{
+  "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "numpy": "2.4.0",
+  "pandas": "2.3.3",
+  "xgboost": "3.4.0",
+  "scipy": "1.16.3",
+  "sklearn": "1.8.0",
+  "config_sha256": "791b35b9e693ceebf1d2e0f3c5578be7e78eacf065e83d67e7f72d9627d131e7",
+  "source_sha256": "14b55a48aea16956d50bfd1d12eb9f170e007df2b64a6d19271a8958412ea5d3",
+  "remedies_sha256": "5d7bafee54d1930113c7018280981f8c92a487465a52a01df0fae27d8a0334fa"
+}

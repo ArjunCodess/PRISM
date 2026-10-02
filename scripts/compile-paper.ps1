@@ -1,5 +1,5 @@
-# Rebuild paper/main.pdf from paper/main.tex and paper/references.bib.
-# IEEEtran conference class + IEEEtran.bst. Prefer latexmk; fall back to pdflatex + bibtex.
+# Rebuild the main manuscript and supplement using an existing TeX installation.
+# The revised manuscript embeds its bibliography; archived sources remain separate.
 
 $ErrorActionPreference = "Stop"
 $paper = Join-Path (Split-Path $PSScriptRoot -Parent) "paper"
@@ -16,9 +16,11 @@ function Invoke-PdfLaTeX {
 
 function Invoke-PdfLaTeXBibTeX {
     Invoke-PdfLaTeX "1/3"
-    if (Get-Command bibtex -ErrorAction SilentlyContinue) {
+    $source = Get-Content -LiteralPath (Join-Path $paper "main.tex") -Raw
+    if ($source -match '\\bibliography\{' -and (Get-Command bibtex -ErrorAction SilentlyContinue)) {
         Write-Host "bibtex"
         & bibtex main
+        if ($LASTEXITCODE -ne 0) { throw "bibtex failed. See paper/main.blg." }
     }
     Invoke-PdfLaTeX "2/3"
     Invoke-PdfLaTeX "3/3"
