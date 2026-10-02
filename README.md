@@ -2,7 +2,7 @@
 
 PRISM forecasts later reported conjunction risk from information available 48 hours before closest approach. The target is a reported `log10(Pc)` estimate, not a collision outcome. This is a research prototype, not flight software.
 
-The FMTS review revision is on `fmts-review-improvements`. The exact submission is commit `091d7c49fa74d28405c4cb1c9cfff4b9ab793712`, preserved by annotated tag `fmts-2026-submitted` and the package in `submissions/fmts_2026`. The active manuscript is [paper/main.tex](paper/main.tex), with the rebuilt [main PDF](paper/main.pdf) and [supplement PDF](paper/supplement.pdf). Pre-review sources and PDFs are named `paper/pre-review-*`. Both revised PDFs compile with the existing MiKTeX installation; the native editor compiler cannot initialize on this host.
+The FMTS review revision is on `fmts-review-improvements`. The exact submission is commit `091d7c49fa74d28405c4cb1c9cfff4b9ab793712`, preserved by annotated tag `fmts-2026-submitted` and the package in `submissions/fmts_2026`. The active manuscript is [paper/main.tex](paper/main.tex), with the rebuilt [main PDF](paper/main.pdf) and [supplement PDF](paper/supplement.pdf). Both revised PDFs compile with the existing MiKTeX installation; the native editor compiler cannot initialize on this host.
 
 ## Revised evidence
 
@@ -16,13 +16,7 @@ Five ESA event redraws and 60 controlled simulation runs test sensitivity and kn
 
 ## Revision artifacts
 
-- [Review response matrix](docs/FMTS_REVIEW_RESPONSE_MATRIX.md) covers all concerns supplied in the rejection summary.
-- [Completion audit](docs/FMTS_COMPLETION_CHECKLIST.md) distinguishes completed work from producer evidence and author attestations still needed.
-- [Related-work matrix](docs/FMTS_RELATED_WORK.md) records established methods and verified references.
-- [Archive-semantics audit](docs/FMTS_ARCHIVE_SEMANTICS.md) separates observed facts from unverified explanations.
-- [Protocol](docs/FMTS_REVIEW_PROTOCOL.md) specifies target, selection, metrics, calibration, and simulations.
-- [Claim audit](docs/FMTS_CLAIM_AUDIT.md) records removals and narrower replacements.
-- [Negative-remedy ledger](docs/FMTS_NEGATIVE_REMEDIES.md) reports failures and unresolved questions.
+- [Review response matrix](docs/FMTS_REVIEW_RESPONSE_MATRIX.md) records the supplied concerns, revised claims, and remaining evidence gaps.
 - [Validation record](docs/FMTS_VALIDATION.md) lists commands, exit statuses, licenses, artifacts, and intervals.
 - [Machine-readable outputs](ml/artifacts/fmts_review) contain input and source hashes, splits, predictions, sets, per-model metrics, paired intervals, and simulation results.
 
@@ -47,6 +41,6 @@ Seed 42 must reproduce the frozen split IDs or the runner stops. Current-runtime
 
 ## Historical exhibit
 
-The existing FastAPI and Next.js exhibit still serves the frozen pre-revision model bundle in `ml/artifacts`. New remedies are research outputs and are not deployed. Legacy evidence remains available at the submitted commit and in the explicitly archived manuscripts. `python main.py` runs the original pipeline and exhibit; it is not the remedy-revision command and can regenerate the legacy artifact bundle.
+The existing FastAPI and Next.js exhibit still serves the frozen pre-revision model bundle in `ml/artifacts`. New remedies are research outputs and are not deployed. Legacy evidence remains available at the submitted commit and in `submissions/fmts_2026`. `python main.py` runs the original pipeline and exhibit; it is not the remedy-revision command and can regenerate the legacy artifact bundle.
 
 The evaluated ESA Zenodo release is CC BY 4.0. PRISM code and generated simulations use the repository's MIT license. Arjun Vijay Prakash is the sole listed author and reports no funding or conflicts. Codex assisted with research, code, execution, artifacts, and writing; independent author verification and prior AI-use history remain pending.

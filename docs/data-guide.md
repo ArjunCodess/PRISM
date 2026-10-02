@@ -6,7 +6,7 @@
 
 `data/raw/test_data.csv` is the official 2019 challenge test input. Every row has `time_to_tca >= 2`. The `risk` column is a pre-cutoff snapshot, not the final label.
 
-Final official-test labels were released on 25 January 2021 as Zenodo record 4463683 (DOI `10.5281/zenodo.4463683`). PRISM stores that archive as `data/raw/zenodo_4463683.zip` (gitignored). The scored label is `true_risk` in member `Collision Avoidance Challenge - Dataset/kelvins_competition_data/test_data_private.csv` (one row per event, 2167 events, about 150 high-risk). Private CDM fields in that file are not features. The `raw_data/` members of the same zip are identifiable raw extracts and are not used.
+Final official-test labels were released on 25 January 2021 as Zenodo record 4463683 (DOI `10.5281/zenodo.4463683`). PRISM stores that archive as `data/raw/zenodo_4463683.zip` (gitignored). The scored label is `true_risk` in member `Collision Avoidance Challenge - Dataset/kelvins_competition_data/test_data_private.csv` (one row per event, 2167 events, about 150 high-risk). Private CDM fields in that file are not features. The `raw_data/` members are anonymized extracts used by the revision for its archive-semantics audit, not as model features.
 
 `event_id` is independently numbered in Kelvins train and test. Numeric ID overlap does not mean the same conjunction. Features come only from `test_data.csv`; labels are joined on `event_id` after cutoff-safe histories are built.
 

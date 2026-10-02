@@ -1,6 +1,6 @@
 # Validation and reproducibility record
 
-The working tree was clean before revision. The exact FMTS submission is `091d7c49fa74d28405c4cb1c9cfff4b9ab793712`, preserved with annotated tag `fmts-2026-submitted`. Branch: `fmts-review-improvements`. No push or pull request was made. Prior PDFs and sources are retained as `paper/pre-review-*`; the submitted package is unchanged.
+The working tree was clean before revision. The exact FMTS submission is `091d7c49fa74d28405c4cb1c9cfff4b9ab793712`, preserved with annotated tag `fmts-2026-submitted`. Branch: `fmts-review-improvements`. No push or pull request was made. The submitted package and submission tag preserve the original state; redundant manuscript copies were removed during cleanup.
 
 ## Final commands
 
@@ -26,7 +26,7 @@ The initial ESA command completed with exit 0 but omitted the legacy eligibility
 
 The first summary-generation command failed with exit 1 due to a string-escaping syntax error. The string was corrected; subsequent summary runs completed with exit 0. Initial Ruff checks returned exit 1 for import ordering, unused imports and long lines. `ruff check --fix` resolved imports but still reported long lines; `ruff format` completed with exit 0, and final checks passed with exit 0. These failures are disclosed rather than counted as successful validation.
 
-The built-in `compile_latex_document` tool failed on the pre-edit manuscript, after revision, and during the final build with `Unable to find standard directories for platform`. This is a compiler initialization failure. The existing MiKTeX installation successfully rebuilt both PDFs with `./scripts/compile-paper.ps1`; no TeX distribution was installed. An initial sandboxed invocation returned exit 1 because MiKTeX could not access its user configuration, and an intermediate rebuild returned exit 1 on a transient locked supplement PDF. The final rebuild returned exit 0. The editable source remains open in Codex. Old PDFs are explicitly named pre-review files. Native tool results do not have shell exit codes.
+The built-in `compile_latex_document` tool failed on the pre-edit manuscript, after revision, and during the final build with `Unable to find standard directories for platform`. This is a compiler initialization failure. The existing MiKTeX installation successfully rebuilt both PDFs with `./scripts/compile-paper.ps1`; no TeX distribution was installed. An initial sandboxed invocation returned exit 1 because MiKTeX could not access its user configuration, and an intermediate rebuild returned exit 1 on a transient locked supplement PDF. The final rebuild returned exit 0. The editable source remains open in Codex. The original PDFs remain in the submitted package and Git history. Native tool results do not have shell exit codes.
 
 ## Final build before commits
 
@@ -69,3 +69,7 @@ Reported error and cost intervals use 1,000 paired event resamples. ESA interval
 For the selected guarded remedy, overall model-minus-persistence MAE is −0.557 [−0.771,−0.342] locally and −0.857 [−1.017,−0.704] officially. Non-floor differences are −0.764 [−1.397,−0.193] and −1.095 [−1.550,−0.640]. ESA loss differences are zero, with 998 valid local draws and two undefined draws; all 1,000 official draws are valid. Official raw high-risk MAE difference is +0.267 [−0.295,0.781], which does not establish improvement. Local calibrated-minus-raw atom Brier difference is −0.0279 [−0.0361,−0.0201].
 
 Direct-model official high-risk category coverage is 140/150, 93.3% [88.1%,96.8%], versus 24.0% marginal coverage. The selected remedy still accepts nine falsely reassuring official forecasts. Category sets around the prior hurdle require review on every event. The mixture has zero local and official tail recall. Known-clipping simulation can have no tail positives; such runs have undefined ESA scores and are not dropped. The negative-remedy ledger reports these failures and the unresolved −30 rule.
+
+## Documentation cleanup
+
+Redundant manuscript copies and documents repeating the paper were removed at the author's request. The claim audit is consolidated into the response matrix; the submitted package and tag remain unchanged. After fixing references, `./scripts/compile-paper.ps1` returned 0 and both PDFs were rendered and checked. An intermediate supplement had a 0.55-point line overflow; the manifest check rejected it and one premature test run failed against the old build hashes. After correcting the layout and refreshing the manifest, `python -m pytest -p no:cacheprovider` returned 0 with 144 tests passed and the single existing estimator-version warning. Final logs contain no overfull boxes or undefined references.

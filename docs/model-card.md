@@ -36,6 +36,6 @@
 
 **Human control.** Forecasts are advisory. Review required means a person must look. The model never commands a manoeuvre.
 
-**License.** PRISM code is MIT licensed. The evaluated ESA Zenodo release specifies CC BY 4.0. The target is later reported `log10(Pc)`, not a collision outcome. −30 is a recorded archive atom whose computation/export rule remains unresolved; see `FMTS_ARCHIVE_SEMANTICS.md`. This card describes the frozen exhibit model, not the new research remedies.
+**License.** PRISM code is MIT licensed. The evaluated ESA Zenodo release specifies CC BY 4.0. The target is later reported `log10(Pc)`, not a collision outcome. −30 is a recorded archive atom whose computation/export rule remains unresolved; see section 2 of `paper/main.tex`. This card describes the frozen exhibit model, not the new research remedies.
 
 See `ml/artifacts/metrics.json` for the frozen numbers, including historical ablation, forecast horizons, abstention coverage, failure clusters, and SHAP contrast.
