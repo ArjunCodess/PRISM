@@ -1,0 +1,541 @@
+{
+  "10.2307/1907382": {
+    "DOI": "10.2307/1907382",
+    "title": [
+      "Estimation of Relationships for Limited Dependent Variables"
+    ],
+    "author": [
+      {
+        "given": "James",
+        "family": "Tobin",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "JSTOR",
+    "container-title": [
+      "Econometrica"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1958,
+          1
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.2307/1907382"
+  },
+  "10.2307/1909582": {
+    "DOI": "10.2307/1909582",
+    "title": [
+      "Some Statistical Models for Limited Dependent Variables with Application to the Demand for Durable Goods"
+    ],
+    "author": [
+      {
+        "given": "John G.",
+        "family": "Cragg",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "JSTOR",
+    "container-title": [
+      "Econometrica"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1971,
+          9
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.2307/1909582"
+  },
+  "10.1080/00401706.1992.10485228": {
+    "verification_error": "HTTP Error 404: Not Found"
+  },
+  "10.1021/ac60259a007": {
+    "DOI": "10.1021/ac60259a007",
+    "title": [
+      "Limits for qualitative detection and quantitative determination.  Application to radiochemistry"
+    ],
+    "author": [
+      {
+        "given": "Lloyd A.",
+        "family": "Currie",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "American Chemical Society (ACS)",
+    "container-title": [
+      "Analytical Chemistry"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1968,
+          3,
+          1
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1021/ac60259a007"
+  },
+  "10.1080/01621459.2017.1307116": {
+    "DOI": "10.1080/01621459.2017.1307116",
+    "title": [
+      "Distribution-Free Predictive Inference for Regression"
+    ],
+    "author": [
+      {
+        "ORCID": "https://orcid.org/0000-0003-3104-9387",
+        "authenticated-orcid": false,
+        "given": "Jing",
+        "family": "Lei",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, Carnegie Mellon University, Pittsburgh, PA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Max",
+        "family": "G\u2019Sell",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, Carnegie Mellon University, Pittsburgh, PA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Alessandro",
+        "family": "Rinaldo",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, Carnegie Mellon University, Pittsburgh, PA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "ORCID": "https://orcid.org/0000-0002-2158-8304",
+        "authenticated-orcid": false,
+        "given": "Ryan J.",
+        "family": "Tibshirani",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, Carnegie Mellon University, Pittsburgh, PA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Larry",
+        "family": "Wasserman",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, Carnegie Mellon University, Pittsburgh, PA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "Informa UK Limited",
+    "container-title": [
+      "Journal of the American Statistical Association"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2018,
+          6,
+          8
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1080/01621459.2017.1307116"
+  },
+  "10.1093/imaiai/iaaa017": {
+    "DOI": "10.1093/imaiai/iaaa017",
+    "title": [
+      "The limits of distribution-free conditional predictive inference"
+    ],
+    "author": [
+      {
+        "given": "Rina",
+        "family": "Foygel Barber",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "Department of Statistics, University of Chicago, Chicago, IL 60637"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Emmanuel J",
+        "family": "Cand\u00e8s",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Departments of Statistics and Mathematics, Stanford University, Stanford, CA 94305"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Aaditya",
+        "family": "Ramdas",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics and Data Science and Machine Learning Department, Carnegie Mellon University, Pittsburgh, PA 15213"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Ryan J",
+        "family": "Tibshirani",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Statistics and Data Science and Machine Learning Department, Carnegie Mellon University, Pittsburgh, PA 15213"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "Oxford University Press (OUP)",
+    "container-title": [
+      "Information and Inference: A Journal of the IMA"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2020,
+          8,
+          25
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1093/imaiai/iaaa017"
+  },
+  "10.1287/mnsc.2020.3922": {
+    "DOI": "10.1287/mnsc.2020.3922",
+    "title": [
+      "Smart \u201cPredict, then Optimize\u201d"
+    ],
+    "author": [
+      {
+        "ORCID": "https://orcid.org/0000-0003-0729-4999",
+        "authenticated-orcid": false,
+        "given": "Adam N.",
+        "family": "Elmachtoub",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "Department of Industrial Engineering and Operations Research and Data Science Institute, Columbia University, New York, New York 10027;"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "ORCID": "https://orcid.org/0000-0002-5617-1058",
+        "authenticated-orcid": false,
+        "given": "Paul",
+        "family": "Grigas",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Department of Industrial Engineering and Operations Research, University of California, Berkeley, Berkeley, California 94720"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "Institute for Operations Research and the Management Sciences (INFORMS)",
+    "container-title": [
+      "Management Science"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2022,
+          1
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1287/mnsc.2020.3922"
+  },
+  "10.1007/978-3-642-04747-3_26": {
+    "DOI": "10.1007/978-3-642-04747-3_26",
+    "title": [
+      "Precision and Recall for Regression"
+    ],
+    "author": [
+      {
+        "given": "Luis",
+        "family": "Torgo",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Rita",
+        "family": "Ribeiro",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "Springer Berlin Heidelberg",
+    "container-title": [
+      "Lecture Notes in Computer Science",
+      "Discovery Science"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2009
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1007/978-3-642-04747-3_26"
+  },
+  "10.1007/s42064-021-0101-5": {
+    "DOI": "10.1007/s42064-021-0101-5",
+    "title": [
+      "Spacecraft collision avoidance challenge: Design and results of a machine learning competition"
+    ],
+    "author": [
+      {
+        "given": "Thomas",
+        "family": "Uriot",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Dario",
+        "family": "Izzo",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Lu\u00eds F.",
+        "family": "Sim\u00f5es",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Rasit",
+        "family": "Abay",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Nils",
+        "family": "Einecke",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Sven",
+        "family": "Rebhan",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Jose",
+        "family": "Martinez-Heras",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Francesca",
+        "family": "Letizia",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Jan",
+        "family": "Siminski",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Klaus",
+        "family": "Merz",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "publisher": "Springer Science and Business Media LLC",
+    "container-title": [
+      "Astrodynamics"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2021,
+          4,
+          7
+        ]
+      ]
+    },
+    "URL": "https://doi.org/10.1007/s42064-021-0101-5"
+  }
+}
