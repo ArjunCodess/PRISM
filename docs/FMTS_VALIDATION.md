@@ -40,6 +40,8 @@ The five ESA configurations and all 60 simulations were rerun from the checked-i
 | `npm.cmd test` in `apps/web` | 0: two Vitest tests. Initial sandboxed attempt returned 1 because esbuild could not access the parent directory; authorized execution succeeded. |
 | `python -m compileall -q ml/src apps/api/main.py scripts/audit_fmts_sources.py scripts/summarize_fmts_revision.py` | 0: Python sources compile. |
 
+After the completion audit, `python -m pytest -p no:cacheprovider` passed 144 tests with the same single legacy estimator-version warning. The added checks recompute every saved run's model metrics, event IDs, marginal and category coverage in all strata, and exact binomial intervals. They also verify every report hash and the final manuscript/PDF hashes. `python -m ruff check ml/tests/test_fmts_review.py --fix` and `python -m ruff format ml/tests/test_fmts_review.py` returned 0.
+
 All six final PDF pages were rendered with `pdftoppm -r 95 -png` and visually checked for clipping, missing figures, unreadable tables and unresolved citations. Final compiler logs contain no overfull boxes or undefined references. MiKTeX emits a locale fallback notice. `paper/build_manifest.json` records final source/PDF hashes and page counts. No push or pull request was made.
 
 ## Licenses, splits and artifacts

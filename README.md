@@ -17,6 +17,7 @@ Five ESA event redraws and 60 controlled simulation runs test sensitivity and kn
 ## Revision artifacts
 
 - [Review response matrix](docs/FMTS_REVIEW_RESPONSE_MATRIX.md) covers all concerns supplied in the rejection summary.
+- [Completion audit](docs/FMTS_COMPLETION_CHECKLIST.md) distinguishes completed work from producer evidence and author attestations still needed.
 - [Related-work matrix](docs/FMTS_RELATED_WORK.md) records established methods and verified references.
 - [Archive-semantics audit](docs/FMTS_ARCHIVE_SEMANTICS.md) separates observed facts from unverified explanations.
 - [Protocol](docs/FMTS_REVIEW_PROTOCOL.md) specifies target, selection, metrics, calibration, and simulations.

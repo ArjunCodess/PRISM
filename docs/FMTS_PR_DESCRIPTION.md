@@ -17,7 +17,7 @@ Add floor-aware remedies and generalization after FMTS review
 - `python ml/src/fmts_review.py --config experiments/fmts_review.json --dataset outputs` — exit 0
 - `python scripts/summarize_fmts_revision.py` — exit 0
 - `python -m pytest ml/tests/test_fmts_review.py -k 'not generated and not saved and not all_simulations'` — exit 0; initial algorithm check, 10 passed
-- `python -m pytest -p no:cacheprovider` — exit 0; final 77 passed, one legacy estimator-version warning
+- `python -m pytest -p no:cacheprovider` — exit 0; final 144 passed, one legacy estimator-version warning; every saved experiment's scores, stratum coverage, intervals and event IDs recomputed
 - `python -m ruff check ml/src/fmts_remedies.py ml/src/fmts_review.py ml/tests/test_fmts_review.py scripts/audit_fmts_sources.py scripts/summarize_fmts_revision.py` — exit 0
 - `git diff --check` — exit 0
 - ESA release: CC BY 4.0; code and simulated data: MIT. No other empirical dataset was modeled.
