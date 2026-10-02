@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "redraw_seeds": [42, 43, 44, 45, 46],
+  "floor": -30.0,
+  "floor_atol": 0.000001,
+  "high_threshold": -6.0,
+  "alpha": 0.1,
+  "bootstrap": 1000,
+  "false_negative_cost": 20.0,
+  "false_positive_cost": 1.0,
+  "review_cost": 0.25,
+  "hurdle_thresholds": [0.05, 0.15, 0.3, 0.5, 0.7, 0.9, 0.95],
+  "blend_weights": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "regressor": {"n_estimators": 250, "learning_rate": 0.05, "max_depth": 4, "min_child_weight": 6, "subsample": 0.85, "colsample_bytree": 0.8, "reg_alpha": 0.1, "reg_lambda": 2.0},
+  "classifier": {"n_estimators": 180, "learning_rate": 0.05, "max_depth": 3, "min_child_weight": 5, "subsample": 0.85, "colsample_bytree": 0.8},
+  "simulation": {"n_events": 6000, "floor_rates": [0.2, 0.8], "mechanisms": ["clipping", "structural_atom", "missing_update"], "drift": [false, true]},
+  "primary_metric": "ESA high-risk MSE / F2; infinity if F2 is zero",
+  "selection": "validation ESA loss, then synthetic decision cost, then non-floor MAE",
+  "positioning": "aerospace; simulation is mechanism evidence, not a second empirical domain"
+}
