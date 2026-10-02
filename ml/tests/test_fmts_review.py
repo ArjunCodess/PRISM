@@ -18,6 +18,7 @@ from fmts_remedies import (
     set_covered,
 )
 from fmts_review import validate_split
+from scipy.stats import binomtest
 
 ROOT = Path(__file__).resolve().parents[2]
 CFG = json.loads((ROOT / "experiments/fmts_review.json").read_text())
@@ -187,3 +188,63 @@ def test_frozen_split_preserved_and_all_source_dois_have_checks():
     publisher = json.loads((OUT / "publisher_reference_checks.json").read_text())
     fallback = {source.get("doi") for source in publisher["sources"]}
     assert all("DOI" in record or doi in fallback for doi, record in checked.items())
+
+
+@pytest.mark.parametrize(
+    "report_path",
+    sorted(OUT.glob("esa_seed*.json")) + sorted(OUT.glob("sim_*.json")),
+    ids=lambda path: path.stem,
+)
+def test_every_saved_run_recomputes_scores_and_stratified_coverage(report_path):
+    report = json.loads(report_path.read_text())
+    for population, evaluation in report["evaluations"].items():
+        with np.load(OUT / f"{report_path.stem}_{population}_predictions.npz") as arrays:
+            y = arrays["y"]
+            assert len(arrays["event_id"]) == len(set(arrays["event_id"])) == len(y)
+            if population == "test":
+                assert set(arrays["event_id"]) == set(report["split"]["test"])
+            group = categories(y, CFG["floor"], CFG["high_threshold"])
+            for name, expected in evaluation["models"].items():
+                assert point_report(y, arrays[name], CFG) == expected
+                uncertainty = evaluation["intervals"][name]
+                sets = {
+                    key: arrays[name + "_set_" + key]
+                    for key in ("atom", "low_lo", "low_hi", "high_lo", "high_hi")
+                }
+                radius = uncertainty["marginal_radius"]
+                covered = {
+                    "mondrian": set_covered(y, sets, CFG),
+                    "marginal": np.abs(y - arrays[name]) <= (np.inf if radius is None else radius),
+                }
+                for label, mask in [("all", np.ones(len(y), bool))] + [
+                    (label, group == g) for g, label in enumerate(("floor", "nonfloor_low", "high"))
+                ]:
+                    n = int(mask.sum())
+                    assert uncertainty["coverage"][label]["n"] == n
+                    for method, coverage in covered.items():
+                        k = int(coverage[mask].sum())
+                        saved = uncertainty["coverage"][label][method]
+                        assert saved["covered"] == k
+                        if not n:
+                            assert saved["coverage"] is None and saved["ci95"] is None
+                        else:
+                            assert saved["coverage"] == pytest.approx(k / n)
+                            interval = binomtest(k, n).proportion_ci(method="exact")
+                            assert saved["ci95"] == pytest.approx([interval.low, interval.high])
+
+
+def test_all_report_hashes_match_release_manifest():
+    manifest = json.loads((OUT / "artifact_hashes.json").read_text())
+    expected = {path.name for path in OUT.glob("*.json") if path.name != "artifact_hashes.json"}
+    assert set(manifest) == expected
+    for name, digest in manifest.items():
+        assert hashlib.sha256((OUT / name).read_bytes()).hexdigest() == digest
+
+
+def test_final_manuscript_and_pdf_hashes_match_build_manifest():
+    paper = ROOT / "paper"
+    manifest = json.loads((paper / "build_manifest.json").read_text())
+    assert manifest["exit_status"] == 0
+    assert not any(manifest["layout_and_reference_warnings"].values())
+    for name, artifact in manifest["artifacts"].items():
+        assert hashlib.sha256((paper / name).read_bytes()).hexdigest() == artifact["sha256"]
